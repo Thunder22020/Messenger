@@ -1,0 +1,25 @@
+spring:
+  security:
+    jwt:
+      secretKey: ${JWT_SECRET}
+      access-expiration: 300000
+      refresh-expiration: 7
+  application:
+    name: Messenger
+  datasource:
+    url: jdbc:postgresql://localhost:5432/messenger_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    properties:
+      hibernate:
+        format-sql: true
+        transaction:
+          jta:
+            platform: org.hibernate.service.jta.JtaService
