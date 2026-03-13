@@ -17,7 +17,9 @@ import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
 import com.daniel.messenger.messaging.exception.NotChatParticipantException
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.ChatRepository
+import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.user.service.UserService
+import org.springframework.data.domain.PageRequest
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,6 +29,7 @@ import java.time.Instant
 class ChatService(
     private val chatRepository: ChatRepository,
     private val chatParticipantRepository: ChatParticipantRepository,
+    private val messageRepository: MessageRepository,
     private val userService: UserService,
     private val messagingTemplate: SimpMessagingTemplate,
 ) {
@@ -254,5 +257,41 @@ class ChatService(
             .findByChat_IdAndUser_Id(chatId, userId)
             ?: throw NotChatParticipantException("Forbidden")
         chatParticipantRepository.delete(participant)
+    }
+
+    @Transactional
+    fun handleMessageDeleted(deletedMessageId: Long, chatId: Long) {
+        val chat = findByIdOrThrow(chatId)
+
+        // Recalculate the chat's last visible message
+        val newLast = messageRepository.findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1)).firstOrNull()
+        chat.lastMessageId = newLast?.id
+        chat.lastMessageContent = newLast?.content
+        chat.lastMessageCreatedAt = newLast?.createdAt
+        chatRepository.save(chat)
+
+        // Decrement unread count for any participant who had not yet read the deleted message
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+        participants.forEach { participant ->
+            val lastReadId = participant.lastReadMessageId ?: -1L
+            if (deletedMessageId > lastReadId && participant.unreadCount > 0) {
+                participant.unreadCount--
+            }
+        }
+        chatParticipantRepository.saveAll(participants)
+
+        // Notify every participant's sidebar
+        participants.forEach { participant ->
+            messagingTemplate.convertAndSendToUser(
+                participant.user.username,
+                "/queue/chat-updates",
+                ChatUpdateEvent(
+                    chatId = chatId,
+                    lastMessageContent = chat.lastMessageContent ?: "",
+                    lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
+                    unreadCount = participant.unreadCount,
+                )
+            )
+        }
     }
 }

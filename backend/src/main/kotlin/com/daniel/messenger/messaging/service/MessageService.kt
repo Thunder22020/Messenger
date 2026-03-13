@@ -59,6 +59,10 @@ class MessageService(
         message.deletedAt = Instant.now()
         val saved = messageRepository.save(message)
         broadcastMessageUpdate(saved)
+        chatService.handleMessageDeleted(
+            deletedMessageId = requireNotNull(saved.id),
+            chatId = requireNotNull(saved.chat.id),
+        )
         return saved.toResponse()
     }
 

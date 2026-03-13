@@ -31,4 +31,10 @@ interface MessageRepository : JpaRepository<MessageEntity, Long> {
         @Param("afterId") afterId: Long,
         pageable: Pageable,
     ): List<MessageEntity>
+
+    @Query("SELECT m FROM MessageEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.deletedAt IS NULL ORDER BY m.id DESC")
+    fun findLastNonDeletedByChatId(
+        @Param("chatId") chatId: Long,
+        pageable: Pageable,
+    ): List<MessageEntity>
 }
