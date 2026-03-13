@@ -2,5 +2,6 @@ package com.daniel.messenger.messaging.dto
 
 data class PagedMessageResponse(
     val messages: List<MessageResponse>,
-    val hasMore: Boolean,
+    val hasMoreOlder: Boolean,
+    val hasMoreNewer: Boolean,
 )

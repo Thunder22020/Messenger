@@ -1,12 +1,12 @@
 package com.daniel.messenger.messaging.controller
 
 import com.daniel.messenger.messaging.dto.AddParticipantRequest
+import com.daniel.messenger.messaging.dto.ChatParticipantResponse
 import com.daniel.messenger.messaging.dto.CreateGroupChatRequest
 import com.daniel.messenger.messaging.dto.MyChatResponse
 import com.daniel.messenger.messaging.dto.OpenChatResponse
 import com.daniel.messenger.messaging.service.ChatService
 import com.daniel.messenger.security.userdetails.UserPrincipal
-import com.daniel.messenger.user.dto.UserSearchResponse
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -64,7 +64,7 @@ class ChatController(
     fun getParticipants(
         @PathVariable chatId: Long,
         @AuthenticationPrincipal userPrincipal: UserPrincipal
-    ): List<UserSearchResponse> {
+    ): List<ChatParticipantResponse> {
         val userId = requireNotNull(userPrincipal.user.id)
         return chatService.getChatParticipants(chatId, userId)
     }

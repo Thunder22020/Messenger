@@ -73,9 +73,36 @@ class MessageService(
         } else {
             messageRepository.findLatestByChatId(chatId, pageable)
         }
-        val hasMore = raw.size > PAGE_SIZE
+        val hasMoreOlder = raw.size > PAGE_SIZE
         val messages = raw.take(PAGE_SIZE).reversed().map { it.toResponse() }
-        return PagedMessageResponse(messages, hasMore)
+        return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = false)
+    }
+
+    fun getMessagesAfter(chatId: Long, userId: Long, afterId: Long): PagedMessageResponse {
+        chatService.isChatParticipantOrThrow(chatId, userId)
+        val pageable = PageRequest.of(0, PAGE_SIZE + 1)
+        val raw = messageRepository.findByChatIdAndIdAfter(chatId, afterId, pageable)
+        val hasMoreNewer = raw.size > PAGE_SIZE
+        val messages = raw.take(PAGE_SIZE).map { it.toResponse() }
+        return PagedMessageResponse(messages, hasMoreOlder = false, hasMoreNewer = hasMoreNewer)
+    }
+
+    fun getMessagesAround(chatId: Long, userId: Long, aroundId: Long): PagedMessageResponse {
+        chatService.isChatParticipantOrThrow(chatId, userId)
+        val halfPage = PageRequest.of(0, HALF_PAGE_SIZE + 1)
+
+        // Messages at or before aroundId (context: the last-read message and older)
+        val beforeRaw = messageRepository.findByChatIdAndIdBefore(chatId, aroundId + 1, halfPage)
+        val hasMoreOlder = beforeRaw.size > HALF_PAGE_SIZE
+        val beforeMessages = beforeRaw.take(HALF_PAGE_SIZE).reversed()
+
+        // Messages after aroundId (the unread block)
+        val afterRaw = messageRepository.findByChatIdAndIdAfter(chatId, aroundId, halfPage)
+        val hasMoreNewer = afterRaw.size > HALF_PAGE_SIZE
+        val afterMessages = afterRaw.take(HALF_PAGE_SIZE)
+
+        val messages = (beforeMessages + afterMessages).map { it.toResponse() }
+        return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = hasMoreNewer)
     }
 
     private fun findByIdWithSenderOrThrow(id: Long): MessageEntity =
@@ -87,5 +114,6 @@ class MessageService(
 
     companion object {
         private const val PAGE_SIZE = 50
+        private const val HALF_PAGE_SIZE = PAGE_SIZE / 2
     }
 }

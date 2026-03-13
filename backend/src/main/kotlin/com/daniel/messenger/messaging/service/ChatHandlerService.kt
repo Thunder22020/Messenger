@@ -51,7 +51,6 @@ class ChatHandlerService(
         participants.forEach { participant ->
             if (participant.user.id == senderId) return@forEach
             if (isUserViewingChat(participant.user.username, chatId)) {
-                participant.lastReadMessageId = response.id
                 participant.unreadCount = 0
             } else {
                 participant.unreadCount += 1

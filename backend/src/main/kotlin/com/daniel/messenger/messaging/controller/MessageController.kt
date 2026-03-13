@@ -23,11 +23,17 @@ class MessageController(
     @GetMapping("/{chatId}")
     fun getMessages(
         @PathVariable chatId: Long,
-        @RequestParam before: Long?,
+        @RequestParam(required = false) before: Long?,
+        @RequestParam(required = false) after: Long?,
+        @RequestParam(required = false) around: Long?,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): PagedMessageResponse {
         val userId = requireNotNull(userPrincipal.user.id)
-        return messageService.getMessages(chatId, userId, before)
+        return when {
+            around != null -> messageService.getMessagesAround(chatId, userId, around)
+            after != null -> messageService.getMessagesAfter(chatId, userId, after)
+            else -> messageService.getMessages(chatId, userId, before)
+        }
     }
 
     @PatchMapping("/{messageId}")

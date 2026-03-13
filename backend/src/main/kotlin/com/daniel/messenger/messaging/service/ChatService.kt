@@ -1,8 +1,10 @@
 package com.daniel.messenger.messaging.service
 
+import com.daniel.messenger.messaging.dto.ChatParticipantResponse
 import com.daniel.messenger.messaging.dto.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.MyChatResponse
 import com.daniel.messenger.messaging.dto.OpenChatResponse
+import com.daniel.messenger.messaging.dto.ReadAckEvent
 import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
@@ -15,7 +17,6 @@ import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
 import com.daniel.messenger.messaging.exception.NotChatParticipantException
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.ChatRepository
-import com.daniel.messenger.user.dto.UserSearchResponse
 import com.daniel.messenger.user.service.UserService
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
@@ -78,6 +79,16 @@ class ChatService(
                 unreadCount = 0
             )
         )
+
+        val lastReadId = chat.lastMessageId ?: return
+        messagingTemplate.convertAndSend(
+            "/topic/chat.$chatId.read",
+            ReadAckEvent(
+                chatId = chatId,
+                readerUsername = participant.user.username,
+                lastReadMessageId = lastReadId,
+            )
+        )
     }
 
     fun findByIdOrThrow(id: Long): Chat =
@@ -118,15 +129,17 @@ class ChatService(
     fun getUserChats(userId: Long) =
         chatRepository.findAllUserChatsWithParticipants(userId)
             .map { chat ->
-            MyChatResponse(
-                chatId = requireNotNull(chat.id),
-                type = chat.type,
-                displayName = getDisplayName(chat, userId),
-                lastMessageContent = chat.lastMessageContent,
-                lastMessageCreatedAt = chat.lastMessageCreatedAt,
-                unreadCount = chat.participants.first { it.user.id == userId }.unreadCount
-            )
-        }
+                val myParticipant = chat.participants.first { it.user.id == userId }
+                MyChatResponse(
+                    chatId = requireNotNull(chat.id),
+                    type = chat.type,
+                    displayName = getDisplayName(chat, userId),
+                    lastMessageContent = chat.lastMessageContent,
+                    lastMessageCreatedAt = chat.lastMessageCreatedAt,
+                    unreadCount = myParticipant.unreadCount,
+                    lastReadMessageId = myParticipant.lastReadMessageId,
+                )
+            }
 
     fun getDisplayName(chat: Chat, userId: Long): String = when (chat.type) {
         ChatType.PRIVATE -> chat.participants.first { it.user.id != userId }.user.username
@@ -177,15 +190,16 @@ class ChatService(
         }
     }
 
-    fun getChatParticipants(chatId: Long, userId: Long): List<UserSearchResponse> {
+    fun getChatParticipants(chatId: Long, userId: Long): List<ChatParticipantResponse> {
         isChatParticipantOrThrow(chatId, userId)
         return chatParticipantRepository.findAllWithUserByChatId(chatId)
             .map {
-            UserSearchResponse(
-                id = requireNotNull(it.user.id),
-                username = it.user.username
-            )
-        }
+                ChatParticipantResponse(
+                    id = requireNotNull(it.user.id),
+                    username = it.user.username,
+                    lastReadMessageId = it.lastReadMessageId,
+                )
+            }
     }
 
     @Transactional

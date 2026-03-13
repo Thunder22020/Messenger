@@ -24,4 +24,11 @@ interface MessageRepository : JpaRepository<MessageEntity, Long> {
         @Param("beforeId") beforeId: Long,
         pageable: Pageable,
     ): List<MessageEntity>
+
+    @Query("SELECT m FROM MessageEntity m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.id > :afterId ORDER BY m.id ASC")
+    fun findByChatIdAndIdAfter(
+        @Param("chatId") chatId: Long,
+        @Param("afterId") afterId: Long,
+        pageable: Pageable,
+    ): List<MessageEntity>
 }

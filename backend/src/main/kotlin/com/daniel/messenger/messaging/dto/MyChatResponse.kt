@@ -9,5 +9,6 @@ data class MyChatResponse(
     val displayName: String,
     val lastMessageContent: String?,
     val lastMessageCreatedAt: Instant?,
-    val unreadCount: Long
+    val unreadCount: Long,
+    val lastReadMessageId: Long?,
 )

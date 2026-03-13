@@ -20,6 +20,18 @@ interface JwtPayload {
     exp: number;
 }
 
+interface ChatParticipant {
+    id: number;
+    username: string;
+    lastReadMessageId: number | null;
+}
+
+interface ReadAckEvent {
+    chatId: number;
+    readerUsername: string;
+    lastReadMessageId: number;
+}
+
 export default function ChatPage() {
     const { chatId } = useParams();
     const numericChatId = chatId ? Number(chatId) : null;
@@ -27,10 +39,11 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const navigate = useNavigate();
     const [chatName, setChatName] = useState<string>("");
-    const [participants, setParticipants] = useState<{ id: number; username: string }[]>([]);
+    const [participants, setParticipants] = useState<ChatParticipant[]>([]);
     const [chatType, setChatType] = useState<string | null>(null);
     const [input, setInput] = useState("");
-    const [hasMore, setHasMore] = useState(false);
+    const [hasMoreOlder, setHasMoreOlder] = useState(false);
+    const [hasMoreNewer, setHasMoreNewer] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [showScrollBtn, setShowScrollBtn] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: number; content: string } | null>(null);
@@ -38,15 +51,40 @@ export default function ChatPage() {
     const [editingOriginalContent, setEditingOriginalContent] = useState("");
     const [deletingMessageIds, setDeletingMessageIds] = useState<Set<number>>(new Set());
 
+    // undefined = not yet determined from /chat/my, null = no previous read, number = last read id
+    const [initialLastReadMessageId, setInitialLastReadMessageId] = useState<number | null | undefined>(undefined);
+    // undefined = not yet set, null = no divider needed, number = first unread message id
+    const [unreadDividerMessageId, setUnreadDividerMessageId] = useState<number | null | undefined>(undefined);
+    const dividerDeterminedRef = useRef(false);
+    const dividerRef = useRef<HTMLDivElement | null>(null);
+    const initialScrollDoneRef = useRef(false);
+    // Ref mirror of hasMoreNewer to avoid stale closure in WS subscription callback
+    const hasMoreNewerRef = useRef(false);
+
+    // other participants' read state: username -> lastReadMessageId
+    const [otherParticipantsReadMap, setOtherParticipantsReadMap] = useState<Record<string, number>>({});
+
     const COLLAPSE_MS = 320;
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const oldestIdRef = useRef<number | null>(null);
-    const shouldScrollToBottom = useRef(true);
+    const newestIdRef = useRef<number | null>(null);
+    const shouldScrollToBottom = useRef(false);
     const shouldRestoreScroll = useRef(false);
     const savedScrollHeight = useRef(0);
+    const isAtBottomRef = useRef(true);
+    const markAsReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const client = useWebSocket();
+
+    const triggerMarkAsRead = () => {
+        if (!numericChatId) return;
+        if (markAsReadTimeoutRef.current) clearTimeout(markAsReadTimeoutRef.current);
+        markAsReadTimeoutRef.current = setTimeout(() => {
+            authFetch(`${API_URL}/chat/${numericChatId}/read`, { method: "POST" });
+            markAsReadTimeoutRef.current = null;
+        }, 300);
+    };
 
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const typingTimersRef = useRef<{ [u: string]: ReturnType<typeof setTimeout> }>({});
@@ -85,6 +123,7 @@ export default function ChatPage() {
             if (currentChat) {
                 setChatName(currentChat.displayName);
                 setChatType(currentChat.type);
+                setInitialLastReadMessageId(currentChat.lastReadMessageId ?? null);
             }
         };
 
@@ -99,39 +138,111 @@ export default function ChatPage() {
     useEffect(() => {
         if (!numericChatId) return;
 
+        setMessages([]);
+        setHasMoreOlder(false);
+        setHasMoreNewer(false);
+        hasMoreNewerRef.current = false;
         oldestIdRef.current = null;
-        shouldScrollToBottom.current = true;
+        newestIdRef.current = null;
+        shouldScrollToBottom.current = false;
+        isAtBottomRef.current = true;
+        dividerDeterminedRef.current = false;
+        initialScrollDoneRef.current = false;
+        if (markAsReadTimeoutRef.current) {
+            clearTimeout(markAsReadTimeoutRef.current);
+            markAsReadTimeoutRef.current = null;
+        }
+        setUnreadDividerMessageId(undefined);
+        setInitialLastReadMessageId(undefined);
+        setOtherParticipantsReadMap({});
+    }, [numericChatId]);
+
+    // Load initial messages once chat info is ready. If the user has a lastReadMessageId,
+    // load a window around that boundary (?around=). Otherwise load the latest page.
+    useEffect(() => {
+        if (!numericChatId) return;
+        if (initialLastReadMessageId === undefined) return; // wait for chat info
 
         const loadMessages = async () => {
-            const res = await authFetch(
-                `${API_URL}/messages/${numericChatId}`
-            );
+            const url = initialLastReadMessageId !== null
+                ? `${API_URL}/messages/${numericChatId}?around=${initialLastReadMessageId}`
+                : `${API_URL}/messages/${numericChatId}`;
 
+            const res = await authFetch(url);
             if (!res || !res.ok) return;
 
             const data = await res.json();
             const visible = data.messages.filter((m: Message) => !m.deletedAt);
             setMessages(visible);
-            setHasMore(data.hasMore);
+            setHasMoreOlder(data.hasMoreOlder);
+            setHasMoreNewer(data.hasMoreNewer);
+            hasMoreNewerRef.current = data.hasMoreNewer;
             if (visible.length > 0) {
                 oldestIdRef.current = visible[0].id;
+                newestIdRef.current = visible[visible.length - 1].id;
             }
         };
 
         loadMessages();
-    }, [numericChatId]);
+    }, [numericChatId, initialLastReadMessageId]);
+
+    // Determine divider position once. The ?around= query already loads a window
+    // centered on the boundary, so no silent pagination is needed.
+    useEffect(() => {
+        if (dividerDeterminedRef.current) return;
+        if (initialLastReadMessageId === undefined) return;
+        if (messages.length === 0) return;
+
+        dividerDeterminedRef.current = true;
+        const firstUnread = messages.find(
+            m => m.id > (initialLastReadMessageId ?? -1) && m.sender !== currentUsername
+        );
+        setUnreadDividerMessageId(firstUnread?.id ?? null);
+    }, [messages, initialLastReadMessageId]);
+
+    // Keep hasMoreNewerRef in sync so WS subscription callback always has a fresh value.
+    useEffect(() => {
+        hasMoreNewerRef.current = hasMoreNewer;
+    }, [hasMoreNewer]);
+
+    // After the divider position is determined, scroll to it (or to bottom if no divider).
+    // Runs once per chat open via initialScrollDoneRef.
+    useEffect(() => {
+        if (initialScrollDoneRef.current) return;
+        if (unreadDividerMessageId === undefined) return;
+        if (messages.length === 0) return;
+        initialScrollDoneRef.current = true;
+        const container = chatContainerRef.current;
+        if (!container) return;
+        if (unreadDividerMessageId === null) {
+            container.scrollTop = container.scrollHeight;
+            isAtBottomRef.current = true;
+            if (!hasMoreNewerRef.current) triggerMarkAsRead();
+        } else {
+            requestAnimationFrame(() => {
+                const divider = dividerRef.current;
+                if (divider) {
+                    const containerTop = container.getBoundingClientRect().top;
+                    const dividerTop = divider.getBoundingClientRect().top;
+                    container.scrollTop += dividerTop - containerTop;
+                } else {
+                    container.scrollTop = container.scrollHeight;
+                    isAtBottomRef.current = true;
+                    if (!hasMoreNewerRef.current) triggerMarkAsRead();
+                }
+            });
+        }
+    }, [unreadDividerMessageId, messages]);
 
     const loadOlderMessages = async () => {
-        if (!hasMore || isLoadingMore || !numericChatId || oldestIdRef.current === null) return;
+        if (!hasMoreOlder || isLoadingMore || !numericChatId || oldestIdRef.current === null) return;
 
         setIsLoadingMore(true);
         savedScrollHeight.current = chatContainerRef.current?.scrollHeight ?? 0;
         shouldScrollToBottom.current = false;
         shouldRestoreScroll.current = true;
 
-        const res = await authFetch(
-            `${API_URL}/messages/${numericChatId}?before=${oldestIdRef.current}`
-        );
+        const res = await authFetch(`${API_URL}/messages/${numericChatId}?before=${oldestIdRef.current}`);
 
         if (!res || !res.ok) {
             setIsLoadingMore(false);
@@ -141,10 +252,29 @@ export default function ChatPage() {
         const data = await res.json();
         const visible = data.messages.filter((m: Message) => !m.deletedAt);
         setMessages(prev => [...visible, ...prev]);
-        setHasMore(data.hasMore);
-        if (visible.length > 0) {
-            oldestIdRef.current = visible[0].id;
+        setHasMoreOlder(data.hasMoreOlder);
+        if (visible.length > 0) oldestIdRef.current = visible[0].id;
+        setIsLoadingMore(false);
+    };
+
+    const loadNewerMessages = async () => {
+        if (!hasMoreNewer || isLoadingMore || !numericChatId || newestIdRef.current === null) return;
+
+        setIsLoadingMore(true);
+
+        const res = await authFetch(`${API_URL}/messages/${numericChatId}?after=${newestIdRef.current}`);
+
+        if (!res || !res.ok) {
+            setIsLoadingMore(false);
+            return;
         }
+
+        const data = await res.json();
+        const visible = data.messages.filter((m: Message) => !m.deletedAt);
+        setMessages(prev => [...prev, ...visible]);
+        setHasMoreNewer(data.hasMoreNewer);
+        hasMoreNewerRef.current = data.hasMoreNewer;
+        if (visible.length > 0) newestIdRef.current = visible[visible.length - 1].id;
         setIsLoadingMore(false);
     };
 
@@ -155,18 +285,34 @@ export default function ChatPage() {
             `/topic/chat.${numericChatId}`,
             (msg) => {
                 const body: Message = JSON.parse(msg.body);
+                let appearedAsNew = false;
                 setMessages(prev => {
                     const idx = prev.findIndex(m => m.id === body.id);
                     if (idx === -1) {
                         if (body.deletedAt) return prev;
-                        shouldScrollToBottom.current = true;
+                        // In windowed mode (not at the live edge), don't append new messages —
+                        // they'd create a gap. User will see them after jumping/scrolling to bottom.
+                        if (hasMoreNewerRef.current) return prev;
+                        appearedAsNew = true;
+                        if (isAtBottomRef.current) {
+                            shouldScrollToBottom.current = true;
+                        }
                         return [...prev, body];
                     }
-                    if (body.deletedAt) return prev; // Handled optimistically in handleDeleteMessage
+                    // Existing message: handle deletion (propagate to all clients) or edit
+                    if (body.deletedAt) {
+                        return prev.filter(m => m.id !== body.id);
+                    }
                     const next = [...prev];
                     next[idx] = body;
                     return next;
                 });
+                // Trigger mark-as-read for any new incoming message when at bottom.
+                // Checking appearedAsNew avoids triggering on edits, which is fine since
+                // edits don't change lastReadMessageId semantics.
+                if (appearedAsNew && isAtBottomRef.current) {
+                    triggerMarkAsRead();
+                }
             }
         );
 
@@ -174,6 +320,26 @@ export default function ChatPage() {
             subscription.unsubscribe();
         };
     }, [client, numericChatId]);
+
+    useEffect(() => {
+        if (!client || !numericChatId) return;
+
+        const subscription = client.subscribe(
+            `/topic/chat.${numericChatId}.read`,
+            (msg) => {
+                const body: ReadAckEvent = JSON.parse(msg.body);
+                if (body.readerUsername === currentUsername) return;
+                setOtherParticipantsReadMap(prev => ({
+                    ...prev,
+                    [body.readerUsername]: body.lastReadMessageId,
+                }));
+            }
+        );
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [client, numericChatId, currentUsername]);
 
     useEffect(() => {
         if (!client || !numericChatId) return;
@@ -237,14 +403,6 @@ export default function ChatPage() {
 
     useEffect(() => {
         if (!numericChatId) return;
-        authFetch(
-            `${API_URL}/chat/${numericChatId}/read`,
-            { method: "POST" }
-        );
-    }, [numericChatId]);
-
-    useEffect(() => {
-        if (!numericChatId) return;
 
         const loadParticipants = async () => {
             const res = await authFetch(
@@ -253,8 +411,27 @@ export default function ChatPage() {
 
             if (!res || !res.ok) return;
 
-            const data = await res.json();
+            const data: ChatParticipant[] = await res.json();
             setParticipants(data);
+
+            const fetchedReadMap: Record<string, number> = {};
+            for (const p of data) {
+                if (p.username !== currentUsername && p.lastReadMessageId !== null) {
+                    fetchedReadMap[p.username] = p.lastReadMessageId;
+                }
+            }
+            // Merge: keep the maximum lastReadMessageId per participant so that
+            // ReadAckEvents received via WebSocket before this fetch completes are
+            // not overwritten by stale data from the HTTP response.
+            setOtherParticipantsReadMap(prev => {
+                const merged: Record<string, number> = { ...fetchedReadMap };
+                for (const [username, liveLastRead] of Object.entries(prev)) {
+                    if ((merged[username] ?? -1) < liveLastRead) {
+                        merged[username] = liveLastRead;
+                    }
+                }
+                return merged;
+            });
         };
 
         loadParticipants();
@@ -419,6 +596,10 @@ export default function ChatPage() {
         setInput("");
     };
 
+    // Returns true if ANY other participant has read this message (dot disappears)
+    const isReadByAnyOther = (messageId: number): boolean =>
+        Object.values(otherParticipantsReadMap).some(lastRead => lastRead >= messageId);
+
     interface SenderGroup { sender: string; messages: Message[]; }
     interface DateGroup { dateKey: string; label: string; senderGroups: SenderGroup[]; }
 
@@ -431,7 +612,10 @@ export default function ChatPage() {
             dateGroups.push(dg);
         }
         const lastSG = dg.senderGroups[dg.senderGroups.length - 1];
-        if (lastSG && lastSG.sender === msg.sender) {
+        // Force a new group when this message is the unread boundary so the divider
+        // can be rendered above it, even if the sender is the same as the previous group.
+        const isUnreadBoundary = msg.id === unreadDividerMessageId;
+        if (lastSG && lastSG.sender === msg.sender && !isUnreadBoundary) {
             lastSG.messages.push(msg);
         } else {
             dg.senderGroups.push({ sender: msg.sender, messages: [msg] });
@@ -532,7 +716,16 @@ export default function ChatPage() {
                         if (!el) return;
                         if (el.scrollTop === 0) loadOlderMessages();
                         const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-                        setShowScrollBtn(distFromBottom > 100);
+                        const nearBottom = distFromBottom <= 150;
+                        if (nearBottom && hasMoreNewer) {
+                            loadNewerMessages();
+                        }
+                        // Only truly "at bottom" if there are no more newer pages to load
+                        isAtBottomRef.current = nearBottom && !hasMoreNewer;
+                        if (nearBottom && !hasMoreNewer) {
+                            triggerMarkAsRead();
+                        }
+                        setShowScrollBtn(hasMoreNewer || distFromBottom > 150);
                     }}
                 >
                     <div className="messages-column">
@@ -544,12 +737,17 @@ export default function ChatPage() {
 
                                 {dateGroup.senderGroups.map((group) => {
                                     const isMine = group.sender === currentUsername;
+                                    const showGroupDivider = unreadDividerMessageId != null &&
+                                        group.messages.some(m => m.id === unreadDividerMessageId);
 
                                     return (
-                                        <div
-                                            key={group.messages[0].id}
-                                            className={`message-group ${isMine ? "mine" : "other"}`}
-                                        >
+                                        <div key={group.messages[0].id}>
+                                            {showGroupDivider && (
+                                                <div ref={dividerRef} className="unread-messages-divider">
+                                                    <span className="unread-messages-divider-label">Unread messages</span>
+                                                </div>
+                                            )}
+                                            <div className={`message-group ${isMine ? "mine" : "other"}`}>
                                             {!isMine && chatType === "GROUP" && (
                                                 <div className="group-sender-label">
                                                     {group.sender}
@@ -563,44 +761,51 @@ export default function ChatPage() {
                                                         hour: "2-digit",
                                                         minute: "2-digit"
                                                     });
+                                                const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
 
                                                 return (
-                                                    <div
-                                                        key={msg.id}
-                                                        className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
-                                                    >
-                                                        <div className={`message-row ${isMine ? "mine" : "other"}`}>
-                                                            {!isMine && chatType === "GROUP" && (
-                                                                isLast
-                                                                    ? <div className="message-avatar">{group.sender.charAt(0).toUpperCase()}</div>
-                                                                    : <div className="message-avatar-spacer" />
-                                                            )}
+                                                    <div key={msg.id}>
+                                                        <div
+                                                            className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
+                                                        >
+                                                            <div className={`message-row ${isMine ? "mine" : "other"}`}>
+                                                                {!isMine && chatType === "GROUP" && (
+                                                                    isLast
+                                                                        ? <div className="message-avatar">{group.sender.charAt(0).toUpperCase()}</div>
+                                                                        : <div className="message-avatar-spacer" />
+                                                                )}
 
-                                                            <div
-                                                                className="message-bubble"
-                                                                onContextMenu={isMine ? (e) => handleMessageRightClick(e, msg) : undefined}
-                                                            >
-                                                                <div className="message-content">
-                                                                    <span className="message-text">
-                                                                        {msg.content}
-                                                                    </span>
+                                                                {isMine && (
+                                                                    <div className={`unread-dot${showUnreadDot ? " visible" : ""}`} />
+                                                                )}
 
-                                                                    <span className="message-time">
-                                                                        {msg.editedAt && (
-                                                                            <img
-                                                                                src="/icons/edit.png"
-                                                                                className="message-edited-icon"
-                                                                                alt="edited"
-                                                                            />
-                                                                        )}
-                                                                        {formattedTime}
-                                                                    </span>
+                                                                <div
+                                                                    className="message-bubble"
+                                                                    onContextMenu={isMine ? (e) => handleMessageRightClick(e, msg) : undefined}
+                                                                >
+                                                                    <div className="message-content">
+                                                                        <span className="message-text">
+                                                                            {msg.content}
+                                                                        </span>
+
+                                                                        <span className="message-time">
+                                                                            {msg.editedAt && (
+                                                                                <img
+                                                                                    src="/icons/edit.png"
+                                                                                    className="message-edited-icon"
+                                                                                    alt="edited"
+                                                                                />
+                                                                            )}
+                                                                            {formattedTime}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 );
                                             })}
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -612,8 +817,27 @@ export default function ChatPage() {
                 {showScrollBtn && (
                     <button
                         className="scroll-to-bottom-btn"
-                        onClick={() => {
-                            chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
+                        onClick={async () => {
+                            if (hasMoreNewer) {
+                                // Discard the windowed view and reload the latest page
+                                const res = await authFetch(`${API_URL}/messages/${numericChatId}`);
+                                if (!res || !res.ok) return;
+                                const data = await res.json();
+                                const visible = data.messages.filter((m: Message) => !m.deletedAt);
+                                setMessages(visible);
+                                setHasMoreOlder(data.hasMoreOlder);
+                                setHasMoreNewer(false);
+                                hasMoreNewerRef.current = false;
+                                if (visible.length > 0) {
+                                    oldestIdRef.current = visible[0].id;
+                                    newestIdRef.current = visible[visible.length - 1].id;
+                                }
+                                shouldScrollToBottom.current = true;
+                                isAtBottomRef.current = true;
+                                triggerMarkAsRead();
+                            } else {
+                                chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
+                            }
                         }}
                     >
                         <img src="/icons/arrow-down.png" alt="scroll to bottom" />
