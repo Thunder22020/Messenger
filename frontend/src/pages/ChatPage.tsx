@@ -811,6 +811,7 @@ export default function ChatPage() {
                     </button>
                 </div>
 
+                <div className="chat-messages-wrapper">
                 <div
                     className="chat-messages"
                     ref={chatContainerRef}
@@ -968,6 +969,7 @@ export default function ChatPage() {
                         <span className="typing-indicator-text">{getTypingText()}</span>
                     </div>
                 )}
+                </div>
 
                 {replyingTo !== null && (
                     <div className="chat-reply-bar">
