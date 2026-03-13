@@ -50,6 +50,8 @@ export default function ChatPage() {
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editingOriginalContent, setEditingOriginalContent] = useState("");
     const [deletingMessageIds, setDeletingMessageIds] = useState<Set<number>>(new Set());
+    // Tracks ids that are already mid-collapse so the WS echo doesn't double-animate
+    const animatingDeleteIdsRef = useRef<Set<number>>(new Set());
 
     // undefined = not yet determined from /chat/my, null = no previous read, number = last read id
     const [initialLastReadMessageId, setInitialLastReadMessageId] = useState<number | null | undefined>(undefined);
@@ -286,6 +288,7 @@ export default function ChatPage() {
             (msg) => {
                 const body: Message = JSON.parse(msg.body);
                 let appearedAsNew = false;
+                let shouldAnimateDelete = false;
                 setMessages(prev => {
                     const idx = prev.findIndex(m => m.id === body.id);
                     if (idx === -1) {
@@ -299,19 +302,20 @@ export default function ChatPage() {
                         }
                         return [...prev, body];
                     }
-                    // Existing message: handle deletion (propagate to all clients) or edit
+                    // Existing message deleted: trigger collapse animation instead of instant removal
                     if (body.deletedAt) {
-                        return prev.filter(m => m.id !== body.id);
+                        shouldAnimateDelete = true;
+                        return prev; // animation callback will remove it after COLLAPSE_MS
                     }
                     const next = [...prev];
                     next[idx] = body;
                     return next;
                 });
-                // Trigger mark-as-read for any new incoming message when at bottom.
-                // Checking appearedAsNew avoids triggering on edits, which is fine since
-                // edits don't change lastReadMessageId semantics.
                 if (appearedAsNew && isAtBottomRef.current) {
                     triggerMarkAsRead();
+                }
+                if (shouldAnimateDelete) {
+                    startCollapseAnimation(body.id);
                 }
             }
         );
@@ -563,11 +567,9 @@ export default function ChatPage() {
         setContextMenu({ x, y, messageId: msg.id, content: msg.content });
     };
 
-    const handleDeleteMessage = async () => {
-        if (!contextMenu) return;
-        const messageId = contextMenu.messageId;
-        setContextMenu(null);
-
+    const startCollapseAnimation = (messageId: number) => {
+        if (animatingDeleteIdsRef.current.has(messageId)) return;
+        animatingDeleteIdsRef.current.add(messageId);
         setDeletingMessageIds(ids => new Set([...ids, messageId]));
         setTimeout(() => {
             setMessages(m => m.filter(x => x.id !== messageId));
@@ -576,8 +578,15 @@ export default function ChatPage() {
                 n.delete(messageId);
                 return n;
             });
+            animatingDeleteIdsRef.current.delete(messageId);
         }, COLLAPSE_MS);
+    };
 
+    const handleDeleteMessage = async () => {
+        if (!contextMenu) return;
+        const messageId = contextMenu.messageId;
+        setContextMenu(null);
+        startCollapseAnimation(messageId);
         await authFetch(`${API_URL}/messages/${messageId}`, { method: "DELETE" });
     };
 
