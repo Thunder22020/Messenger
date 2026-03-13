@@ -11,7 +11,6 @@ import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.user.service.UserService
 import org.springframework.data.domain.PageRequest
-import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -21,22 +20,16 @@ class MessageService(
     private val messageRepository: MessageRepository,
     private val chatService: ChatService,
     private val userService: UserService,
-    private val messagingTemplate: SimpMessagingTemplate,
+    private val chatNotificationService: ChatNotificationService,
 ) {
     @Transactional
     fun sendMessage(request: SendMessageRequest, senderId: Long): MessageResponse {
         val chat = chatService.findByIdOrThrow(request.chatId)
-
         chatService.isChatParticipantOrThrow(requireNotNull(chat.id), senderId)
-
         val sender = userService.findByIdOrThrow(senderId)
         val message = messageRepository.save(
-            MessageEntity(
-                sender = sender,
-                content = request.content,
-                chat = chat)
+            MessageEntity(sender = sender, content = request.content, chat = chat)
         )
-
         chatService.updateChatLastMessage(chat, message)
         return message.toResponse()
     }
@@ -44,7 +37,7 @@ class MessageService(
     @Transactional
     fun editMessage(messageId: Long, request: EditMessageRequest, userId: Long): MessageResponse {
         val message = findByIdWithSenderOrThrow(messageId)
-        if (message.sender.id != userId) throw NotMessageOwnerException("Not the message owner")
+        checkSenderIsNotMessageOwner(message.sender.id, userId)
         message.content = request.content
         message.editedAt = Instant.now()
         val saved = messageRepository.save(message)
@@ -55,7 +48,7 @@ class MessageService(
     @Transactional
     fun deleteMessage(messageId: Long, userId: Long): MessageResponse {
         val message = findByIdWithSenderOrThrow(messageId)
-        if (message.sender.id != userId) throw NotMessageOwnerException("Not the message owner")
+        checkSenderIsNotMessageOwner(message.sender.id, userId)
         message.deletedAt = Instant.now()
         val saved = messageRepository.save(message)
         broadcastMessageUpdate(saved)
@@ -66,8 +59,11 @@ class MessageService(
         return saved.toResponse()
     }
 
-    fun findAllByChatIdInAscOrder(chatId: Long) =
-        messageRepository.findAllByChat_IdOrderByIdAsc(chatId)
+    private fun checkSenderIsNotMessageOwner(messageSenderId: Long?, userId: Long) {
+        if (messageSenderId != userId) {
+            throw NotMessageOwnerException("Not the message owner")
+        }
+    }
 
     fun getMessages(chatId: Long, userId: Long, before: Long?): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
@@ -84,8 +80,7 @@ class MessageService(
 
     fun getMessagesAfter(chatId: Long, userId: Long, afterId: Long): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
-        val pageable = PageRequest.of(0, PAGE_SIZE + 1)
-        val raw = messageRepository.findByChatIdAndIdAfter(chatId, afterId, pageable)
+        val raw = messageRepository.findByChatIdAndIdAfter(chatId, afterId, PageRequest.of(0, PAGE_SIZE + 1))
         val hasMoreNewer = raw.size > PAGE_SIZE
         val messages = raw.take(PAGE_SIZE).map { it.toResponse() }
         return PagedMessageResponse(messages, hasMoreOlder = false, hasMoreNewer = hasMoreNewer)
@@ -93,15 +88,13 @@ class MessageService(
 
     fun getMessagesAround(chatId: Long, userId: Long, aroundId: Long): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
-        val halfPage = PageRequest.of(0, HALF_PAGE_SIZE + 1)
+        val halfPageable = PageRequest.of(0, HALF_PAGE_SIZE + 1)
 
-        // Messages at or before aroundId (context: the last-read message and older)
-        val beforeRaw = messageRepository.findByChatIdAndIdBefore(chatId, aroundId + 1, halfPage)
+        val beforeRaw = messageRepository.findByChatIdAndIdBefore(chatId, aroundId + 1, halfPageable)
         val hasMoreOlder = beforeRaw.size > HALF_PAGE_SIZE
         val beforeMessages = beforeRaw.take(HALF_PAGE_SIZE).reversed()
 
-        // Messages after aroundId (the unread block)
-        val afterRaw = messageRepository.findByChatIdAndIdAfter(chatId, aroundId, halfPage)
+        val afterRaw = messageRepository.findByChatIdAndIdAfter(chatId, aroundId, halfPageable)
         val hasMoreNewer = afterRaw.size > HALF_PAGE_SIZE
         val afterMessages = afterRaw.take(HALF_PAGE_SIZE)
 
@@ -110,10 +103,14 @@ class MessageService(
     }
 
     private fun findByIdWithSenderOrThrow(id: Long): MessageEntity =
-        messageRepository.findByIdWithSender(id) ?: throw MessageNotFoundException("Message $id not found")
+        messageRepository.findByIdWithSender(id)
+            ?: throw MessageNotFoundException("Message $id not found")
 
     private fun broadcastMessageUpdate(message: MessageEntity) {
-        messagingTemplate.convertAndSend("/topic/chat.${message.chat.id}", message.toResponse())
+        chatNotificationService.broadcastChatMessage(
+            requireNotNull(message.chat.id),
+            message.toResponse()
+        )
     }
 
     companion object {

@@ -22,7 +22,6 @@ data class Chat(
     @Column(nullable = false)
     var type: ChatType,
 
-    @Column(nullable = true)
     var title: String? = null,
 
     var lastMessageId: Long? = null,

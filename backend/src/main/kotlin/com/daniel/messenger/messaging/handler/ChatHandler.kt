@@ -28,7 +28,6 @@ class ChatHandler(
         principal: Principal
     ) {
         val userPrincipal = principal.toUserPrincipal()
-        val userId = requireNotNull(userPrincipal.user.id)
-        chatHandlerService.broadcastTyping(request, userPrincipal.user.username, userId)
+        chatHandlerService.broadcastTyping(request, userPrincipal.user.username)
     }
 }

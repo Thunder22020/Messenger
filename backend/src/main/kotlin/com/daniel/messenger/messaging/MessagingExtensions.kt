@@ -5,7 +5,7 @@ import com.daniel.messenger.messaging.entity.MessageEntity
 
 fun MessageEntity.toResponse(): MessageResponse =
     MessageResponse(
-        id = id,
+        id = requireNotNull(id),
         content = if (deletedAt != null) "" else content,
         sender = sender.username,
         createdAt = createdAt,
