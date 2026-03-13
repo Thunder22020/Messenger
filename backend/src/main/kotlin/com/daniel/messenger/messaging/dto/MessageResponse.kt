@@ -9,4 +9,6 @@ data class MessageResponse(
     val createdAt: Instant,
     val editedAt: Instant?,
     val deletedAt: Instant?,
+    val replyToMessageId: Long? = null,
+    val replyPreview: ReplyPreviewDto? = null,
 )

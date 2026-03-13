@@ -37,4 +37,6 @@ class MessageEntity(
     var editedAt: Instant? = null,
 
     var deletedAt: Instant? = null,
+
+    var replyToMessageId: Long? = null,
 )

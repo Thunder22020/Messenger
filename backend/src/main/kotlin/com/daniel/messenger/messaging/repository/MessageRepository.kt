@@ -37,4 +37,7 @@ interface MessageRepository : JpaRepository<MessageEntity, Long> {
         @Param("chatId") chatId: Long,
         pageable: Pageable,
     ): List<MessageEntity>
+
+    @Query("SELECT m FROM MessageEntity m JOIN FETCH m.sender WHERE m.id IN :ids")
+    fun findAllByIdInWithSender(@Param("ids") ids: Collection<Long>): List<MessageEntity>
 }

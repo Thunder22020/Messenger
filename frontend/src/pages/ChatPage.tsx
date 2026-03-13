@@ -6,6 +6,12 @@ import { jwtDecode } from "jwt-decode";
 import { useWebSocket } from "../context/WebSocketContext";
 import { API_URL } from "../config";
 
+interface ReplyPreview {
+    messageId: number;
+    sender: string;
+    content: string;
+}
+
 interface Message {
     id: number;
     content: string;
@@ -13,6 +19,8 @@ interface Message {
     createdAt: string;
     editedAt: string | null;
     deletedAt: string | null;
+    replyToMessageId?: number;
+    replyPreview?: ReplyPreview;
 }
 
 interface JwtPayload {
@@ -46,8 +54,9 @@ export default function ChatPage() {
     const [hasMoreNewer, setHasMoreNewer] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [showScrollBtn, setShowScrollBtn] = useState(false);
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: number; content: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: number; content: string; sender: string; isMine: boolean } | null>(null);
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [replyingTo, setReplyingTo] = useState<Message | null>(null);
     const [editingOriginalContent, setEditingOriginalContent] = useState("");
     const [deletingMessageIds, setDeletingMessageIds] = useState<Set<number>>(new Set());
     // Tracks ids that are already mid-collapse so the WS echo doesn't double-animate
@@ -62,6 +71,8 @@ export default function ChatPage() {
     const initialScrollDoneRef = useRef(false);
     // Ref mirror of hasMoreNewer to avoid stale closure in WS subscription callback
     const hasMoreNewerRef = useRef(false);
+    // When navigating to a reply target, holds the message id to scroll to after render
+    const pendingScrollToMessageIdRef = useRef<number | null>(null);
 
     // other participants' read state: username -> lastReadMessageId
     const [otherParticipantsReadMap, setOtherParticipantsReadMap] = useState<Record<string, number>>({});
@@ -408,6 +419,17 @@ export default function ChatPage() {
         } else if (shouldRestoreScroll.current) {
             container.scrollTop = container.scrollHeight - savedScrollHeight.current;
             shouldRestoreScroll.current = false;
+        } else if (pendingScrollToMessageIdRef.current !== null) {
+            const targetId = pendingScrollToMessageIdRef.current;
+            pendingScrollToMessageIdRef.current = null;
+            requestAnimationFrame(() => {
+                const el = document.querySelector(`[data-message-id="${targetId}"]`);
+                if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el.classList.add("message-highlight");
+                    setTimeout(() => el.classList.remove("message-highlight"), 1200);
+                }
+            });
         }
         // else: edit/delete — don't touch scroll position
     }, [messages]);
@@ -465,11 +487,13 @@ export default function ChatPage() {
                 setEditingMessageId(null);
                 setEditingOriginalContent("");
                 setInput("");
+            } else if (replyingTo !== null) {
+                setReplyingTo(null);
             }
         };
         document.addEventListener("keydown", onKeyDown);
         return () => document.removeEventListener("keydown", onKeyDown);
-    }, [contextMenu, editingMessageId]);
+    }, [contextMenu, editingMessageId, replyingTo]);
 
     const adjustTextarea = () => {
         const el = inputRef.current;
@@ -543,10 +567,34 @@ export default function ChatPage() {
             body: JSON.stringify({
                 chatId: numericChatId,
                 content: input,
+                ...(replyingTo ? { replyToMessageId: replyingTo.id } : {}),
             }),
         });
 
+        setReplyingTo(null);
         setInput("");
+
+        if (hasMoreNewerRef.current) {
+            // Windowed: reload latest page so the sent message is visible
+            const res = await authFetch(`${API_URL}/messages/${numericChatId}`);
+            if (res && res.ok) {
+                const data = await res.json();
+                const visible = data.messages.filter((m: Message) => !m.deletedAt);
+                setMessages(visible);
+                setHasMoreOlder(data.hasMoreOlder);
+                setHasMoreNewer(false);
+                hasMoreNewerRef.current = false;
+                if (visible.length > 0) {
+                    oldestIdRef.current = visible[0].id;
+                    newestIdRef.current = visible[visible.length - 1].id;
+                }
+                shouldScrollToBottom.current = true;
+                isAtBottomRef.current = true;
+            }
+        } else {
+            // Live edge: WS echo will append the message; ensure we scroll to it
+            isAtBottomRef.current = true;
+        }
     };
 
     const getTypingText = (): string => {
@@ -568,11 +616,11 @@ export default function ChatPage() {
         return date.toLocaleDateString("en-US", opts);
     };
 
-    const handleMessageRightClick = (e: React.MouseEvent, msg: Message) => {
+    const handleMessageRightClick = (e: React.MouseEvent, msg: Message, isMine: boolean) => {
         e.preventDefault();
         const x = Math.min(e.clientX, window.innerWidth - 148);
-        const y = Math.min(e.clientY, window.innerHeight - 96);
-        setContextMenu({ x, y, messageId: msg.id, content: msg.content });
+        const y = Math.min(e.clientY, window.innerHeight - 160);
+        setContextMenu({ x, y, messageId: msg.id, content: msg.content, sender: msg.sender, isMine });
     };
 
     const startCollapseAnimation = (messageId: number) => {
@@ -611,6 +659,44 @@ export default function ChatPage() {
         setEditingMessageId(null);
         setEditingOriginalContent("");
         setInput("");
+    };
+
+    const handleStartReply = () => {
+        if (!contextMenu) return;
+        setReplyingTo({ id: contextMenu.messageId, content: contextMenu.content, sender: contextMenu.sender, createdAt: "", editedAt: null, deletedAt: null });
+        setContextMenu(null);
+        setTimeout(() => inputRef.current?.focus(), 0);
+    };
+
+    const cancelReply = () => setReplyingTo(null);
+
+    const scrollToMessage = async (messageId: number) => {
+        const isLoaded = messages.some(m => m.id === messageId);
+        if (isLoaded) {
+            const el = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.classList.add("message-highlight");
+                setTimeout(() => el.classList.remove("message-highlight"), 1200);
+            }
+            return;
+        }
+
+        if (!numericChatId) return;
+        const res = await authFetch(`${API_URL}/messages/${numericChatId}?around=${messageId}`);
+        if (!res || !res.ok) return;
+
+        const data = await res.json();
+        const visible = data.messages.filter((m: Message) => !m.deletedAt);
+        pendingScrollToMessageIdRef.current = messageId;
+        setMessages(visible);
+        setHasMoreOlder(data.hasMoreOlder);
+        setHasMoreNewer(data.hasMoreNewer);
+        hasMoreNewerRef.current = data.hasMoreNewer;
+        if (visible.length > 0) {
+            oldestIdRef.current = visible[0].id;
+            newestIdRef.current = visible[visible.length - 1].id;
+        }
     };
 
     // Returns true if ANY other participant has read this message (dot disappears)
@@ -781,7 +867,7 @@ export default function ChatPage() {
                                                 const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
 
                                                 return (
-                                                    <div key={msg.id}>
+                                                    <div key={msg.id} data-message-id={msg.id}>
                                                         <div
                                                             className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
                                                         >
@@ -798,8 +884,19 @@ export default function ChatPage() {
 
                                                                 <div
                                                                     className="message-bubble"
-                                                                    onContextMenu={isMine ? (e) => handleMessageRightClick(e, msg) : undefined}
+                                                                    onContextMenu={(e) => handleMessageRightClick(e, msg, isMine)}
                                                                 >
+                                                                    {msg.replyPreview && (
+                                                                        <div
+                                                                            className="message-reply-preview"
+                                                                            onClick={() => scrollToMessage(msg.replyPreview!.messageId)}
+                                                                        >
+                                                                            <div className="reply-preview-sender">{msg.replyPreview.sender}</div>
+                                                                            <div className="reply-preview-content">
+                                                                                {msg.replyPreview.content || "Deleted message"}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="message-content">
                                                                         <span className="message-text">
                                                                             {msg.content}
@@ -872,6 +969,17 @@ export default function ChatPage() {
                     </div>
                 )}
 
+                {replyingTo !== null && (
+                    <div className="chat-reply-bar">
+                        <div className="chat-reply-bar-accent" />
+                        <div className="chat-edit-bar-content">
+                            <span className="chat-reply-bar-label">{replyingTo.sender}</span>
+                            <span className="chat-edit-bar-preview">{replyingTo.content}</span>
+                        </div>
+                        <button className="chat-edit-cancel-btn" onClick={cancelReply}>✕</button>
+                    </div>
+                )}
+
                 {editingMessageId !== null && (
                     <div className="chat-edit-bar">
                         <div className="chat-edit-bar-accent" />
@@ -911,8 +1019,13 @@ export default function ChatPage() {
                         style={{ left: contextMenu.x, top: contextMenu.y }}
                         onMouseDown={(e) => e.stopPropagation()}
                     >
-                        <button className="context-menu-item" onClick={handleStartEdit}>Edit</button>
-                        <button className="context-menu-item danger" onClick={handleDeleteMessage}>Delete</button>
+                        <button className="context-menu-item" onClick={handleStartReply}>Reply</button>
+                        {contextMenu.isMine && (
+                            <>
+                                <button className="context-menu-item" onClick={handleStartEdit}>Edit</button>
+                                <button className="context-menu-item danger" onClick={handleDeleteMessage}>Delete</button>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

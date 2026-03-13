@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.service
 import com.daniel.messenger.messaging.dto.EditMessageRequest
 import com.daniel.messenger.messaging.dto.MessageResponse
 import com.daniel.messenger.messaging.dto.PagedMessageResponse
+import com.daniel.messenger.messaging.dto.ReplyPreviewDto
 import com.daniel.messenger.messaging.dto.SendMessageRequest
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
@@ -28,10 +29,15 @@ class MessageService(
         chatService.isChatParticipantOrThrow(requireNotNull(chat.id), senderId)
         val sender = userService.findByIdOrThrow(senderId)
         val message = messageRepository.save(
-            MessageEntity(sender = sender, content = request.content, chat = chat)
+            MessageEntity(
+                sender = sender,
+                content = request.content,
+                chat = chat,
+                replyToMessageId = request.replyToMessageId,
+            )
         )
         chatService.updateChatLastMessage(chat, message)
-        return message.toResponse()
+        return message.toResponse(resolveSingleReplyPreview(message))
     }
 
     @Transactional
@@ -42,7 +48,7 @@ class MessageService(
         message.editedAt = Instant.now()
         val saved = messageRepository.save(message)
         broadcastMessageUpdate(saved)
-        return saved.toResponse()
+        return saved.toResponse(resolveSingleReplyPreview(saved))
     }
 
     @Transactional
@@ -56,7 +62,7 @@ class MessageService(
             deletedMessageId = requireNotNull(saved.id),
             chatId = requireNotNull(saved.chat.id),
         )
-        return saved.toResponse()
+        return saved.toResponse(resolveSingleReplyPreview(saved))
     }
 
     private fun checkSenderIsNotMessageOwner(messageSenderId: Long?, userId: Long) {
@@ -74,7 +80,9 @@ class MessageService(
             messageRepository.findLatestByChatId(chatId, pageable)
         }
         val hasMoreOlder = raw.size > PAGE_SIZE
-        val messages = raw.take(PAGE_SIZE).reversed().map { it.toResponse() }
+        val page = raw.take(PAGE_SIZE).reversed()
+        val replyPreviews = resolveReplyPreviews(page)
+        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
         return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = false)
     }
 
@@ -82,7 +90,9 @@ class MessageService(
         chatService.isChatParticipantOrThrow(chatId, userId)
         val raw = messageRepository.findByChatIdAndIdAfter(chatId, afterId, PageRequest.of(0, PAGE_SIZE + 1))
         val hasMoreNewer = raw.size > PAGE_SIZE
-        val messages = raw.take(PAGE_SIZE).map { it.toResponse() }
+        val page = raw.take(PAGE_SIZE)
+        val replyPreviews = resolveReplyPreviews(page)
+        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
         return PagedMessageResponse(messages, hasMoreOlder = false, hasMoreNewer = hasMoreNewer)
     }
 
@@ -98,7 +108,9 @@ class MessageService(
         val hasMoreNewer = afterRaw.size > HALF_PAGE_SIZE
         val afterMessages = afterRaw.take(HALF_PAGE_SIZE)
 
-        val messages = (beforeMessages + afterMessages).map { it.toResponse() }
+        val page = beforeMessages + afterMessages
+        val replyPreviews = resolveReplyPreviews(page)
+        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
         return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = hasMoreNewer)
     }
 
@@ -109,8 +121,31 @@ class MessageService(
     private fun broadcastMessageUpdate(message: MessageEntity) {
         chatNotificationService.broadcastChatMessage(
             requireNotNull(message.chat.id),
-            message.toResponse()
+            message.toResponse(resolveSingleReplyPreview(message))
         )
+    }
+
+    private fun resolveSingleReplyPreview(entity: MessageEntity): ReplyPreviewDto? =
+        entity.replyToMessageId?.let { replyId ->
+            messageRepository.findByIdWithSender(replyId)?.let { replyMsg ->
+                ReplyPreviewDto(
+                    messageId = replyId,
+                    sender = replyMsg.sender.username,
+                    content = if (replyMsg.deletedAt != null) "" else replyMsg.content.take(100),
+                )
+            }
+        }
+
+    private fun resolveReplyPreviews(messages: List<MessageEntity>): Map<Long, ReplyPreviewDto> {
+        val ids = messages.mapNotNull { it.replyToMessageId }.distinct()
+        if (ids.isEmpty()) return emptyMap()
+        return messageRepository.findAllByIdInWithSender(ids).associate { m ->
+            requireNotNull(m.id) to ReplyPreviewDto(
+                messageId = requireNotNull(m.id),
+                sender = m.sender.username,
+                content = if (m.deletedAt != null) "" else m.content.take(100),
+            )
+        }
     }
 
     companion object {
