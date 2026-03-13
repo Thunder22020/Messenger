@@ -114,14 +114,16 @@ export default function ChatPage() {
 
     useEffect(() => {
         if (!numericChatId) return;
+        let cancelled = false;
 
         const loadChatInfo = async () => {
             const res = await authFetch(`${API_URL}/chat/my`);
-            if (!res || !res.ok) return;
+            if (cancelled || !res || !res.ok) return;
 
             const data = await res.json();
-            const currentChat = data.find((c: any) => c.chatId === numericChatId);
+            if (cancelled) return;
 
+            const currentChat = data.find((c: any) => c.chatId === numericChatId);
             if (currentChat) {
                 setChatName(currentChat.displayName);
                 setChatType(currentChat.type);
@@ -130,6 +132,7 @@ export default function ChatPage() {
         };
 
         loadChatInfo();
+        return () => { cancelled = true; };
     }, [numericChatId]);
 
     useEffect(() => {
@@ -164,6 +167,7 @@ export default function ChatPage() {
     useEffect(() => {
         if (!numericChatId) return;
         if (initialLastReadMessageId === undefined) return; // wait for chat info
+        let cancelled = false;
 
         const loadMessages = async () => {
             const url = initialLastReadMessageId !== null
@@ -171,9 +175,11 @@ export default function ChatPage() {
                 : `${API_URL}/messages/${numericChatId}`;
 
             const res = await authFetch(url);
-            if (!res || !res.ok) return;
+            if (cancelled || !res || !res.ok) return;
 
             const data = await res.json();
+            if (cancelled) return;
+
             const visible = data.messages.filter((m: Message) => !m.deletedAt);
             setMessages(visible);
             setHasMoreOlder(data.hasMoreOlder);
@@ -186,6 +192,7 @@ export default function ChatPage() {
         };
 
         loadMessages();
+        return () => { cancelled = true; };
     }, [numericChatId, initialLastReadMessageId]);
 
     // Determine divider position once. The ?around= query already loads a window
@@ -407,15 +414,15 @@ export default function ChatPage() {
 
     useEffect(() => {
         if (!numericChatId) return;
+        let cancelled = false;
 
         const loadParticipants = async () => {
-            const res = await authFetch(
-                `${API_URL}/chat/${numericChatId}/participants`
-            );
-
-            if (!res || !res.ok) return;
+            const res = await authFetch(`${API_URL}/chat/${numericChatId}/participants`);
+            if (cancelled || !res || !res.ok) return;
 
             const data: ChatParticipant[] = await res.json();
+            if (cancelled) return;
+
             setParticipants(data);
 
             const fetchedReadMap: Record<string, number> = {};
@@ -439,6 +446,7 @@ export default function ChatPage() {
         };
 
         loadParticipants();
+        return () => { cancelled = true; };
     }, [numericChatId, chatType]);
 
     useEffect(() => {
