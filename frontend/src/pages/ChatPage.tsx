@@ -92,6 +92,30 @@ export default function ChatPage() {
     const typingTimersRef = useRef<{ [u: string]: ReturnType<typeof setTimeout> }>({});
     const typingSentRef = useRef(false);
     const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const uploadingBubbleTempIdRef = useRef<string | null>(null);
+    const sentAtNewestIdRef = useRef<number | null>(null);
+
+    // Remove the uploading bubble once the server echo appears in `messages`.
+    // We can't do this inside the WS subscription callback because React 18 batches
+    // pending progress-update setState calls, which prevents the eager-state optimization
+    // from running the setMessages updater synchronously (so appearedAsNew stays false).
+    // A useEffect on `messages` is guaranteed to run after the render that includes the echo.
+    useEffect(() => {
+        const tid = uploadingBubbleTempIdRef.current;
+        if (!tid) return;
+        const watermark = sentAtNewestIdRef.current;
+        const lastMsg = messages[messages.length - 1];
+        if (
+            lastMsg &&
+            lastMsg.sender === currentUsername &&
+            !lastMsg.deletedAt &&
+            (watermark === null || lastMsg.id > watermark)
+        ) {
+            uploadingBubbleTempIdRef.current = null;
+            sentAtNewestIdRef.current = null;
+            setUploadingBubbles(prev => prev.filter(b => b.tempId !== tid));
+        }
+    }, [messages]);
 
     const token = localStorage.getItem("accessToken");
 
@@ -327,9 +351,6 @@ export default function ChatPage() {
                 });
                 if (appearedAsNew && isAtBottomRef.current) {
                     triggerMarkAsRead();
-                }
-                if (appearedAsNew && body.sender === currentUsername) {
-                    setUploadingBubbles(prev => prev.slice(1));
                 }
                 if (shouldAnimateDelete) {
                     startCollapseAnimation(body.id);
@@ -602,6 +623,7 @@ export default function ChatPage() {
         if (filesToUpload.length > 0) {
             // Show optimistic bubble immediately while uploading
             const tempId = crypto.randomUUID();
+            uploadingBubbleTempIdRef.current = tempId;
             setUploadingBubbles(prev => [...prev, {
                 tempId,
                 content: messageContent,
@@ -624,6 +646,7 @@ export default function ChatPage() {
                 if (dto) attachmentIds.push(dto.id);
             }
 
+            sentAtNewestIdRef.current = newestIdRef.current;
             client.publish({
                 destination: "/app/chat.send",
                 body: JSON.stringify({
