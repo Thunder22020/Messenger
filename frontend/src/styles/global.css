@@ -2214,24 +2214,118 @@ button {
 
 /* ===== MESSAGE ATTACHMENTS ===== */
 
-.message-attachments {
+/* --- Media bubble variants --- */
+
+/* Attachment-only or attachment+text: tight 3px frame, overflow clips images to rounded corners */
+.message-bubble.media-only,
+.message-bubble.has-media {
+    padding: 3px;
+    overflow: hidden;
+}
+
+/* Text section inside an attachment+text bubble needs its own padding */
+.message-bubble.has-media .message-content {
+    padding: 4px 11px 8px;
+}
+
+/* Reply preview inside a media bubble: restore side breathing room */
+.message-bubble.media-only .message-reply-preview,
+.message-bubble.has-media .message-reply-preview {
+    margin: 0 0 3px;
+}
+
+/* Grid wrapper — needed for the timestamp overlay */
+.attachment-grid-wrapper {
+    position: relative;
+}
+
+/* Timestamp overlay for media-only messages */
+.message-meta-overlay {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.message-meta-overlay .message-time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.95);
+    opacity: 1;
+    line-height: 1.4;
+}
+
+.message-meta-overlay .message-edited-icon {
+    width: 11px;
+    height: 11px;
+    opacity: 0.85;
+}
+
+/* --- Grid layout --- */
+
+.attachment-grid {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     margin-bottom: 4px;
 }
 
-.message-image {
+/* No margin when grid is inside a media bubble (bubble padding handles spacing) */
+.message-bubble.media-only .attachment-grid,
+.message-bubble.has-media .attachment-grid {
+    margin-bottom: 0;
+}
+
+.attachment-row {
+    display: flex;
+    gap: 2px;
+}
+
+.attachment-row .message-image,
+.attachment-row .uploading-image-wrapper {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+}
+
+/* Single image: natural proportions, constrained */
+.attachment-grid.single .message-image {
+    width: 100%;
     max-width: 280px;
     max-height: 320px;
-    width: 100%;
     height: auto;
-    border-radius: 10px;
+}
+
+/* Multi-image rows: fixed height for visual consistency */
+.attachment-grid:not(.single) .message-image {
+    height: 140px;
+    width: 100%;
+}
+
+.attachment-grid:not(.single) .uploading-image-wrapper {
+    height: 140px;
+}
+
+.attachment-grid:not(.single) .uploading-image-wrapper .message-image {
+    height: 100%;
+    max-height: none;
+    max-width: none;
+}
+
+.message-image {
+    border-radius: 8px;
     display: block;
     cursor: pointer;
     object-fit: cover;
     transition: opacity 0.15s ease;
 }
+
 
 .message-image:hover {
     opacity: 0.9;
@@ -2244,7 +2338,8 @@ button {
 
 .uploading-image-wrapper {
     position: relative;
-    display: inline-block;
+    display: block;
+    overflow: hidden;
 }
 
 .upload-progress-overlay {

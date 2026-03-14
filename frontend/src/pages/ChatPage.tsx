@@ -113,7 +113,7 @@ export default function ChatPage() {
         ) {
             uploadingBubbleTempIdRef.current = null;
             sentAtNewestIdRef.current = null;
-            setUploadingBubbles(prev => prev.filter(b => b.tempId !== tid));
+            setUploadingBubbles([]);
         }
     }, [messages]);
 
@@ -549,6 +549,12 @@ export default function ChatPage() {
         }, 1500);
     };
 
+    const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+        const chunks: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+        return chunks;
+    };
+
     const uploadFileWithProgress = (file: File, onProgress: (pct: number) => void): Promise<AttachmentDto | null> => {
         return new Promise((resolve) => {
             const formData = new FormData();
@@ -584,7 +590,9 @@ export default function ChatPage() {
     };
 
     const sendMessage = async () => {
-        if (!input.trim() && pendingFiles.length === 0) return;
+        const editingMessage = editingMessageId !== null ? messages.find(m => m.id === editingMessageId) : null;
+        const editingHasAttachments = (editingMessage?.attachments?.length ?? 0) > 0;
+        if (!input.trim() && pendingFiles.length === 0 && !editingHasAttachments) return;
 
         if (typingStopTimerRef.current) {
             clearTimeout(typingStopTimerRef.current);
@@ -621,41 +629,46 @@ export default function ChatPage() {
         setInput("");
 
         if (filesToUpload.length > 0) {
-            // Show optimistic bubble immediately while uploading
-            const tempId = crypto.randomUUID();
-            uploadingBubbleTempIdRef.current = tempId;
-            setUploadingBubbles(prev => [...prev, {
-                tempId,
-                content: messageContent,
-                replyPreview: replyTarget?.replyPreview,
-                files: filesToUpload,
-                progress: 0,
-            }]);
+            // Split files into chunks of 5; each chunk becomes its own message bubble
+            const fileChunks = chunkArray(filesToUpload, 5);
+            const firstTempId = crypto.randomUUID();
+            uploadingBubbleTempIdRef.current = firstTempId;
+            setUploadingBubbles(prev => [
+                ...prev,
+                ...fileChunks.map((chunk, i) => ({
+                    tempId: i === 0 ? firstTempId : crypto.randomUUID(),
+                    content: i === 0 ? messageContent : "",
+                    replyPreview: i === 0 ? replyTarget?.replyPreview : undefined,
+                    files: chunk,
+                    progress: 0,
+                })),
+            ]);
             shouldScrollToBottom.current = true;
             isAtBottomRef.current = true;
 
-            // Upload all files, tracking aggregate progress
+            // Upload all files sequentially, tracking aggregate progress across all bubbles
             const attachmentIds: number[] = [];
             for (let i = 0; i < filesToUpload.length; i++) {
                 const dto = await uploadFileWithProgress(filesToUpload[i].file, (pct) => {
                     const overall = Math.round((i * 100 + pct) / filesToUpload.length);
-                    setUploadingBubbles(prev => prev.map(b =>
-                        b.tempId === tempId ? { ...b, progress: overall } : b
-                    ));
+                    setUploadingBubbles(prev => prev.map(b => ({ ...b, progress: overall })));
                 });
                 if (dto) attachmentIds.push(dto.id);
             }
 
+            const idChunks = chunkArray(attachmentIds, 5);
             sentAtNewestIdRef.current = newestIdRef.current;
-            client.publish({
-                destination: "/app/chat.send",
-                body: JSON.stringify({
-                    chatId: numericChatId,
-                    content: messageContent,
-                    ...(replyTarget ? { replyToMessageId: replyTarget.id } : {}),
-                    attachmentIds,
-                }),
-            });
+            for (let i = 0; i < idChunks.length; i++) {
+                client.publish({
+                    destination: "/app/chat.send",
+                    body: JSON.stringify({
+                        chatId: numericChatId,
+                        content: i === 0 ? messageContent : "",
+                        ...(i === 0 && replyTarget ? { replyToMessageId: replyTarget.id } : {}),
+                        attachmentIds: idChunks[i],
+                    }),
+                });
+            }
         } else {
             client.publish({
                 destination: "/app/chat.send",
