@@ -868,10 +868,11 @@ export default function ChatPage() {
                                                 const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
 
                                                 return (
-                                                    <div key={msg.id} data-message-id={msg.id}>
-                                                        <div
-                                                            className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
-                                                        >
+                                                    <div
+                                                        key={msg.id}
+                                                        data-message-id={msg.id}
+                                                        className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
+                                                    >
                                                             <div className={`message-row ${isMine ? "mine" : "other"}`}>
                                                                 {!isMine && chatType === "GROUP" && (
                                                                     isLast
@@ -917,7 +918,6 @@ export default function ChatPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
                                                 );
                                             })}
                                             </div>
