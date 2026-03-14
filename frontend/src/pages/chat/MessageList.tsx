@@ -38,7 +38,7 @@ function distributeIntoRows<T>(items: T[], rowSizes: number[]): T[][] {
   return rows;
 }
 
-function AttachmentGrid({ photos, onOpen, hasTextBelow = false }: { photos: AttachmentDto[]; onOpen: (url: string) => void; hasTextBelow?: boolean }) {
+function AttachmentGrid({ photos, onImageClick, hasTextBelow = false }: { photos: AttachmentDto[]; onImageClick: (index: number) => void; hasTextBelow?: boolean }) {
   const rows = distributeIntoRows(photos, buildAttachmentRows(photos.length));
   const totalRows = rows.length;
   return (
@@ -52,7 +52,7 @@ function AttachmentGrid({ photos, onOpen, hasTextBelow = false }: { photos: Atta
               alt={att.fileName}
               className="message-image"
               style={{ borderRadius: getImageBorderRadius(rowIdx, colIdx, totalRows, row.length, hasTextBelow) }}
-              onClick={() => onOpen(att.url)}
+              onClick={() => onImageClick(photos.indexOf(att))}
             />
           ))}
         </div>
@@ -107,6 +107,7 @@ export function MessageList(props: {
   isReadByAnyOther: (messageId: number) => boolean;
   onMessageContextMenu: (e: React.MouseEvent, msg: Message, isMine: boolean) => void;
   onScrollToMessage: (messageId: number) => void;
+  onImageClick: (photos: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
 }) {
   const {
     dateGroups,
@@ -119,6 +120,7 @@ export function MessageList(props: {
     isReadByAnyOther,
     onMessageContextMenu,
     onScrollToMessage,
+    onImageClick,
   } = props;
 
   return (
@@ -207,7 +209,11 @@ export function MessageList(props: {
 
                             {hasMedia && (
                               <div className="attachment-grid-wrapper">
-                                <AttachmentGrid photos={photos} onOpen={(url) => window.open(url, "_blank")} hasTextBelow={!isMediaOnly} />
+                                <AttachmentGrid
+                                  photos={photos}
+                                  onImageClick={(i) => onImageClick(photos, i, { sender: msg.sender, createdAt: msg.createdAt })}
+                                  hasTextBelow={!isMediaOnly}
+                                />
                                 {isMediaOnly && (
                                   <div className="message-meta-overlay">
                                     {msg.editedAt && (

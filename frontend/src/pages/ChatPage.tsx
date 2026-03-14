@@ -21,6 +21,7 @@ import { TypingIndicator } from "./chat/TypingIndicator";
 import { AttachmentsBar } from "./chat/AttachmentsBar";
 import { MessageContextMenu, type MessageContextMenuState } from "./chat/MessageContextMenu";
 import { MessageList } from "./chat/MessageList";
+import { ImageViewer } from "./chat/ImageViewer";
 import { ReplyBar, EditBar } from "./chat/ReplyEditBars";
 import { ScrollToBottomButton } from "./chat/ScrollToBottomButton";
 
@@ -63,6 +64,12 @@ export default function ChatPage() {
 
     const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
     const [uploadingBubbles, setUploadingBubbles] = useState<UploadingBubble[]>([]);
+    const [viewerState, setViewerState] = useState<{
+        photos: AttachmentDto[];
+        index: number;
+        sender: string;
+        createdAt: string;
+    } | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -193,6 +200,7 @@ export default function ChatPage() {
         setOtherParticipantsReadMap({});
         setPendingFiles([]);
         setUploadingBubbles([]);
+        setViewerState(null);
     }, [numericChatId]);
 
     // Load initial messages once chat info is ready. If the user has a lastReadMessageId,
@@ -801,6 +809,7 @@ export default function ChatPage() {
     const dateGroups = groupMessagesByDateAndSender({ messages, unreadDividerMessageId });
 
     return (
+        <>
         <AppLayout
             rightPanel={
                 <ChatInfoPanel
@@ -865,6 +874,9 @@ export default function ChatPage() {
                         isReadByAnyOther={isReadByAnyOther}
                         onMessageContextMenu={handleMessageRightClick}
                         onScrollToMessage={scrollToMessage}
+                        onImageClick={(photos, index, meta) =>
+                            setViewerState({ photos, index, sender: meta.sender, createdAt: meta.createdAt })
+                        }
                     />
                 </div>
 
@@ -951,5 +963,16 @@ export default function ChatPage() {
                 )}
             </div>
         </AppLayout>
+
+        {viewerState && (
+            <ImageViewer
+                photos={viewerState.photos}
+                initialIndex={viewerState.index}
+                sender={viewerState.sender}
+                createdAt={viewerState.createdAt}
+                onClose={() => setViewerState(null)}
+            />
+        )}
+        </>
     );
 }
