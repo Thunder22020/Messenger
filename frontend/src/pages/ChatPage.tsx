@@ -21,6 +21,20 @@ interface AttachmentDto {
     fileSize: number;
 }
 
+interface PendingFile {
+    localId: string;
+    file: File;
+    previewUrl: string;
+}
+
+interface UploadingBubble {
+    tempId: string;
+    content: string;
+    replyPreview?: ReplyPreview;
+    files: PendingFile[];
+    progress: number;
+}
+
 interface Message {
     id: number;
     content: string;
@@ -87,7 +101,8 @@ export default function ChatPage() {
     // other participants' read state: username -> lastReadMessageId
     const [otherParticipantsReadMap, setOtherParticipantsReadMap] = useState<Record<string, number>>({});
 
-    const [pendingAttachments, setPendingAttachments] = useState<AttachmentDto[]>([]);
+    const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+    const [uploadingBubbles, setUploadingBubbles] = useState<UploadingBubble[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -185,6 +200,8 @@ export default function ChatPage() {
         setUnreadDividerMessageId(undefined);
         setInitialLastReadMessageId(undefined);
         setOtherParticipantsReadMap({});
+        setPendingFiles([]);
+        setUploadingBubbles([]);
     }, [numericChatId]);
 
     // Load initial messages once chat info is ready. If the user has a lastReadMessageId,
@@ -345,6 +362,9 @@ export default function ChatPage() {
                 });
                 if (appearedAsNew && isAtBottomRef.current) {
                     triggerMarkAsRead();
+                }
+                if (appearedAsNew && body.sender === currentUsername) {
+                    setUploadingBubbles(prev => prev.slice(1));
                 }
                 if (shouldAnimateDelete) {
                     startCollapseAnimation(body.id);
@@ -547,27 +567,42 @@ export default function ChatPage() {
         }, 1500);
     };
 
-    const uploadFile = async (file: File): Promise<AttachmentDto | null> => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await authFetch(`${API_URL}/attachments/upload`, {
-            method: "POST",
-            body: formData,
+    const uploadFileWithProgress = (file: File, onProgress: (pct: number) => void): Promise<AttachmentDto | null> => {
+        return new Promise((resolve) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener("progress", (e) => {
+                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+            });
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(JSON.parse(xhr.responseText));
+                } else {
+                    resolve(null);
+                }
+            });
+            xhr.addEventListener("error", () => resolve(null));
+            const token = localStorage.getItem("accessToken");
+            xhr.open("POST", `${API_URL}/attachments/upload`);
+            if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+            xhr.send(formData);
         });
-        if (!res || !res.ok) return null;
-        return res.json();
     };
 
-    const handleFilesSelected = async (files: FileList | File[]) => {
-        const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"));
-        for (const file of fileArray) {
-            const dto = await uploadFile(file);
-            if (dto) setPendingAttachments(prev => [...prev, dto]);
-        }
+    const handleFilesSelected = (files: FileList | File[]) => {
+        const newFiles: PendingFile[] = Array.from(files)
+            .filter(f => f.type.startsWith("image/"))
+            .map(f => ({
+                localId: crypto.randomUUID(),
+                file: f,
+                previewUrl: URL.createObjectURL(f),
+            }));
+        setPendingFiles(prev => [...prev, ...newFiles]);
     };
 
     const sendMessage = async () => {
-        if (!input.trim() && pendingAttachments.length === 0) return;
+        if (!input.trim() && pendingFiles.length === 0) return;
 
         if (typingStopTimerRef.current) {
             clearTimeout(typingStopTimerRef.current);
@@ -595,19 +630,58 @@ export default function ChatPage() {
 
         if (!client || !numericChatId) return;
 
-        client.publish({
-            destination: "/app/chat.send",
-            body: JSON.stringify({
-                chatId: numericChatId,
-                content: input,
-                ...(replyingTo ? { replyToMessageId: replyingTo.id } : {}),
-                ...(pendingAttachments.length > 0 ? { attachmentIds: pendingAttachments.map(a => a.id) } : {}),
-            }),
-        });
+        const filesToUpload = [...pendingFiles];
+        const messageContent = input;
+        const replyTarget = replyingTo;
 
         setReplyingTo(null);
-        setPendingAttachments([]);
+        setPendingFiles([]);
         setInput("");
+
+        if (filesToUpload.length > 0) {
+            // Show optimistic bubble immediately while uploading
+            const tempId = crypto.randomUUID();
+            setUploadingBubbles(prev => [...prev, {
+                tempId,
+                content: messageContent,
+                replyPreview: replyTarget?.replyPreview,
+                files: filesToUpload,
+                progress: 0,
+            }]);
+            shouldScrollToBottom.current = true;
+            isAtBottomRef.current = true;
+
+            // Upload all files, tracking aggregate progress
+            const attachmentIds: number[] = [];
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const dto = await uploadFileWithProgress(filesToUpload[i].file, (pct) => {
+                    const overall = Math.round((i * 100 + pct) / filesToUpload.length);
+                    setUploadingBubbles(prev => prev.map(b =>
+                        b.tempId === tempId ? { ...b, progress: overall } : b
+                    ));
+                });
+                if (dto) attachmentIds.push(dto.id);
+            }
+
+            client.publish({
+                destination: "/app/chat.send",
+                body: JSON.stringify({
+                    chatId: numericChatId,
+                    content: messageContent,
+                    ...(replyTarget ? { replyToMessageId: replyTarget.id } : {}),
+                    attachmentIds,
+                }),
+            });
+        } else {
+            client.publish({
+                destination: "/app/chat.send",
+                body: JSON.stringify({
+                    chatId: numericChatId,
+                    content: messageContent,
+                    ...(replyTarget ? { replyToMessageId: replyTarget.id } : {}),
+                }),
+            });
+        }
 
         if (hasMoreNewerRef.current) {
             // Windowed: reload latest page so the sent message is visible
@@ -616,6 +690,7 @@ export default function ChatPage() {
                 const data = await res.json();
                 const visible = data.messages.filter((m: Message) => !m.deletedAt);
                 setMessages(visible);
+                setUploadingBubbles([]);
                 setHasMoreOlder(data.hasMoreOlder);
                 setHasMoreNewer(false);
                 hasMoreNewerRef.current = false;
@@ -627,7 +702,6 @@ export default function ChatPage() {
                 isAtBottomRef.current = true;
             }
         } else {
-            // Live edge: WS echo will append the message; ensure we scroll to it
             isAtBottomRef.current = true;
         }
     };
@@ -851,11 +925,11 @@ export default function ChatPage() {
                     className={`chat-messages-wrapper${isDragging ? " drag-over" : ""}`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false); }}
-                    onDrop={async (e) => {
+                    onDrop={(e) => {
                         e.preventDefault();
                         setIsDragging(false);
                         if (e.dataTransfer.files.length > 0) {
-                            await handleFilesSelected(e.dataTransfer.files);
+                            handleFilesSelected(e.dataTransfer.files);
                         }
                     }}
                 >
@@ -988,6 +1062,49 @@ export default function ChatPage() {
                                 })}
                             </div>
                         ))}
+                        {uploadingBubbles.map((bubble) => (
+                            <div key={bubble.tempId} className="message-group mine">
+                                <div className="message-row-collapse">
+                                    <div className="message-row mine">
+                                        <div className="message-bubble">
+                                            {bubble.replyPreview && (
+                                                <div className="message-reply-preview">
+                                                    <div className="reply-preview-sender">{bubble.replyPreview.sender}</div>
+                                                    <div className="reply-preview-content">{bubble.replyPreview.content || "Deleted message"}</div>
+                                                </div>
+                                            )}
+                                            {bubble.files.length > 0 && (
+                                                <div className="message-attachments">
+                                                    {bubble.files.map((pf) => (
+                                                        <div key={pf.localId} className="uploading-image-wrapper">
+                                                            <img src={pf.previewUrl} alt={pf.file.name} className="message-image uploading" />
+                                                            <div className="upload-progress-overlay">
+                                                                <svg viewBox="0 0 36 36" className="upload-progress-circle">
+                                                                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
+                                                                    <circle
+                                                                        cx="18" cy="18" r="15" fill="none"
+                                                                        stroke="white" strokeWidth="3"
+                                                                        strokeDasharray={`${2 * Math.PI * 15}`}
+                                                                        strokeDashoffset={`${2 * Math.PI * 15 * (1 - bubble.progress / 100)}`}
+                                                                        strokeLinecap="round"
+                                                                        style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%", transition: "stroke-dashoffset 0.2s" }}
+                                                                    />
+                                                                </svg>
+                                                                <span className="upload-progress-pct">{bubble.progress}%</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="message-content">
+                                                <span className="message-text">{bubble.content}</span>
+                                                <span className="message-time">sending…</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -1057,14 +1174,14 @@ export default function ChatPage() {
                     </div>
                 )}
 
-                {pendingAttachments.length > 0 && (
+                {pendingFiles.length > 0 && (
                     <div className="chat-attachments-bar">
-                        {pendingAttachments.map((att) => (
-                            <div key={att.id} className="pending-attachment">
-                                <img src={att.url} alt={att.fileName} className="pending-attachment-thumb" />
+                        {pendingFiles.map((pf) => (
+                            <div key={pf.localId} className="pending-attachment">
+                                <img src={pf.previewUrl} alt={pf.file.name} className="pending-attachment-thumb" />
                                 <button
                                     className="pending-attachment-remove"
-                                    onClick={() => setPendingAttachments(prev => prev.filter(a => a.id !== att.id))}
+                                    onClick={() => setPendingFiles(prev => prev.filter(p => p.localId !== pf.localId))}
                                 >✕</button>
                             </div>
                         ))}
@@ -1078,8 +1195,8 @@ export default function ChatPage() {
                         accept="image/*"
                         multiple
                         style={{ display: "none" }}
-                        onChange={async (e) => {
-                            if (e.target.files) await handleFilesSelected(e.target.files);
+                        onChange={(e) => {
+                            if (e.target.files) handleFilesSelected(e.target.files);
                             e.target.value = "";
                         }}
                     />
