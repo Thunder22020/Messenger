@@ -12,6 +12,15 @@ interface ReplyPreview {
     content: string;
 }
 
+interface AttachmentDto {
+    id: number;
+    url: string;
+    type: "PHOTO" | "VIDEO" | "AUDIO" | "FILE";
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+}
+
 interface Message {
     id: number;
     content: string;
@@ -21,6 +30,7 @@ interface Message {
     deletedAt: string | null;
     replyToMessageId?: number;
     replyPreview?: ReplyPreview;
+    attachments?: AttachmentDto[];
 }
 
 interface JwtPayload {
@@ -76,6 +86,10 @@ export default function ChatPage() {
 
     // other participants' read state: username -> lastReadMessageId
     const [otherParticipantsReadMap, setOtherParticipantsReadMap] = useState<Record<string, number>>({});
+
+    const [pendingAttachments, setPendingAttachments] = useState<AttachmentDto[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const COLLAPSE_MS = 320;
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
@@ -533,8 +547,27 @@ export default function ChatPage() {
         }, 1500);
     };
 
+    const uploadFile = async (file: File): Promise<AttachmentDto | null> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await authFetch(`${API_URL}/attachments/upload`, {
+            method: "POST",
+            body: formData,
+        });
+        if (!res || !res.ok) return null;
+        return res.json();
+    };
+
+    const handleFilesSelected = async (files: FileList | File[]) => {
+        const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"));
+        for (const file of fileArray) {
+            const dto = await uploadFile(file);
+            if (dto) setPendingAttachments(prev => [...prev, dto]);
+        }
+    };
+
     const sendMessage = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() && pendingAttachments.length === 0) return;
 
         if (typingStopTimerRef.current) {
             clearTimeout(typingStopTimerRef.current);
@@ -568,10 +601,12 @@ export default function ChatPage() {
                 chatId: numericChatId,
                 content: input,
                 ...(replyingTo ? { replyToMessageId: replyingTo.id } : {}),
+                ...(pendingAttachments.length > 0 ? { attachmentIds: pendingAttachments.map(a => a.id) } : {}),
             }),
         });
 
         setReplyingTo(null);
+        setPendingAttachments([]);
         setInput("");
 
         if (hasMoreNewerRef.current) {
@@ -663,7 +698,8 @@ export default function ChatPage() {
 
     const handleStartReply = () => {
         if (!contextMenu) return;
-        setReplyingTo({ id: contextMenu.messageId, content: contextMenu.content, sender: contextMenu.sender, createdAt: "", editedAt: null, deletedAt: null });
+        const msg = messages.find(m => m.id === contextMenu.messageId);
+        if (msg) setReplyingTo(msg);
         setContextMenu(null);
         setTimeout(() => inputRef.current?.focus(), 0);
     };
@@ -811,7 +847,18 @@ export default function ChatPage() {
                     </button>
                 </div>
 
-                <div className="chat-messages-wrapper">
+                <div
+                    className={`chat-messages-wrapper${isDragging ? " drag-over" : ""}`}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false); }}
+                    onDrop={async (e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        if (e.dataTransfer.files.length > 0) {
+                            await handleFilesSelected(e.dataTransfer.files);
+                        }
+                    }}
+                >
                 <div
                     className="chat-messages"
                     ref={chatContainerRef}
@@ -899,6 +946,21 @@ export default function ChatPage() {
                                                                             </div>
                                                                         </div>
                                                                     )}
+                                                                    {msg.attachments && msg.attachments.length > 0 && (
+                                                                        <div className="message-attachments">
+                                                                            {msg.attachments.map((att) => (
+                                                                                att.type === "PHOTO" ? (
+                                                                                    <img
+                                                                                        key={att.id}
+                                                                                        src={att.url}
+                                                                                        alt={att.fileName}
+                                                                                        className="message-image"
+                                                                                        onClick={() => window.open(att.url, "_blank")}
+                                                                                    />
+                                                                                ) : null
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
                                                                     <div className="message-content">
                                                                         <span className="message-text">
                                                                             {msg.content}
@@ -976,7 +1038,9 @@ export default function ChatPage() {
                         <div className="chat-reply-bar-accent" />
                         <div className="chat-edit-bar-content">
                             <span className="chat-reply-bar-label">{replyingTo.sender}</span>
-                            <span className="chat-edit-bar-preview">{replyingTo.content}</span>
+                            <span className="chat-edit-bar-preview">
+                                    {replyingTo.content || (replyingTo.attachments?.length ? "📎 Photo" : "")}
+                                </span>
                         </div>
                         <button className="chat-edit-cancel-btn" onClick={cancelReply}>✕</button>
                     </div>
@@ -993,7 +1057,39 @@ export default function ChatPage() {
                     </div>
                 )}
 
+                {pendingAttachments.length > 0 && (
+                    <div className="chat-attachments-bar">
+                        {pendingAttachments.map((att) => (
+                            <div key={att.id} className="pending-attachment">
+                                <img src={att.url} alt={att.fileName} className="pending-attachment-thumb" />
+                                <button
+                                    className="pending-attachment-remove"
+                                    onClick={() => setPendingAttachments(prev => prev.filter(a => a.id !== att.id))}
+                                >✕</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className="chat-input-bar">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: "none" }}
+                        onChange={async (e) => {
+                            if (e.target.files) await handleFilesSelected(e.target.files);
+                            e.target.value = "";
+                        }}
+                    />
+                    <button
+                        className="chat-attach-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        type="button"
+                    >
+                        <img src="/icons/paperclip.png" alt="attach" />
+                    </button>
                     <textarea
                         key={numericChatId}
                         ref={inputRef}

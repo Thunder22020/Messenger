@@ -2,6 +2,7 @@ package com.daniel.messenger.messaging.dto
 
 data class SendMessageRequest(
     val chatId: Long,
-    val content: String,
+    val content: String = "",
     val replyToMessageId: Long? = null,
+    val attachmentIds: List<Long> = emptyList(),
 )

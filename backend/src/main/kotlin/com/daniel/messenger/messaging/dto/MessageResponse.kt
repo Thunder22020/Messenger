@@ -11,4 +11,5 @@ data class MessageResponse(
     val deletedAt: Instant?,
     val replyToMessageId: Long? = null,
     val replyPreview: ReplyPreviewDto? = null,
+    val attachments: List<AttachmentDto> = emptyList(),
 )

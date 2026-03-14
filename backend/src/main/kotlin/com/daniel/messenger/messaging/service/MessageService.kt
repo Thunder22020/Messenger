@@ -1,5 +1,6 @@
 package com.daniel.messenger.messaging.service
 
+import com.daniel.messenger.messaging.dto.AttachmentDto
 import com.daniel.messenger.messaging.dto.EditMessageRequest
 import com.daniel.messenger.messaging.dto.MessageResponse
 import com.daniel.messenger.messaging.dto.PagedMessageResponse
@@ -8,7 +9,9 @@ import com.daniel.messenger.messaging.dto.SendMessageRequest
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
 import com.daniel.messenger.messaging.exception.NotMessageOwnerException
+import com.daniel.messenger.messaging.repository.AttachmentRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
+import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.user.service.UserService
 import org.springframework.data.domain.PageRequest
@@ -22,6 +25,8 @@ class MessageService(
     private val chatService: ChatService,
     private val userService: UserService,
     private val chatNotificationService: ChatNotificationService,
+    private val attachmentService: AttachmentService,
+    private val attachmentRepository: AttachmentRepository,
 ) {
     @Transactional
     fun sendMessage(request: SendMessageRequest, senderId: Long): MessageResponse {
@@ -36,8 +41,12 @@ class MessageService(
                 replyToMessageId = request.replyToMessageId,
             )
         )
+        attachmentService.linkToMessage(request.attachmentIds, message)
         chatService.updateChatLastMessage(chat, message)
-        return message.toResponse(resolveSingleReplyPreview(message))
+        return message.toResponse(
+            replyPreview = resolveSingleReplyPreview(message),
+            attachments = resolveSingleMessageAttachments(requireNotNull(message.id)),
+        )
     }
 
     @Transactional
@@ -48,7 +57,10 @@ class MessageService(
         message.editedAt = Instant.now()
         val saved = messageRepository.save(message)
         broadcastMessageUpdate(saved)
-        return saved.toResponse(resolveSingleReplyPreview(saved))
+        return saved.toResponse(
+            replyPreview = resolveSingleReplyPreview(saved),
+            attachments = resolveSingleMessageAttachments(requireNotNull(saved.id)),
+        )
     }
 
     @Transactional
@@ -62,7 +74,10 @@ class MessageService(
             deletedMessageId = requireNotNull(saved.id),
             chatId = requireNotNull(saved.chat.id),
         )
-        return saved.toResponse(resolveSingleReplyPreview(saved))
+        return saved.toResponse(
+            replyPreview = resolveSingleReplyPreview(saved),
+            attachments = resolveSingleMessageAttachments(requireNotNull(saved.id)),
+        )
     }
 
     private fun checkSenderIsNotMessageOwner(messageSenderId: Long?, userId: Long) {
@@ -82,7 +97,13 @@ class MessageService(
         val hasMoreOlder = raw.size > PAGE_SIZE
         val page = raw.take(PAGE_SIZE).reversed()
         val replyPreviews = resolveReplyPreviews(page)
-        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
+        val attachmentsMap = resolveAttachments(page)
+        val messages = page.map {
+            it.toResponse(
+                replyPreviews[it.replyToMessageId],
+                attachmentsMap[it.id] ?: emptyList()
+            )
+        }
         return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = false)
     }
 
@@ -92,7 +113,10 @@ class MessageService(
         val hasMoreNewer = raw.size > PAGE_SIZE
         val page = raw.take(PAGE_SIZE)
         val replyPreviews = resolveReplyPreviews(page)
-        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
+        val attachmentsMap = resolveAttachments(page)
+        val messages = page.map {
+            it.toResponse(replyPreviews[it.replyToMessageId], attachmentsMap[it.id] ?: emptyList())
+        }
         return PagedMessageResponse(messages, hasMoreOlder = false, hasMoreNewer = hasMoreNewer)
     }
 
@@ -110,7 +134,10 @@ class MessageService(
 
         val page = beforeMessages + afterMessages
         val replyPreviews = resolveReplyPreviews(page)
-        val messages = page.map { it.toResponse(replyPreviews[it.replyToMessageId]) }
+        val attachmentsMap = resolveAttachments(page)
+        val messages = page.map {
+            it.toResponse(replyPreviews[it.replyToMessageId], attachmentsMap[it.id] ?: emptyList())
+        }
         return PagedMessageResponse(messages, hasMoreOlder = hasMoreOlder, hasMoreNewer = hasMoreNewer)
     }
 
@@ -121,7 +148,10 @@ class MessageService(
     private fun broadcastMessageUpdate(message: MessageEntity) {
         chatNotificationService.broadcastChatMessage(
             requireNotNull(message.chat.id),
-            message.toResponse(resolveSingleReplyPreview(message))
+            message.toResponse(
+                replyPreview = resolveSingleReplyPreview(message),
+                attachments = resolveSingleMessageAttachments(requireNotNull(message.id)),
+            )
         )
     }
 
@@ -146,6 +176,17 @@ class MessageService(
                 content = if (m.deletedAt != null) "" else m.content.take(100),
             )
         }
+    }
+
+    private fun resolveSingleMessageAttachments(messageId: Long): List<AttachmentDto> =
+        attachmentRepository.findAllByMessageIdIn(listOf(messageId)).map { it.toDto() }
+
+    private fun resolveAttachments(messages: List<MessageEntity>): Map<Long, List<AttachmentDto>> {
+        val ids = messages.mapNotNull { it.id }
+        if (ids.isEmpty()) return emptyMap()
+        return attachmentRepository.findAllByMessageIdIn(ids)
+            .groupBy { requireNotNull(it.message?.id) }
+            .mapValues { (_, list) -> list.map { it.toDto() } }
     }
 
     companion object {

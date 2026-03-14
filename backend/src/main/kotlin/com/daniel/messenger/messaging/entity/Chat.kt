@@ -3,6 +3,8 @@ package com.daniel.messenger.messaging.entity
 import com.daniel.messenger.messaging.enum.ChatType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -20,6 +22,7 @@ data class Chat(
     var id: Long? = null,
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     var type: ChatType,
 
     var title: String? = null,

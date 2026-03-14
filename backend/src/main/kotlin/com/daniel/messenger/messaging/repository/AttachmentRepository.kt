@@ -1,0 +1,13 @@
+package com.daniel.messenger.messaging.repository
+
+import com.daniel.messenger.messaging.entity.Attachment
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
+import org.springframework.stereotype.Repository
+
+@Repository
+interface AttachmentRepository : JpaRepository<Attachment, Long> {
+    @Query("SELECT a FROM Attachment a WHERE a.message.id IN :messageIds")
+    fun findAllByMessageIdIn(@Param("messageIds") messageIds: Collection<Long>): List<Attachment>
+}
