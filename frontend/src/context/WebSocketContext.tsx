@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import { WS_URL } from "../config";
-
-const WebSocketContext = createContext<Client | null>(null);
+import { WebSocketContext } from "./WebSocketContext";
 
 export function WebSocketProvider({
                                       children,
@@ -42,8 +41,4 @@ export function WebSocketProvider({
             {children}
         </WebSocketContext.Provider>
     );
-}
-
-export function useWebSocket() {
-    return useContext(WebSocketContext);
 }

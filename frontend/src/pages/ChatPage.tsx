@@ -5,64 +5,24 @@ import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { useWebSocket } from "../context/WebSocketContext";
 import { API_URL } from "../config";
-
-interface ReplyPreview {
-    messageId: number;
-    sender: string;
-    content: string;
-}
-
-interface AttachmentDto {
-    id: number;
-    url: string;
-    type: "PHOTO" | "VIDEO" | "AUDIO" | "FILE";
-    fileName: string;
-    mimeType: string;
-    fileSize: number;
-}
-
-interface PendingFile {
-    localId: string;
-    file: File;
-    previewUrl: string;
-}
-
-interface UploadingBubble {
-    tempId: string;
-    content: string;
-    replyPreview?: ReplyPreview;
-    files: PendingFile[];
-    progress: number;
-}
-
-interface Message {
-    id: number;
-    content: string;
-    sender: string;
-    createdAt: string;
-    editedAt: string | null;
-    deletedAt: string | null;
-    replyToMessageId?: number;
-    replyPreview?: ReplyPreview;
-    attachments?: AttachmentDto[];
-}
-
-interface JwtPayload {
-    sub: string;
-    exp: number;
-}
-
-interface ChatParticipant {
-    id: number;
-    username: string;
-    lastReadMessageId: number | null;
-}
-
-interface ReadAckEvent {
-    chatId: number;
-    readerUsername: string;
-    lastReadMessageId: number;
-}
+import type {
+    AttachmentDto,
+    ChatParticipant,
+    JwtPayload,
+    Message,
+    PendingFile,
+    ReadAckEvent,
+    UploadingBubble,
+} from "./chat/chatTypes";
+import { groupMessagesByDateAndSender } from "./chat/groupMessages";
+import { ChatHeader } from "./chat/ChatHeader";
+import { ChatInfoPanel } from "./chat/ChatInfoPanel";
+import { TypingIndicator } from "./chat/TypingIndicator";
+import { AttachmentsBar } from "./chat/AttachmentsBar";
+import { MessageContextMenu, type MessageContextMenuState } from "./chat/MessageContextMenu";
+import { MessageList } from "./chat/MessageList";
+import { ReplyBar, EditBar } from "./chat/ReplyEditBars";
+import { ScrollToBottomButton } from "./chat/ScrollToBottomButton";
 
 export default function ChatPage() {
     const { chatId } = useParams();
@@ -78,7 +38,7 @@ export default function ChatPage() {
     const [hasMoreNewer, setHasMoreNewer] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [showScrollBtn, setShowScrollBtn] = useState(false);
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: number; content: string; sender: string; isMine: boolean } | null>(null);
+    const [contextMenu, setContextMenu] = useState<MessageContextMenuState | null>(null);
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [replyingTo, setReplyingTo] = useState<Message | null>(null);
     const [editingOriginalContent, setEditingOriginalContent] = useState("");
@@ -156,14 +116,21 @@ export default function ChatPage() {
         if (!numericChatId) return;
         let cancelled = false;
 
+        type MyChatItem = {
+            chatId: number;
+            displayName: string;
+            type: string;
+            lastReadMessageId: number | null;
+        };
+
         const loadChatInfo = async () => {
             const res = await authFetch(`${API_URL}/chat/my`);
             if (cancelled || !res || !res.ok) return;
 
-            const data = await res.json();
+            const data: MyChatItem[] = await res.json();
             if (cancelled) return;
 
-            const currentChat = data.find((c: any) => c.chatId === numericChatId);
+            const currentChat = data.find((c) => c.chatId === numericChatId);
             if (currentChat) {
                 setChatName(currentChat.displayName);
                 setChatType(currentChat.type);
@@ -332,9 +299,7 @@ export default function ChatPage() {
     useEffect(() => {
         if (!client || !numericChatId) return;
 
-        const subscription = client.subscribe(
-            `/topic/chat.${numericChatId}`,
-            (msg) => {
+        const subscription = client.subscribe(`/topic/chat.${numericChatId}`, (msg: { body: string }) => {
                 const body: Message = JSON.parse(msg.body);
                 let appearedAsNew = false;
                 let shouldAnimateDelete = false;
@@ -380,9 +345,7 @@ export default function ChatPage() {
     useEffect(() => {
         if (!client || !numericChatId) return;
 
-        const subscription = client.subscribe(
-            `/topic/chat.${numericChatId}.read`,
-            (msg) => {
+        const subscription = client.subscribe(`/topic/chat.${numericChatId}.read`, (msg: { body: string }) => {
                 const body: ReadAckEvent = JSON.parse(msg.body);
                 if (body.readerUsername === currentUsername) return;
                 setOtherParticipantsReadMap(prev => ({
@@ -400,9 +363,7 @@ export default function ChatPage() {
     useEffect(() => {
         if (!client || !numericChatId) return;
 
-        const subscription = client.subscribe(
-            `/topic/chat.${numericChatId}.typing`,
-            (msg) => {
+        const subscription = client.subscribe(`/topic/chat.${numericChatId}.typing`, (msg: { body: string }) => {
                 const body = JSON.parse(msg.body);
                 if (body.username === currentUsername) return;
 
@@ -713,18 +674,6 @@ export default function ChatPage() {
         return `${typingUsers[0]}, ${typingUsers[1]} and ${typingUsers.length - 2} other${typingUsers.length - 2 > 1 ? "s" : ""} are typing...`;
     };
 
-    const formatDateSeparator = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        if (date.toDateString() === now.toDateString()) return "Today";
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-        const opts: Intl.DateTimeFormatOptions = { month: "long", day: "numeric" };
-        if (date.getFullYear() !== now.getFullYear()) opts.year = "numeric";
-        return date.toLocaleDateString("en-US", opts);
-    };
-
     const handleMessageRightClick = (e: React.MouseEvent, msg: Message, isMine: boolean) => {
         e.preventDefault();
         const x = Math.min(e.clientX, window.innerWidth - 148);
@@ -813,113 +762,29 @@ export default function ChatPage() {
     const isReadByAnyOther = (messageId: number): boolean =>
         Object.values(otherParticipantsReadMap).some(lastRead => lastRead >= messageId);
 
-    interface SenderGroup { sender: string; messages: Message[]; }
-    interface DateGroup { dateKey: string; label: string; senderGroups: SenderGroup[]; }
-
-    const dateGroups: DateGroup[] = [];
-    for (const msg of messages) {
-        const dateKey = new Date(msg.createdAt).toDateString();
-        let dg = dateGroups[dateGroups.length - 1];
-        if (!dg || dg.dateKey !== dateKey) {
-            dg = { dateKey, label: formatDateSeparator(msg.createdAt), senderGroups: [] };
-            dateGroups.push(dg);
-        }
-        const lastSG = dg.senderGroups[dg.senderGroups.length - 1];
-        // Force a new group when this message is the unread boundary so the divider
-        // can be rendered above it, even if the sender is the same as the previous group.
-        const isUnreadBoundary = msg.id === unreadDividerMessageId;
-        if (lastSG && lastSG.sender === msg.sender && !isUnreadBoundary) {
-            lastSG.messages.push(msg);
-        } else {
-            dg.senderGroups.push({ sender: msg.sender, messages: [msg] });
-        }
-    }
+    const dateGroups = groupMessagesByDateAndSender({ messages, unreadDividerMessageId });
 
     return (
         <AppLayout
             rightPanel={
-                <div className={`chat-info-panel ${isInfoOpen ? "open" : ""}`}>
-
-                    <div className="info-chat-header">
-                        <div className="info-chat-avatar">
-                            {chatName ? chatName.charAt(0).toUpperCase() : "?"}
-                        </div>
-
-                        <div className="info-chat-name">
-                            {chatName}
-                        </div>
-                    </div>
-
-                    {chatType === "GROUP" && (
-                        <>
-                            <div className="info-divider" />
-
-                            <div className="info-section-title">
-                                Members
-                            </div>
-
-                            <div className="info-members">
-                                {[...participants].sort((a, b) => {
-                                    if (a.username === currentUsername) return -1;
-                                    if (b.username === currentUsername) return 1;
-                                    return 0;
-                                }).map(user => {
-                                    const isMe = user.username === currentUsername;
-
-                                    return (
-                                        <div
-                                            key={user.id}
-                                            className="info-member"
-                                            onClick={() => navigate(`/user/${user.id}`)}
-                                        >
-                                            <div className="info-avatar">
-                                                {user.username.charAt(0).toUpperCase()}
-                                            </div>
-
-                                            <span className="info-member-name">
-                                                {user.username}
-                                            </span>
-
-                                            {isMe && (
-                                                <span className="info-you-label">
-                                                    You
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
-
-                </div>
+                <ChatInfoPanel
+                    isOpen={isInfoOpen}
+                    chatName={chatName}
+                    chatType={chatType}
+                    participants={participants}
+                    currentUsername={currentUsername}
+                    onUserClick={(id) => navigate(`/user/${id}`)}
+                />
             }
         >
             <div className="chat-container">
-                <div className="chat-header">
-                    <div className="chat-header-avatar" onClick={handleHeaderClick}>
-                        {chatName ? chatName.charAt(0).toUpperCase() : "?"}
-                    </div>
-
-                    <div className="chat-header-info">
-                        <div className="chat-header-name" onClick={handleHeaderClick}>
-                            {chatName}
-                        </div>
-
-                        {chatType === "GROUP" && (
-                            <div className="chat-header-members" onClick={handleHeaderClick}>
-                                {participants.length} members
-                            </div>
-                        )}
-                    </div>
-
-                    <button
-                        className="chat-menu-btn"
-                        onClick={() => setIsInfoOpen(prev => !prev)}
-                    >
-                        <img src="/icons/menu.png" alt="menu" />
-                    </button>
-                </div>
+                <ChatHeader
+                    chatName={chatName}
+                    chatType={chatType}
+                    participantsCount={participants.length}
+                    onHeaderClick={handleHeaderClick}
+                    onToggleInfo={() => setIsInfoOpen(prev => !prev)}
+                />
 
                 <div
                     className={`chat-messages-wrapper${isDragging ? " drag-over" : ""}`}
@@ -953,240 +818,52 @@ export default function ChatPage() {
                         setShowScrollBtn(hasMoreNewer || distFromBottom > 150);
                     }}
                 >
-                    <div className="messages-column">
-                        {dateGroups.map((dateGroup) => (
-                            <div key={dateGroup.dateKey} className="date-section">
-                                <div className="date-separator">
-                                    <span className="date-pill">{dateGroup.label}</span>
-                                </div>
-
-                                {dateGroup.senderGroups.map((group) => {
-                                    const isMine = group.sender === currentUsername;
-                                    const showGroupDivider = unreadDividerMessageId != null &&
-                                        group.messages.some(m => m.id === unreadDividerMessageId);
-
-                                    return (
-                                        <div key={group.messages[0].id}>
-                                            {showGroupDivider && (
-                                                <div ref={dividerRef} className="unread-messages-divider">
-                                                    <span className="unread-messages-divider-label">Unread messages</span>
-                                                </div>
-                                            )}
-                                            <div className={`message-group ${isMine ? "mine" : "other"}`}>
-                                            {!isMine && chatType === "GROUP" && (
-                                                <div className="group-sender-label">
-                                                    {group.sender}
-                                                </div>
-                                            )}
-
-                                            {group.messages.map((msg, msgIdx) => {
-                                                const isLast = msgIdx === group.messages.length - 1;
-                                                const formattedTime = new Date(msg.createdAt)
-                                                    .toLocaleTimeString([], {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    });
-                                                const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
-
-                                                return (
-                                                    <div
-                                                        key={msg.id}
-                                                        data-message-id={msg.id}
-                                                        className={`message-row-collapse${deletingMessageIds.has(msg.id) ? " collapsing" : ""}`}
-                                                    >
-                                                            <div className={`message-row ${isMine ? "mine" : "other"}`}>
-                                                                {!isMine && chatType === "GROUP" && (
-                                                                    isLast
-                                                                        ? <div className="message-avatar">{group.sender.charAt(0).toUpperCase()}</div>
-                                                                        : <div className="message-avatar-spacer" />
-                                                                )}
-
-                                                                {isMine && (
-                                                                    <div className={`unread-dot${showUnreadDot ? " visible" : ""}`} />
-                                                                )}
-
-                                                                <div
-                                                                    className="message-bubble"
-                                                                    onContextMenu={(e) => handleMessageRightClick(e, msg, isMine)}
-                                                                >
-                                                                    {msg.replyPreview && (
-                                                                        <div
-                                                                            className="message-reply-preview"
-                                                                            onClick={() => scrollToMessage(msg.replyPreview!.messageId)}
-                                                                        >
-                                                                            <div className="reply-preview-sender">{msg.replyPreview.sender}</div>
-                                                                            <div className="reply-preview-content">
-                                                                                {msg.replyPreview.content || "Deleted message"}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {msg.attachments && msg.attachments.length > 0 && (
-                                                                        <div className="message-attachments">
-                                                                            {msg.attachments.map((att) => (
-                                                                                att.type === "PHOTO" ? (
-                                                                                    <img
-                                                                                        key={att.id}
-                                                                                        src={att.url}
-                                                                                        alt={att.fileName}
-                                                                                        className="message-image"
-                                                                                        onClick={() => window.open(att.url, "_blank")}
-                                                                                    />
-                                                                                ) : null
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="message-content">
-                                                                        <span className="message-text">
-                                                                            {msg.content}
-                                                                        </span>
-
-                                                                        <span className="message-time">
-                                                                            {msg.editedAt && (
-                                                                                <img
-                                                                                    src="/icons/edit.png"
-                                                                                    className="message-edited-icon"
-                                                                                    alt="edited"
-                                                                                />
-                                                                            )}
-                                                                            {formattedTime}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                );
-                                            })}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                        {uploadingBubbles.map((bubble) => (
-                            <div key={bubble.tempId} className="message-group mine">
-                                <div className="message-row-collapse">
-                                    <div className="message-row mine">
-                                        <div className="message-bubble">
-                                            {bubble.replyPreview && (
-                                                <div className="message-reply-preview">
-                                                    <div className="reply-preview-sender">{bubble.replyPreview.sender}</div>
-                                                    <div className="reply-preview-content">{bubble.replyPreview.content || "Deleted message"}</div>
-                                                </div>
-                                            )}
-                                            {bubble.files.length > 0 && (
-                                                <div className="message-attachments">
-                                                    {bubble.files.map((pf) => (
-                                                        <div key={pf.localId} className="uploading-image-wrapper">
-                                                            <img src={pf.previewUrl} alt={pf.file.name} className="message-image uploading" />
-                                                            <div className="upload-progress-overlay">
-                                                                <svg viewBox="0 0 36 36" className="upload-progress-circle">
-                                                                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
-                                                                    <circle
-                                                                        cx="18" cy="18" r="15" fill="none"
-                                                                        stroke="white" strokeWidth="3"
-                                                                        strokeDasharray={`${2 * Math.PI * 15}`}
-                                                                        strokeDashoffset={`${2 * Math.PI * 15 * (1 - bubble.progress / 100)}`}
-                                                                        strokeLinecap="round"
-                                                                        style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%", transition: "stroke-dashoffset 0.2s" }}
-                                                                    />
-                                                                </svg>
-                                                                <span className="upload-progress-pct">{bubble.progress}%</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <div className="message-content">
-                                                <span className="message-text">{bubble.content}</span>
-                                                <span className="message-time">sending…</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <MessageList
+                        dateGroups={dateGroups}
+                        uploadingBubbles={uploadingBubbles}
+                        chatType={chatType}
+                        currentUsername={currentUsername}
+                        unreadDividerMessageId={unreadDividerMessageId}
+                        dividerRef={dividerRef}
+                        deletingMessageIds={deletingMessageIds}
+                        isReadByAnyOther={isReadByAnyOther}
+                        onMessageContextMenu={handleMessageRightClick}
+                        onScrollToMessage={scrollToMessage}
+                    />
                 </div>
 
-                {showScrollBtn && (
-                    <button
-                        className="scroll-to-bottom-btn"
-                        onClick={async () => {
-                            if (hasMoreNewer) {
-                                // Discard the windowed view and reload the latest page
-                                const res = await authFetch(`${API_URL}/messages/${numericChatId}`);
-                                if (!res || !res.ok) return;
-                                const data = await res.json();
-                                const visible = data.messages.filter((m: Message) => !m.deletedAt);
-                                setMessages(visible);
-                                setHasMoreOlder(data.hasMoreOlder);
-                                setHasMoreNewer(false);
-                                hasMoreNewerRef.current = false;
-                                if (visible.length > 0) {
-                                    oldestIdRef.current = visible[0].id;
-                                    newestIdRef.current = visible[visible.length - 1].id;
-                                }
-                                shouldScrollToBottom.current = true;
-                                isAtBottomRef.current = true;
-                                triggerMarkAsRead();
-                            } else {
-                                chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
-                            }
-                        }}
-                    >
-                        <img src="/icons/arrow-down.png" alt="scroll to bottom" />
-                    </button>
-                )}
+                <ScrollToBottomButton
+                    visible={showScrollBtn}
+                    hasMoreNewer={hasMoreNewer}
+                    numericChatId={numericChatId}
+                    authFetch={authFetch}
+                    apiUrl={API_URL}
+                    setMessages={setMessages}
+                    setHasMoreOlder={setHasMoreOlder}
+                    setHasMoreNewer={setHasMoreNewer}
+                    hasMoreNewerRef={hasMoreNewerRef}
+                    oldestIdRef={oldestIdRef}
+                    newestIdRef={newestIdRef}
+                    isAtBottomRef={isAtBottomRef}
+                    triggerMarkAsRead={triggerMarkAsRead}
+                />
 
-                {typingUsers.length > 0 && (
-                    <div className="typing-indicator-bar">
-                        <div className="typing-dots-container">
-                            <span className="typing-dot" />
-                            <span className="typing-dot" />
-                            <span className="typing-dot" />
-                        </div>
-                        <span className="typing-indicator-text">{getTypingText()}</span>
-                    </div>
-                )}
+                {typingUsers.length > 0 && <TypingIndicator text={getTypingText()} />}
                 </div>
 
-                {replyingTo !== null && (
-                    <div className="chat-reply-bar">
-                        <div className="chat-reply-bar-accent" />
-                        <div className="chat-edit-bar-content">
-                            <span className="chat-reply-bar-label">{replyingTo.sender}</span>
-                            <span className="chat-edit-bar-preview">
-                                    {replyingTo.content || (replyingTo.attachments?.length ? "📎 Photo" : "")}
-                                </span>
-                        </div>
-                        <button className="chat-edit-cancel-btn" onClick={cancelReply}>✕</button>
-                    </div>
-                )}
+                <ReplyBar replyingTo={replyingTo} onCancel={cancelReply} />
+                <EditBar
+                    editingMessageId={editingMessageId}
+                    originalContent={editingOriginalContent}
+                    onCancel={cancelEditing}
+                />
 
-                {editingMessageId !== null && (
-                    <div className="chat-edit-bar">
-                        <div className="chat-edit-bar-accent" />
-                        <div className="chat-edit-bar-content">
-                            <span className="chat-edit-bar-label">Editing</span>
-                            <span className="chat-edit-bar-preview">{editingOriginalContent}</span>
-                        </div>
-                        <button className="chat-edit-cancel-btn" onClick={cancelEditing}>✕</button>
-                    </div>
-                )}
-
-                {pendingFiles.length > 0 && (
-                    <div className="chat-attachments-bar">
-                        {pendingFiles.map((pf) => (
-                            <div key={pf.localId} className="pending-attachment">
-                                <img src={pf.previewUrl} alt={pf.file.name} className="pending-attachment-thumb" />
-                                <button
-                                    className="pending-attachment-remove"
-                                    onClick={() => setPendingFiles(prev => prev.filter(p => p.localId !== pf.localId))}
-                                >✕</button>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <AttachmentsBar
+                    pendingFiles={pendingFiles}
+                    onRemove={(localId) =>
+                        setPendingFiles(prev => prev.filter(p => p.localId !== localId))
+                    }
+                />
 
                 <div className="chat-input-bar">
                     <input
@@ -1229,19 +906,12 @@ export default function ChatPage() {
                 </div>
 
                 {contextMenu && (
-                    <div
-                        className="message-context-menu"
-                        style={{ left: contextMenu.x, top: contextMenu.y }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                    >
-                        <button className="context-menu-item" onClick={handleStartReply}>Reply</button>
-                        {contextMenu.isMine && (
-                            <>
-                                <button className="context-menu-item" onClick={handleStartEdit}>Edit</button>
-                                <button className="context-menu-item danger" onClick={handleDeleteMessage}>Delete</button>
-                            </>
-                        )}
-                    </div>
+                    <MessageContextMenu
+                        menu={contextMenu}
+                        onReply={handleStartReply}
+                        onEdit={handleStartEdit}
+                        onDelete={handleDeleteMessage}
+                    />
                 )}
             </div>
         </AppLayout>

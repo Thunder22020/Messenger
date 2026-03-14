@@ -5,7 +5,23 @@ import { authFetch } from "../utils/authFetch";
 import { useWebSocket } from "../context/WebSocketContext";
 import { jwtDecode } from "jwt-decode";
 
-const sortByLastMessage = (a: any, b: any) => {
+type JwtPayload = { sub: string };
+
+type ChatListItem = {
+    chatId: number;
+    displayName: string;
+    type: "PRIVATE" | "GROUP";
+    lastMessageContent?: string | null;
+    lastMessageCreatedAt?: string | null;
+    unreadCount: number;
+};
+
+type UserSearchResult = {
+    id: number;
+    username: string;
+};
+
+const sortByLastMessage = (a: ChatListItem, b: ChatListItem) => {
     if (!a.lastMessageCreatedAt) return 1;
     if (!b.lastMessageCreatedAt) return -1;
     return new Date(b.lastMessageCreatedAt).getTime() - new Date(a.lastMessageCreatedAt).getTime();
@@ -21,7 +37,7 @@ export default function AppLayout({ children, rightPanel }: {
     let currentUsername = "";
     if (token) {
         try {
-            const payload: any = jwtDecode(token);
+            const payload = jwtDecode<JwtPayload>(token);
             currentUsername = payload.sub;
         } catch { /* empty */ }
     }
@@ -31,9 +47,9 @@ export default function AppLayout({ children, rightPanel }: {
         return saved ? Number(saved) : 300;
     });
     const [isResizing, setIsResizing] = useState(false);
-    const [chats, setChats] = useState<any[]>([]);
+    const [chats, setChats] = useState<ChatListItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
     const [typingByChatId, setTypingByChatId] = useState<{ [chatId: string]: string[] }>({});
     const sidebarTypingTimersRef = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
@@ -44,8 +60,13 @@ export default function AppLayout({ children, rightPanel }: {
 
         if (!res || !res.ok) return;
 
-        const data = await res.json();
-        setChats([...data].sort(sortByLastMessage));
+        const data: Array<Omit<ChatListItem, "unreadCount"> & { unreadCount?: number | null }> =
+            await res.json();
+        const normalized: ChatListItem[] = data.map((c) => ({
+            ...c,
+            unreadCount: c.unreadCount ?? 0,
+        }));
+        setChats([...normalized].sort(sortByLastMessage));
     };
 
     useEffect(() => {
@@ -78,7 +99,7 @@ export default function AppLayout({ children, rightPanel }: {
                                 ...chat,
                                 lastMessageContent: body.lastMessageContent,
                                 lastMessageCreatedAt: body.lastMessageCreatedAt,
-                                unreadCount: body.unreadCount
+                                unreadCount: body.unreadCount ?? 0,
                             }
                             : chat
                     );
@@ -141,7 +162,7 @@ export default function AppLayout({ children, rightPanel }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [client, chatIdsKey]);
 
-    const getSidebarTypingLabel = (chat: any): string | null => {
+    const getSidebarTypingLabel = (chat: ChatListItem): string | null => {
         const users = typingByChatId[String(chat.chatId)];
         if (!users || users.length === 0) return null;
         if (chat.type === "PRIVATE") return "typing...";
