@@ -1,4 +1,4 @@
-package com.daniel.messenger.messaging.dto
+package com.daniel.messenger.messaging.dto.response
 
 data class PagedMessageResponse(
     val messages: List<MessageResponse>,

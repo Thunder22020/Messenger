@@ -1,14 +1,16 @@
 package com.daniel.messenger.messaging.service
 
-import com.daniel.messenger.messaging.dto.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.MessageResponse
-import com.daniel.messenger.messaging.dto.SendMessageRequest
-import com.daniel.messenger.messaging.dto.TypingEvent
-import com.daniel.messenger.messaging.dto.TypingRequest
+import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
+import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.request.SendMessageRequest
+import com.daniel.messenger.messaging.dto.event.TypingEvent
+import com.daniel.messenger.messaging.dto.request.TypingRequest
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
+import com.daniel.messenger.user.entity.User
 import org.springframework.messaging.simp.user.SimpUserRegistry
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ChatHandlerService(
@@ -17,16 +19,21 @@ class ChatHandlerService(
     private val chatParticipantRepository: ChatParticipantRepository,
     private val simpUserRegistry: SimpUserRegistry,
 ) {
-    fun sendMessage(message: SendMessageRequest, senderId: Long) {
-        val response = messageService.sendMessage(message, senderId)
+    @Transactional
+    fun sendMessage(message: SendMessageRequest, sender: User) {
+        val response = messageService.sendMessage(message, sender)
         chatNotificationService.broadcastChatMessage(message.chatId, response)
-        updateAndNotifyParticipants(message.chatId, senderId, response)
+        updateAndNotifyParticipants(message.chatId, requireNotNull(sender.id), response)
     }
 
     fun broadcastTyping(request: TypingRequest, username: String) {
         chatNotificationService.broadcastTyping(
             request.chatId,
-            TypingEvent(chatId = request.chatId, username = username, isTyping = request.isTyping),
+            TypingEvent(
+                chatId = request.chatId,
+                username = username,
+                isTyping = request.isTyping
+            ),
         )
     }
 
@@ -34,7 +41,9 @@ class ChatHandlerService(
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
         updateUnreadCounts(participants, senderId, chatId)
         chatParticipantRepository.saveAll(participants)
-        participants.forEach { sendChatUpdateEvent(chatId, it, response) }
+        participants.forEach {
+            sendChatUpdateEvent(chatId, it, response)
+        }
     }
 
     private fun updateUnreadCounts(participants: List<ChatParticipant>, senderId: Long, chatId: Long) {

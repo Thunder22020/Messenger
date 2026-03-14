@@ -1,5 +1,7 @@
-package com.daniel.messenger.messaging.dto
+package com.daniel.messenger.messaging.dto.response
 
+import com.daniel.messenger.messaging.dto.AttachmentDto
+import com.daniel.messenger.messaging.dto.ReplyPreviewDto
 import java.time.Instant
 
 data class MessageResponse(

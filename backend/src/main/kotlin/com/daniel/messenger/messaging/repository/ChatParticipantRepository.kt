@@ -17,11 +17,10 @@ interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatPartici
     SELECT cp FROM ChatParticipant cp
     JOIN FETCH cp.user
     WHERE cp.chat.id = :chatId
-""")
+    """)
     fun findAllWithUserByChatId(@Param("chatId") chatId: Long): List<ChatParticipant>
 
-    @Query(
-        """
+    @Query("""
         SELECT cp.chat.id
         FROM ChatParticipant cp
         WHERE cp.chat.type = com.daniel.messenger.messaging.enum.ChatType.PRIVATE
@@ -32,7 +31,6 @@ interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatPartici
               GROUP BY cp2.id.chatId
               HAVING COUNT(cp2.id.chatId) = 2
           )
-    """
-    )
+    """)
     fun findPrivateChatIdByUserIds(userIds: List<Long>): Long?
 }

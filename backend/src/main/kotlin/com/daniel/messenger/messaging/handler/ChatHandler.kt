@@ -1,8 +1,8 @@
 package com.daniel.messenger.messaging.handler
 
 import com.daniel.messenger.common.annotation.StompHandler
-import com.daniel.messenger.messaging.dto.SendMessageRequest
-import com.daniel.messenger.messaging.dto.TypingRequest
+import com.daniel.messenger.messaging.dto.request.SendMessageRequest
+import com.daniel.messenger.messaging.dto.request.TypingRequest
 import com.daniel.messenger.messaging.service.ChatHandlerService
 import com.daniel.messenger.security.util.toUserPrincipal
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -17,9 +17,8 @@ class ChatHandler(
         message: SendMessageRequest,
         principal: Principal
     ) {
-        val userPrincipal = principal.toUserPrincipal()
-        val senderId = requireNotNull(userPrincipal.user.id)
-        chatHandlerService.sendMessage(message, senderId)
+        val sender = principal.toUserPrincipal().user
+        chatHandlerService.sendMessage(message, sender)
     }
 
     @MessageMapping("/chat.typing")

@@ -18,7 +18,6 @@ import java.time.Instant
 @Entity
 @Table(name = "messages")
 class MessageEntity(
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
@@ -34,7 +33,7 @@ class MessageEntity(
     @JoinColumn(name = "chat_id", nullable = false)
     var chat: Chat,
 
-    @OneToMany(mappedBy = "message", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToMany(mappedBy = "message")
     var attachments: MutableList<Attachment> = mutableListOf(),
 
     var createdAt: Instant = Instant.now(),

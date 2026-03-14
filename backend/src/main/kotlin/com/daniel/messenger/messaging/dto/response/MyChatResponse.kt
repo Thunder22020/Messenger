@@ -1,4 +1,4 @@
-package com.daniel.messenger.messaging.dto
+package com.daniel.messenger.messaging.dto.response
 
 import com.daniel.messenger.messaging.enum.ChatType
 import java.time.Instant

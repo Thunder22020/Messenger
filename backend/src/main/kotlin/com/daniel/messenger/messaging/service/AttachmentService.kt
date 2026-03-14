@@ -21,7 +21,12 @@ class AttachmentService(
         val originalName = file.originalFilename ?: "file"
         val ext = originalName.substringAfterLast('.', "bin")
         val key = "${UUID.randomUUID()}.$ext"
-        val url = s3StorageService.upload(key, file.inputStream, contentType, file.size)
+        val url = s3StorageService.upload(
+            key,
+            file.inputStream,
+            contentType,
+            file.size
+        )
 
         val attachment = attachmentRepository.save(
             Attachment(
@@ -36,11 +41,10 @@ class AttachmentService(
         return attachment.toDto()
     }
 
-    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity) {
-        if (attachmentIds.isEmpty()) return
-        val attachments = attachmentRepository.findAllById(attachmentIds)
-        attachments.forEach { it.message = message }
-        attachmentRepository.saveAll(attachments)
+    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
+        if (attachmentIds.isEmpty()) return emptyList()
+        attachmentRepository.bulkLinkToMessage(attachmentIds, message)
+        return attachmentRepository.findAllByMessageIdIn(listOf(requireNotNull(message.id)))
     }
 
     private fun detectType(contentType: String): AttachmentType = when {

@@ -1,4 +1,4 @@
-package com.daniel.messenger.messaging.dto
+package com.daniel.messenger.messaging.dto.event
 
 data class ReadAckEvent(
     val chatId: Long,

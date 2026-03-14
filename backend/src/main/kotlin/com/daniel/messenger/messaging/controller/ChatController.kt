@@ -1,10 +1,10 @@
 package com.daniel.messenger.messaging.controller
 
-import com.daniel.messenger.messaging.dto.AddParticipantRequest
-import com.daniel.messenger.messaging.dto.ChatParticipantResponse
-import com.daniel.messenger.messaging.dto.CreateGroupChatRequest
-import com.daniel.messenger.messaging.dto.MyChatResponse
-import com.daniel.messenger.messaging.dto.OpenChatResponse
+import com.daniel.messenger.messaging.dto.request.AddParticipantRequest
+import com.daniel.messenger.messaging.dto.response.ChatParticipantResponse
+import com.daniel.messenger.messaging.dto.request.CreateGroupChatRequest
+import com.daniel.messenger.messaging.dto.response.MyChatResponse
+import com.daniel.messenger.messaging.dto.response.OpenChatResponse
 import com.daniel.messenger.messaging.service.ChatService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import org.springframework.security.core.annotation.AuthenticationPrincipal

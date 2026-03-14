@@ -1,9 +1,9 @@
 package com.daniel.messenger.messaging.service
 
-import com.daniel.messenger.messaging.dto.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.MessageResponse
-import com.daniel.messenger.messaging.dto.ReadAckEvent
-import com.daniel.messenger.messaging.dto.TypingEvent
+import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
+import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.event.ReadAckEvent
+import com.daniel.messenger.messaging.dto.event.TypingEvent
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 

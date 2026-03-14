@@ -1,8 +1,8 @@
 package com.daniel.messenger.messaging.controller
 
-import com.daniel.messenger.messaging.dto.EditMessageRequest
-import com.daniel.messenger.messaging.dto.MessageResponse
-import com.daniel.messenger.messaging.dto.PagedMessageResponse
+import com.daniel.messenger.messaging.dto.request.EditMessageRequest
+import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.response.PagedMessageResponse
 import com.daniel.messenger.messaging.service.MessageService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import org.springframework.security.core.annotation.AuthenticationPrincipal

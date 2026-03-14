@@ -1,7 +1,7 @@
 package com.daniel.messenger
 
-import com.daniel.messenger.messaging.dto.MessageResponse
-import com.daniel.messenger.messaging.dto.SendMessageRequest
+import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId

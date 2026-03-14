@@ -9,15 +9,15 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ChatRepository : JpaRepository<Chat, Long> {
     @Query("""
-    SELECT DISTINCT c
-    FROM Chat c
-    JOIN FETCH c.participants p
-    JOIN FETCH p.user
-    WHERE c.id IN (
-        SELECT cp.chat.id
-        FROM ChatParticipant cp
-        WHERE cp.user.id = :userId
-    )
+        SELECT DISTINCT c
+        FROM Chat c
+        JOIN FETCH c.participants p
+        JOIN FETCH p.user
+        WHERE c.id IN (
+            SELECT cp.chat.id
+            FROM ChatParticipant cp
+            WHERE cp.user.id = :userId
+        )
     """)
     fun findAllUserChatsWithParticipants(@Param("userId") userId: Long): List<Chat>
 }

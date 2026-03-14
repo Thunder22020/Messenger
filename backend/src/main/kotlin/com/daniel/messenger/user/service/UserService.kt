@@ -55,10 +55,12 @@ class UserService(
         userRepository.findByUsername(username)
             ?: throw UserNotFoundException("User $username not found")
 
-    fun findByIdOrThrow(id: Long) : User =
+    fun findByIdOrThrow(id: Long): User =
         userRepository.findById(id).orElseThrow {
             UserNotFoundException("User with ID:$id not found")
         }
+
+    fun getReference(id: Long): User = userRepository.getReferenceById(id)
 
     fun lockById(id: Long) {
         userRepository.findByIdWithLock(id)

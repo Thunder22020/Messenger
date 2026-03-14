@@ -1,7 +1,9 @@
 package com.daniel.messenger.messaging.repository
 
 import com.daniel.messenger.messaging.entity.Attachment
+import com.daniel.messenger.messaging.entity.MessageEntity
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -10,4 +12,8 @@ import org.springframework.stereotype.Repository
 interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("SELECT a FROM Attachment a WHERE a.message.id IN :messageIds")
     fun findAllByMessageIdIn(@Param("messageIds") messageIds: Collection<Long>): List<Attachment>
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids")
+    fun bulkLinkToMessage(@Param("ids") ids: List<Long>, @Param("message") message: MessageEntity): Int
 }

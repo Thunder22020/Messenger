@@ -1,10 +1,10 @@
 package com.daniel.messenger.messaging.service
 
-import com.daniel.messenger.messaging.dto.ChatParticipantResponse
-import com.daniel.messenger.messaging.dto.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.MyChatResponse
-import com.daniel.messenger.messaging.dto.OpenChatResponse
-import com.daniel.messenger.messaging.dto.ReadAckEvent
+import com.daniel.messenger.messaging.dto.response.ChatParticipantResponse
+import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
+import com.daniel.messenger.messaging.dto.response.MyChatResponse
+import com.daniel.messenger.messaging.dto.response.OpenChatResponse
+import com.daniel.messenger.messaging.dto.event.ReadAckEvent
 import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
@@ -104,15 +104,21 @@ class ChatService(
         val lastReadId = chat.lastMessageId ?: return
         chatNotificationService.broadcastReadAck(
             chatId,
-            ReadAckEvent(chatId = chatId, readerUsername = participant.user.username, lastReadMessageId = lastReadId),
+            ReadAckEvent(
+                chatId = chatId,
+                readerUsername = participant.user.username,
+                lastReadMessageId = lastReadId
+            ),
         )
     }
 
     @Transactional
     fun handleMessageDeleted(deletedMessageId: Long, chatId: Long) {
         val chat = findByIdOrThrow(chatId)
-        val newLast = messageRepository.findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1)).firstOrNull()
-        applyLastMessage(chat, newLast)
+        val newLast = messageRepository
+            .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
+            .firstOrNull()
+        updateChatLastMessage(chat, newLast)
         chatRepository.save(chat)
 
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
@@ -198,12 +204,7 @@ class ChatService(
         }
     }
 
-    fun updateChatLastMessage(chat: Chat, message: MessageEntity) {
-        applyLastMessage(chat, message)
-        chatRepository.save(chat)
-    }
-
-    private fun applyLastMessage(chat: Chat, message: MessageEntity?) {
+    fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
         chat.lastMessageId = message?.id
         chat.lastMessageContent = message?.content
         chat.lastMessageCreatedAt = message?.createdAt
