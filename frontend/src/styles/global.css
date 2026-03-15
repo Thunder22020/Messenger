@@ -2430,7 +2430,7 @@ button {
     height: 50px;
     opacity: 0;
     transition: opacity 0.2s;
-    filter: invert(1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
+    filter: invert(1) drop-shadow(1px 1px 8px rgba(0, 0, 0, 0.7));
     pointer-events: none;
     user-select: none;
 }
