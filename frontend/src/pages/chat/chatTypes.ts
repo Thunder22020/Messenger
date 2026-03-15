@@ -17,6 +17,8 @@ export interface PendingFile {
   localId: string;
   file: File;
   previewUrl: string;
+  naturalWidth: number;
+  naturalHeight: number;
 }
 
 export interface UploadingBubble {

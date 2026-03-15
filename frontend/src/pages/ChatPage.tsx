@@ -587,14 +587,21 @@ export default function ChatPage() {
     };
 
     const handleFilesSelected = (files: FileList | File[]) => {
-        const newFiles: PendingFile[] = Array.from(files)
-            .filter(f => f.type.startsWith("image/"))
-            .map(f => ({
-                localId: crypto.randomUUID(),
-                file: f,
-                previewUrl: URL.createObjectURL(f),
-            }));
-        setPendingFiles(prev => [...prev, ...newFiles]);
+        Promise.all(
+            Array.from(files)
+                .filter(f => f.type.startsWith("image/"))
+                .map(async f => {
+                    const previewUrl = URL.createObjectURL(f);
+                    let naturalWidth = 280, naturalHeight = 200;
+                    try {
+                        const bm = await createImageBitmap(f);
+                        naturalWidth = bm.width;
+                        naturalHeight = bm.height;
+                        bm.close();
+                    } catch {}
+                    return { localId: crypto.randomUUID(), file: f, previewUrl, naturalWidth, naturalHeight };
+                })
+        ).then(newFiles => setPendingFiles(prev => [...prev, ...newFiles]));
     };
 
     const sendMessage = async () => {

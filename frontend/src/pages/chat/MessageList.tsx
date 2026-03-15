@@ -61,18 +61,30 @@ function AttachmentGrid({ photos, onImageClick, hasTextBelow = false }: { photos
   );
 }
 
+const MAX_SINGLE_W = 280;
+const MAX_SINGLE_H = 320;
+
+function singleImageSize(nw: number, nh: number): { width: number; height: number } {
+  const scale = Math.min(MAX_SINGLE_W / nw, MAX_SINGLE_H / nh, 1);
+  return { width: Math.round(nw * scale), height: Math.round(nh * scale) };
+}
+
 function UploadingAttachmentGrid({ files, progress, hasTextBelow = false }: { files: PendingFile[]; progress: number; hasTextBelow?: boolean }) {
+  const isSingle = files.length === 1;
   const rows = distributeIntoRows(files, buildAttachmentRows(files.length));
   const totalRows = rows.length;
   const circumference = 2 * Math.PI * 15;
   return (
-    <div className={`attachment-grid${files.length === 1 ? " single" : ""}`}>
+    <div className={`attachment-grid${isSingle ? " single" : ""}`}>
       {rows.map((row, rowIdx) => (
         <div key={rowIdx} className="attachment-row">
           {row.map((pf, colIdx) => {
             const br = getImageBorderRadius(rowIdx, colIdx, totalRows, row.length, hasTextBelow);
+            const wrapperStyle = isSingle
+              ? { borderRadius: br, ...singleImageSize(pf.naturalWidth, pf.naturalHeight) }
+              : { borderRadius: br };
             return (
-              <div key={pf.localId} className="uploading-image-wrapper" style={{ borderRadius: br }}>
+              <div key={pf.localId} className="uploading-image-wrapper" style={wrapperStyle}>
                 <img src={pf.previewUrl} alt={pf.file.name} className="message-image uploading" style={{ borderRadius: br }} />
                 <div className="upload-progress-overlay">
                   <svg viewBox="0 0 36 36" className="upload-progress-circle">
