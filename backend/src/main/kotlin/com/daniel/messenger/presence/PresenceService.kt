@@ -10,7 +10,7 @@ import java.time.Duration
 @Service
 class PresenceService(
     private val redis: RedisTemplate<String, String>,
-    private val messaging: SimpMessagingTemplate,
+    private val simpMessagingTemplate: SimpMessagingTemplate
 ) {
     @PostConstruct
     fun cleanupOnStartup() {
@@ -20,26 +20,31 @@ class PresenceService(
     }
 
     fun userConnected(userId: Long) {
-        redis.opsForValue().increment(connKey(userId))
+        redis.opsForValue().increment(connectionKey(userId))
     }
 
     fun userDisconnected(userId: Long, username: String) {
-        val cnt = redis.opsForValue().decrement(connKey(userId)) ?: 0L
-        if (cnt <= 0L) {
-            redis.delete(connKey(userId))
-            redis.delete(heartbeatKey(username))
-            val removed = redis.opsForSet().remove(ONLINE_KEY, username) ?: 0L
-            if (removed > 0L) {
-                messaging.convertAndSend("/topic/presence", PresenceEvent(username, false))
-            }
+        val cnt = redis.opsForValue().decrement(connectionKey(userId)) ?: 0L
+        if (!isAllConnectionsClosed(cnt)) return
+
+        redis.delete(heartbeatKey(username))
+        redis.delete(connectionKey(userId))
+
+        val numOfRemoved = redis.opsForSet().remove(ONLINE_KEY, username)
+        if (numOfRemoved > 0) {
+            sendOfflinePresenceEvent(username)
         }
     }
 
     fun heartbeat(username: String) {
         val isNew = (redis.opsForSet().add(ONLINE_KEY, username) ?: 0L) > 0L
-        redis.opsForValue().set(heartbeatKey(username), "1", Duration.ofSeconds(HEARTBEAT_TTL_SECONDS))
+        redis.opsForValue().set(
+            heartbeatKey(username),
+            STUB,
+            Duration.ofSeconds(HEARTBEAT_TTL_SECONDS)
+        )
         if (isNew) {
-            messaging.convertAndSend("/topic/presence", PresenceEvent(username, true))
+            sendOnlinePresenceEvent(username)
         }
     }
 
@@ -49,23 +54,39 @@ class PresenceService(
             listOf(ONLINE_KEY),
             HEARTBEAT_KEY,
         )?.filterIsInstance<String>() ?: return
-
-        for (username in evicted) {
-            messaging.convertAndSend("/topic/presence", PresenceEvent(username, false))
-        }
+        evicted.forEach { sendOfflinePresenceEvent(it) }
     }
 
     fun getOnlineUsernames(): Set<String> =
         redis.opsForSet().members(ONLINE_KEY).orEmpty()
 
-    private fun connKey(userId: Long) = "$CONNECTIONS_KEY:$userId"
+    private fun isAllConnectionsClosed(cnt: Long) = cnt <= 0L
+
+    private fun sendOnlinePresenceEvent(username: String) {
+        sendPresenceEvent(username, true)
+    }
+
+    private fun sendOfflinePresenceEvent(username: String) {
+        sendPresenceEvent(username, false)
+    }
+
+    private fun sendPresenceEvent(username: String, online: Boolean) {
+        simpMessagingTemplate.convertAndSend(
+            PRESENCE_TOPIC,
+            PresenceEvent(username, online)
+        )
+    }
+
+    private fun connectionKey(userId: Long) = "$CONNECTIONS_KEY:$userId"
     private fun heartbeatKey(username: String) = "$HEARTBEAT_KEY:$username"
 
     companion object {
         private const val ONLINE_KEY = "presence:online"
-        private const val CONNECTIONS_KEY = "presence:connections"
         private const val HEARTBEAT_KEY = "presence:heartbeat"
-        const val HEARTBEAT_TTL_SECONDS = 30L
+        private const val CONNECTIONS_KEY = "presence:connections"
+        private const val PRESENCE_TOPIC = "/topic/presence"
+        private const val STUB = "1"
+        private const val HEARTBEAT_TTL_SECONDS = 30L
 
         private val EVICT_SCRIPT: RedisScript<List<String>> = RedisScript.of(
             """

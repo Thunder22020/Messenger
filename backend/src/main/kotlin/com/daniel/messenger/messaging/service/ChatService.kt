@@ -204,6 +204,28 @@ class ChatService(
         }
     }
 
+    @Transactional
+    fun handleLastMessageEdited(chatId: Long, messageId: Long, newContent: String) {
+        val chat = findByIdOrThrow(chatId)
+        if (chat.lastMessageId != messageId) return
+
+        chat.lastMessageContent = newContent
+        chatRepository.save(chat)
+
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+        participants.forEach { participant ->
+            chatNotificationService.sendSidebarUpdate(
+                participant.user.username,
+                ChatUpdateEvent(
+                    chatId = chatId,
+                    lastMessageContent = newContent,
+                    lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
+                    unreadCount = participant.unreadCount,
+                ),
+            )
+        }
+    }
+
     fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
         chat.lastMessageId = message?.id
         chat.lastMessageContent = message?.content

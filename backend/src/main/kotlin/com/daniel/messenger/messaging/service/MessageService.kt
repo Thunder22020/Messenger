@@ -70,7 +70,9 @@ class MessageService(
 
         val response = toMessageResponse(saved)
 
-        notifyMessageUpdated(response, requireNotNull(saved.chat.id))
+        val chatId = requireNotNull(saved.chat.id)
+        notifyMessageUpdated(response, chatId)
+        chatService.handleLastMessageEdited(chatId, requireNotNull(saved.id), saved.content)
 
         return response
     }
