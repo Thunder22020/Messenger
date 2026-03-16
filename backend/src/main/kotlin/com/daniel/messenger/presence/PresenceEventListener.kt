@@ -17,7 +17,6 @@ class PresenceEventListener(
     @EventListener
     fun onConnect(event: SessionConnectedEvent) {
         val user = event.user?.toUserPrincipal()?.user ?: return
-        log.info("User connected: ${user.username}")
         presenceService.userConnected(user.id ?: return)
     }
 
