@@ -2,10 +2,11 @@ export function ChatHeader(props: {
   chatName: string;
   chatType: string | null;
   participantsCount: number;
+  isOnline?: boolean;
   onHeaderClick: () => void;
   onToggleInfo: () => void;
 }) {
-  const { chatName, chatType, participantsCount, onHeaderClick, onToggleInfo } = props;
+  const { chatName, chatType, participantsCount, isOnline, onHeaderClick, onToggleInfo } = props;
 
   return (
     <div className="chat-header">
@@ -22,6 +23,9 @@ export function ChatHeader(props: {
           <div className="chat-header-members" onClick={onHeaderClick}>
             {participantsCount} members
           </div>
+        )}
+        {chatType === "PRIVATE" && isOnline && (
+          <div className="chat-header-online">online</div>
         )}
       </div>
 

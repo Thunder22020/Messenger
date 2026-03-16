@@ -3,6 +3,7 @@ import { API_URL } from "../config";
 import { useState, useEffect, useRef } from "react";
 import { authFetch } from "../utils/authFetch";
 import { useWebSocket } from "../context/WebSocketContext";
+import { usePresence } from "../context/PresenceContext";
 import { jwtDecode } from "jwt-decode";
 
 type JwtPayload = { sub: string };
@@ -54,6 +55,7 @@ export default function AppLayout({ children, rightPanel }: {
     const [typingByChatId, setTypingByChatId] = useState<{ [chatId: string]: string[] }>({});
     const sidebarTypingTimersRef = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
     const client = useWebSocket();
+    const { isOnline } = usePresence();
 
     const reloadChats = async () => {
         const res = await authFetch(`${API_URL}/chat/my`);
@@ -284,8 +286,13 @@ export default function AppLayout({ children, rightPanel }: {
                                         }`}
                                         onClick={() => navigate(`/chat/${chat.chatId}`)}
                                     >
-                                        <div className="chat-avatar">
-                                            {chat.displayName.charAt(0).toUpperCase()}
+                                        <div className="chat-avatar-wrap">
+                                            <div className="chat-avatar">
+                                                {chat.displayName.charAt(0).toUpperCase()}
+                                            </div>
+                                            {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                <span className="presence-dot" />
+                                            )}
                                         </div>
 
                                         <div className="chat-info">
@@ -339,8 +346,13 @@ export default function AppLayout({ children, rightPanel }: {
                                                     }`}
                                                     onClick={() => navigate(`/chat/${chat.chatId}`)}
                                                 >
-                                                    <div className="chat-avatar">
-                                                        {chat.displayName.charAt(0).toUpperCase()}
+                                                    <div className="chat-avatar-wrap">
+                                                        <div className="chat-avatar">
+                                                            {chat.displayName.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                            <span className="presence-dot" />
+                                                        )}
                                                     </div>
 
                                                     <div className="chat-info">

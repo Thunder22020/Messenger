@@ -13,16 +13,17 @@ class PresenceEventListener(
     private val presenceService: PresenceService,
 ) {
     private val log: Logger = LoggerFactory.getLogger(PresenceEventListener::class.java)
+
     @EventListener
     fun onConnect(event: SessionConnectedEvent) {
-        log.info("User connected: ${event.user}")
-        val userId = event.user?.toUserPrincipal()?.user?.id ?: return
-        presenceService.userConnected(userId)
+        val user = event.user?.toUserPrincipal()?.user ?: return
+        log.info("User connected: ${user.username}")
+        presenceService.userConnected(user.id ?: return)
     }
 
     @EventListener
     fun onDisconnect(event: SessionDisconnectEvent) {
-        val userId = event.user?.toUserPrincipal()?.user?.id ?: return
-        presenceService.userDisconnected(userId)
+        val user = event.user?.toUserPrincipal()?.user ?: return
+        presenceService.userDisconnected(user.id ?: return, user.username)
     }
 }

@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
 import {WebSocketProvider} from "./context/WebSocketContext.tsx";
+import { PresenceProvider } from "./context/PresenceContext.tsx";
 import CreateGroupPage from "./pages/CreateGroupPage.tsx";
 import UserInfoPage from "./pages/UserInfoPage.tsx";
 
@@ -15,6 +16,7 @@ function App() {
 
     return (
         <WebSocketProvider key={accessToken} accessToken={accessToken}>
+           <PresenceProvider>
            <BrowserRouter>
                <Routes>
                        <Route
@@ -53,6 +55,7 @@ function App() {
                        <Route path="/user/:userId" element={<UserInfoPage />} />
                    </Routes>
            </BrowserRouter>
+           </PresenceProvider>
        </WebSocketProvider>
     );
 }

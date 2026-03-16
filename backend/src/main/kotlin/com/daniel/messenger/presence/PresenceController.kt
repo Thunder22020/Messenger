@@ -10,5 +10,5 @@ class PresenceController(
     private val presenceService: PresenceService
 ) {
     @GetMapping("/online")
-    fun online(): Set<Long> = presenceService.getOnlineUserIds()
+    fun online(): Set<String> = presenceService.getOnlineUsernames()
 }

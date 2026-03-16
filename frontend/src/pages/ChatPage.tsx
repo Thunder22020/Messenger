@@ -4,6 +4,7 @@ import { authFetch } from "../utils/authFetch";
 import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { useWebSocket } from "../context/WebSocketContext";
+import { usePresence } from "../context/PresenceContext";
 import { API_URL } from "../config";
 import type {
     AttachmentDto,
@@ -85,9 +86,11 @@ export default function ChatPage() {
     const isAtBottomRef = useRef(true);
     const markAsReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const client = useWebSocket();
+    const { isOnline } = usePresence();
 
     const triggerMarkAsRead = () => {
         if (!numericChatId) return;
+        if (document.visibilityState !== "visible") return;
         if (markAsReadTimeoutRef.current) clearTimeout(markAsReadTimeoutRef.current);
         markAsReadTimeoutRef.current = setTimeout(() => {
             authFetch(`${API_URL}/chat/${numericChatId}/read`, { method: "POST" });
@@ -201,6 +204,18 @@ export default function ChatPage() {
         setPendingFiles([]);
         setUploadingBubbles([]);
         setViewerState(null);
+    }, [numericChatId]);
+
+    // When the tab becomes visible again, mark messages as read if we're at the bottom
+    useEffect(() => {
+        const handleVisible = () => {
+            if (document.visibilityState === "visible" && isAtBottomRef.current) {
+                triggerMarkAsRead();
+            }
+        };
+        document.addEventListener("visibilitychange", handleVisible);
+        return () => document.removeEventListener("visibilitychange", handleVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [numericChatId]);
 
     // Load initial messages once chat info is ready. If the user has a lastReadMessageId,
@@ -834,6 +849,7 @@ export default function ChatPage() {
                     chatName={chatName}
                     chatType={chatType}
                     participantsCount={participants.length}
+                    isOnline={chatType === "PRIVATE" ? isOnline(chatName) : undefined}
                     onHeaderClick={handleHeaderClick}
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
                 />
