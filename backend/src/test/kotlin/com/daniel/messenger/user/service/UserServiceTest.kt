@@ -63,16 +63,6 @@ class UserServiceTest {
     }
 
     @Test
-    fun `getInitialUsers - should return mapped users excluding the current user`() {
-        given(userRepository.findTop50ByOrderByIdAsc()).willReturn(otherUsers + currentUser)
-
-        val result = userService.getInitialUsers(currentUserId = currentUser.id!!)
-
-        assertThat(result).hasSize(2)
-        assertThat(result.map { it.id }).doesNotContain(currentUser.id)
-    }
-
-    @Test
     fun `searchUsers - should return matching users excluding the current user`() {
         given(userRepository.findTop50ByUsernameStartingWith(searchQuery)).willReturn(otherUsers + currentUser)
 

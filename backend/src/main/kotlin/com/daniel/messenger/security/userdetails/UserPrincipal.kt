@@ -1,9 +1,13 @@
 package com.daniel.messenger.security.userdetails
 
 import com.daniel.messenger.user.entity.User
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
+import java.io.Serializable
 import java.util.Collections
 
 class UserPrincipal(
@@ -35,5 +39,9 @@ class UserPrincipal(
 
     override fun isEnabled(): Boolean {
         return true
+    }
+
+    companion object {
+        private const val serialVersionUID = 1L
     }
 }

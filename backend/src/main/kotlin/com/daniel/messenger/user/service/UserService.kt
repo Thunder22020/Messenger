@@ -27,17 +27,6 @@ class UserService(
         return userRepository.save(entity)
     }
 
-    fun getInitialUsers(currentUserId: Long) =
-        userRepository
-            .findTop50ByOrderByIdAsc()
-            .filter { it.id != currentUserId }
-            .map {
-                UserSearchResponse(
-                    id = requireNotNull(it.id),
-                    username = it.username
-                )
-            }
-
     fun searchUsers(query: String, currentUserId: Long) =
         userRepository
             .findTop50ByUsernameStartingWith(query)
@@ -48,8 +37,6 @@ class UserService(
                     username = it.username
                 )
             }
-
-    fun findAll(): List<User> = userRepository.findAll()
 
     fun findByUsernameOrThrow(username: String) =
         userRepository.findByUsername(username)
