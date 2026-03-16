@@ -30,23 +30,37 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!client) return;
 
+        // Flag-based gate: flipped by all relevant browser lifecycle events.
+        // The interval keeps running so there's no start/stop complexity,
+        // but sendHeartbeat is a no-op while active === false.
+        let active = document.visibilityState === "visible";
+
         const sendHeartbeat = () => {
-            if (document.visibilityState === "visible") {
-                client.publish({ destination: "/app/presence.heartbeat", body: "{}" });
-            }
+            if (!active) return;
+            client.publish({ destination: "/app/presence.heartbeat", body: "{}" });
         };
 
-        // Send immediately on connect (if tab is visible)
+        // Send immediately on connect if the tab is already visible
         sendHeartbeat();
 
         const interval = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
 
-        // When returning to tab, send a heartbeat right away so online status
-        // is restored without waiting for the next interval tick
         const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") sendHeartbeat();
+            if (document.visibilityState === "visible") {
+                active = true;
+                sendHeartbeat(); // restore online status immediately, don't wait for next tick
+            } else {
+                active = false;
+            }
         };
+
+        // pagehide fires when the page is put into bfcache or unloaded (tab close, navigation).
+        // beforeunload is a final safety net for hard navigations that skip bfcache.
+        const stopHeartbeat = () => { active = false; };
+
         document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("pagehide", stopHeartbeat);
+        window.addEventListener("beforeunload", stopHeartbeat);
 
         const sub = client.subscribe("/topic/presence", (msg) => {
             const ev: { username: string; online: boolean } = JSON.parse(msg.body);
@@ -61,6 +75,8 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
         return () => {
             clearInterval(interval);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("pagehide", stopHeartbeat);
+            window.removeEventListener("beforeunload", stopHeartbeat);
             sub.unsubscribe();
         };
     }, [client]);
