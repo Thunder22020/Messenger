@@ -376,7 +376,10 @@ button {
 .content {
     flex: 1;
     min-width: 0;
-    background: radial-gradient(ellipse 100% 50% at 50% 0%, #151310 0%, var(--bg-surface) 70%);
+    background:
+        radial-gradient(ellipse 55% 30% at 10% 88%, rgba(234,224,210,0.022) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 25% at 90% 12%, rgba(234,224,210,0.016) 0%, transparent 70%),
+        radial-gradient(ellipse 100% 50% at 50% 0%, #151310 0%, var(--bg-surface) 70%);
 }
 
 /* ===== CHAT CONTAINER ===== */
@@ -508,12 +511,13 @@ button {
 }
 
 .message-bubble {
-    max-width: 60%;
+    max-width: 65%;
     min-width: 80px;
 
     padding: 10px 14px;
 
-    border-radius: 16px;
+    border-radius: 18px;
+    position: relative;
 
     background: var(--accent-gradient);
     border: none;
@@ -747,36 +751,38 @@ button {
 }
 
 .chat-send-btn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    background: transparent;
+    background: var(--accent-gradient);
     border: none;
 
     padding: 0;
     flex-shrink: 0;
     cursor: pointer;
 
-    opacity: 0.6;
-    transition: opacity 0.2s ease, transform 0.15s ease;
+    opacity: 1;
+    box-shadow: 0 2px 10px rgba(234,224,210,0.14), 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
 }
 
 .chat-send-btn:hover {
     opacity: 1;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 6px 20px rgba(234,224,210,0.22), 0 2px 6px rgba(0,0,0,0.3);
+    filter: none;
 }
 
 .chat-send-btn img {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     object-fit: contain;
-
-    filter: brightness(0) invert(1);
+    filter: brightness(0);
 }
 
 /* ===== CUSTOM SCROLLBAR ===== */
@@ -1127,7 +1133,7 @@ button {
     width: 100%;
     flex-shrink: 0;
 
-    background: var(--divider);
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.07) 70%, transparent 100%);
 }
 
 /* ===== CHAT HEADER ===== */
@@ -2010,15 +2016,21 @@ button {
     content: "";
     flex: 1;
     height: 1px;
-    background: var(--accent-border);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
 }
 
 .unread-messages-divider-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent-soft);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
     white-space: nowrap;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    background: #1A1815;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 3px 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
 }
 
 /* ===== MESSAGE COLLAPSE ANIMATION ===== */
@@ -2828,4 +2840,235 @@ button {
 /* Sidebar resizer hover — warm glow */
 .sidebar-resizer:hover {
     background: linear-gradient(180deg, transparent, rgba(234,224,210,0.08), transparent);
+}
+
+/* ===== SYNK: ATMOSPHERE & LIFE ===== */
+
+/* Top fade mask on chat messages — creates depth as content scrolls under header */
+.chat-messages-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: linear-gradient(180deg, var(--bg-surface) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Subtle dot-grid texture on chat background */
+.chat-messages {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.014) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+/* ===== ONLINE STATUS — pulse + dot ===== */
+
+.chat-header-online::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--online);
+    margin-right: 5px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+    box-shadow: 0 0 5px rgba(34,197,94,0.7);
+    animation: onlineDotPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes onlineDotPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 5px rgba(34,197,94,0.7); }
+    50% { opacity: 0.6; box-shadow: 0 0 10px rgba(34,197,94,0.4); }
+}
+
+/* ===== CHAT TILE — hover left-edge indicator ===== */
+
+.chat-tile {
+    position: relative;
+}
+
+.chat-tile::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: scaleY(0.5);
+}
+
+.chat-tile:hover::before {
+    opacity: 0.35;
+    transform: scaleY(1);
+}
+
+.chat-tile.active::before {
+    opacity: 1;
+    transform: scaleY(1);
+}
+
+/* Hide the old border-left so ::before handles it */
+.chat-tile.active {
+    border-left: none;
+    padding-left: 16px;
+}
+
+/* ===== AVATAR COLOR VARIETY — nth-child tints ===== */
+
+.chat-tile:nth-child(4n+2) .chat-avatar {
+    background: #141C1E;
+    border-color: rgba(56,189,248,0.14);
+}
+
+.chat-tile:nth-child(4n+3) .chat-avatar {
+    background: #141C16;
+    border-color: rgba(34,197,94,0.12);
+}
+
+.chat-tile:nth-child(4n+4) .chat-avatar {
+    background: #1C1714;
+    border-color: rgba(234,176,120,0.12);
+}
+
+/* ===== BUBBLE TAILS — last message in group ===== */
+
+/* Outgoing tail */
+.message-row-collapse:last-child .message-row.mine .message-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -5px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 8px 0 0 7px;
+    border-color: transparent transparent transparent #CFC7B8;
+}
+
+/* Incoming tail */
+.message-row-collapse:last-child .message-row.other .message-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -5px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 8px 7px 0 0;
+    border-color: transparent #1C1A17 transparent transparent;
+}
+
+/* ===== CHAT MESSAGES SCROLLBAR — thinner and more refined ===== */
+
+.chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+/* ===== INPUT BAR — focus atmosphere ===== */
+
+.chat-input-bar:has(.chat-input-field:focus) {
+    background: linear-gradient(180deg, #111009 0%, #0E0C0A 100%);
+}
+
+/* ===== CHAT SEND BUTTON — disabled state ===== */
+
+.chat-send-btn:disabled,
+.chat-send-btn[style*="opacity: 0.4"] {
+    opacity: 0.35;
+    box-shadow: none;
+}
+
+/* ===== INCOMING MESSAGE TIME — more subtle ===== */
+
+.message-row.other .message-time {
+    color: var(--text-muted);
+    opacity: 0.85;
+}
+
+/* ===== FADE-IN ANIMATION FOR NEW MESSAGES ===== */
+
+@keyframes bubbleIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.message-group.fade-item .message-bubble {
+    animation: bubbleIn 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+/* ===== LOGO AREA — brand breathing room ===== */
+
+.sidebar-logo {
+    height: 20px;
+    opacity: 0.85;
+    filter: drop-shadow(0 1px 4px rgba(255,255,255,0.08));
+}
+
+/* ===== CHAT HEADER NAME — slightly tighter tracking ===== */
+
+.chat-header-name {
+    letter-spacing: -0.2px;
+    font-weight: 700;
+}
+
+/* ===== SEARCH SECTION LABEL — refined caps ===== */
+
+.search-section-label {
+    letter-spacing: 1px;
+    font-size: 10px;
+    color: var(--text-disabled);
+}
+
+/* ===== CONTEXT MENU ITEMS — refined hover ===== */
+
+.context-menu-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+/* ===== INFO PANEL DIVIDER ===== */
+
+.info-divider {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+}
+
+/* ===== ATTACHMENT PENDING BAR ===== */
+
+.chat-attachments-bar {
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ===== PENDING ATTACHMENT REMOVE BUTTON ===== */
+
+.pending-attachment-remove {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ===== CHAT INPUT CARET ===== */
+
+.chat-input-field {
+    caret-color: var(--accent);
 }
