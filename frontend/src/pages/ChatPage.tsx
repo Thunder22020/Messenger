@@ -18,7 +18,6 @@ import type {
 import { groupMessagesByDateAndSender } from "./chat/groupMessages";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatInfoPanel } from "./chat/ChatInfoPanel";
-import { TypingIndicator } from "./chat/TypingIndicator";
 import { AttachmentsBar } from "./chat/AttachmentsBar";
 import { MessageContextMenu, type MessageContextMenuState } from "./chat/MessageContextMenu";
 import { MessageList } from "./chat/MessageList";
@@ -850,6 +849,7 @@ export default function ChatPage() {
                     chatType={chatType}
                     participantsCount={participants.length}
                     isOnline={chatType === "PRIVATE" ? isOnline(chatName) : undefined}
+                    typingText={typingUsers.length > 0 ? getTypingText() : undefined}
                     onHeaderClick={handleHeaderClick}
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
                 />
@@ -919,7 +919,6 @@ export default function ChatPage() {
                     triggerMarkAsRead={triggerMarkAsRead}
                 />
 
-                {typingUsers.length > 0 && <TypingIndicator text={getTypingText()} />}
                 </div>
 
                 <ReplyBar replyingTo={replyingTo} onCancel={cancelReply} />

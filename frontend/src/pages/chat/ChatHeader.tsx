@@ -3,10 +3,28 @@ export function ChatHeader(props: {
   chatType: string | null;
   participantsCount: number;
   isOnline?: boolean;
+  typingText?: string;
   onHeaderClick: () => void;
   onToggleInfo: () => void;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, onHeaderClick, onToggleInfo } = props;
+  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo } = props;
+
+  const renderSubtitle = () => {
+    if (chatType === "PRIVATE") {
+      if (typingText) return <div className="chat-header-typing">{typingText}</div>;
+      if (isOnline)   return <div className="chat-header-online">online</div>;
+      return null;
+    }
+    if (chatType === "GROUP") {
+      if (typingText) return <div className="chat-header-typing">{typingText}</div>;
+      return (
+        <div className="chat-header-members" onClick={onHeaderClick}>
+          {participantsCount} members
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="chat-header">
@@ -18,15 +36,7 @@ export function ChatHeader(props: {
         <div className="chat-header-name" onClick={onHeaderClick}>
           {chatName}
         </div>
-
-        {chatType === "GROUP" && (
-          <div className="chat-header-members" onClick={onHeaderClick}>
-            {participantsCount} members
-          </div>
-        )}
-        {chatType === "PRIVATE" && isOnline && (
-          <div className="chat-header-online">online</div>
-        )}
+        {renderSubtitle()}
       </div>
 
       <button className="chat-menu-btn" onClick={onToggleInfo}>
@@ -35,4 +45,3 @@ export function ChatHeader(props: {
     </div>
   );
 }
-

@@ -1154,6 +1154,12 @@ button {
     margin-top: 4px;
 }
 
+.chat-header-typing {
+    font-size: 12px;
+    color: var(--accent-soft);
+    margin-top: 4px;
+}
+
 .chat-header-avatar,
 .chat-header-members,
 .chat-header-name {
