@@ -442,18 +442,18 @@ button {
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.4px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 
     padding: 4px 14px;
 
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(8,7,6,0.82);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 999px;
     backdrop-filter: blur(16px);
 
     white-space: nowrap;
     user-select: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.55);
 }
 
 .message-group {
@@ -964,10 +964,10 @@ button {
 }
 
 .chat-tile.active {
-    background: linear-gradient(90deg, rgba(234,224,210,0.12) 0%, rgba(234,224,210,0.04) 100%);
+    background: linear-gradient(90deg, rgba(234,224,210,0.18) 0%, rgba(234,224,210,0.06) 100%);
     border-left: 2px solid var(--accent);
     padding-left: 14px;
-    box-shadow: inset 1px 0 0 rgba(234,224,210,0.08);
+    box-shadow: inset 1px 0 0 rgba(234,224,210,0.12);
 }
 
 .chat-avatar-wrap {
@@ -2056,7 +2056,7 @@ button {
 }
 
 .message-row-collapse .message-bubble {
-    transition: transform 0.25s ease;
+    transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
 .message-row-collapse.collapsing .message-bubble {
@@ -2915,6 +2915,16 @@ button {
     transform: scaleY(1);
 }
 
+/* Active tile: lock in active appearance on hover */
+.chat-tile.active:hover {
+    background: linear-gradient(90deg, rgba(234,224,210,0.18) 0%, rgba(234,224,210,0.07) 100%);
+}
+
+.chat-tile.active:hover::before {
+    opacity: 1;
+    transform: scaleY(1);
+}
+
 /* Hide the old border-left so ::before handles it */
 .chat-tile.active {
     border-left: none;
@@ -2938,33 +2948,9 @@ button {
     border-color: rgba(234,176,120,0.12);
 }
 
-/* ===== BUBBLE TAILS — last message in group ===== */
-
-/* Outgoing tail */
-.message-row-collapse:last-child .message-row.mine .message-bubble::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -5px;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 8px 0 0 7px;
-    border-color: transparent transparent transparent #CFC7B8;
-}
-
-/* Incoming tail */
-.message-row-collapse:last-child .message-row.other .message-bubble::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -5px;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 8px 7px 0 0;
-    border-color: transparent #1C1A17 transparent transparent;
-}
+/* ===== BUBBLE TAILS — asymmetric border-radius on last message ===== */
+/* (::after tails removed — clipped by overflow:hidden on .message-row-collapse > *)
+   The border-bottom-*-radius: 5px rules above already handle the tail look natively */
 
 /* ===== CHAT MESSAGES SCROLLBAR — thinner and more refined ===== */
 
@@ -2984,7 +2970,8 @@ button {
 /* ===== INPUT BAR — focus atmosphere ===== */
 
 .chat-input-bar:has(.chat-input-field:focus) {
-    background: linear-gradient(180deg, #111009 0%, #0E0C0A 100%);
+    background: linear-gradient(180deg, #070605 0%, #050403 100%);
+    border-top-color: rgba(234,224,210,0.1);
 }
 
 /* ===== CHAT SEND BUTTON — disabled state ===== */
@@ -3003,20 +2990,13 @@ button {
 }
 
 /* ===== FADE-IN ANIMATION FOR NEW MESSAGES ===== */
+/* Uses @starting-style — fires when a .message-bubble is first inserted into the DOM */
 
-@keyframes bubbleIn {
-    from {
+@starting-style {
+    .message-row-collapse .message-bubble {
         opacity: 0;
-        transform: translateY(6px) scale(0.97);
+        transform: translateY(8px) scale(0.96);
     }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.message-group.fade-item .message-bubble {
-    animation: bubbleIn 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 /* ===== LOGO AREA — brand breathing room ===== */
