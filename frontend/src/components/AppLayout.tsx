@@ -243,7 +243,7 @@ export default function AppLayout({ children, rightPanel }: {
                         </div>
                     </button>
 
-                    <span className="sidebar-title">Chats</span>
+                    <img src="/logo/synk_white.svg" alt="Synk" className="sidebar-logo" />
 
                     <button className="sidebar-create-btn" onClick={() => navigate("/group")}>
                         <img src="/icons/people.png" alt="create group" />

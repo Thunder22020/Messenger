@@ -1,69 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 :root {
 
     /* ===== BASE BACKGROUNDS ===== */
 
-    --bg-main: #14141A;
-    --bg-sidebar: #0E0E12;
-    --bg-surface: #14141A;
-    --bg-card: #1D1D23;
-    --bg-elevated: #24242B;
+    --bg-main: #100F0D;
+    --bg-sidebar: #0A0A08;
+    --bg-surface: #100F0D;
+    --bg-card: #191815;
+    --bg-elevated: #201E1B;
 
-    --bg-hover: #2B2B33;
-    --bg-active: #33333D;
+    --bg-hover: #272521;
+    --bg-active: #2E2B26;
 
     /* ===== BORDERS ===== */
 
-    --border: #2A2A31;
-    --border-soft: #32323A;
-    --border-strong: #3B3B45;
+    --border: #242220;
+    --border-soft: #2C2A27;
+    --border-strong: #363330;
 
     /* ===== TEXT ===== */
 
-    --text-primary: #E8E8ED;
-    --text-secondary: #A8A8B3;
-    --text-muted: #777781;
-    --text-disabled: #52525B;
+    --text-primary: #F0EBE3;
+    --text-secondary: #9A9288;
+    --text-muted: #655E57;
+    --text-disabled: #454039;
 
-    /* ===== ACCENT (PINK) ===== */
+    /* ===== ACCENT (MILK) ===== */
 
-    --accent: #EC4899;
-    --accent-hover: #F472B6;
-    --accent-soft: #F9A8D4;
-    --accent-muted: #BE185D;
+    --accent: #EAE0D2;
+    --accent-hover: #F2EBE0;
+    --accent-soft: #C6BCB2;
+    --accent-muted: #887E72;
 
     --accent-gradient: linear-gradient(
-            135deg,
-            #F683A1,
-            #AA3471
+            145deg,
+            #EEE6D8 0%,
+            #D8CFC2 50%,
+            #C8BFB2 100%
     );
 
-    --accent-border: rgba(236, 72, 153, 0.6);
-    --accent-border-soft: rgba(236, 72, 153, 0.2);
+    --accent-border: rgba(234, 224, 210, 0.4);
+    --accent-border-soft: rgba(234, 224, 210, 0.12);
 
     /* ===== MESSAGE BUBBLES ===== */
 
-    --bubble-outgoing: #EC4899;
-    --bubble-outgoing-hover: #F472B6;
+    --bubble-outgoing: #EAE0D2;
+    --bubble-outgoing-hover: #F2EBE0;
+    --bubble-outgoing-text: #19160F;
 
-    --bubble-incoming: #24242B;
-    --bubble-incoming-hover: #2B2B33;
+    --bubble-incoming: #1C1A17;
+    --bubble-incoming-hover: #242220;
 
     /* ===== INPUT ===== */
 
-    --input-bg: #1A1A21;
-    --input-border: #2A2A31;
-    --input-focus: #EC4899;
-    --input-placeholder: #777781;
+    --input-bg: #161614;
+    --input-border: #252523;
+    --input-focus: #E8DDD0;
+    --input-placeholder: #68635C;
 
     /* ===== BUTTONS ===== */
 
-    --btn-primary-bg: #EC4899;
-    --btn-primary-hover: #F472B6;
-    --btn-primary-active: #BE185D;
+    --btn-primary-bg: #E8DDD0;
+    --btn-primary-hover: #F0E8DC;
+    --btn-primary-active: #D0C6B8;
 
-    --btn-secondary-bg: #24242B;
-    --btn-secondary-hover: #2B2B33;
-    --btn-secondary-active: #33333D;
+    --btn-secondary-bg: #222220;
+    --btn-secondary-hover: #2A2A28;
+    --btn-secondary-active: #323230;
 
     /* ===== STATUS COLORS ===== */
 
@@ -74,20 +78,20 @@
 
     /* ===== SCROLLBAR ===== */
 
-    --scrollbar-bg: #14141A;
-    --scrollbar-thumb: rgba(255,255,255,0.2);
-    --scrollbar-thumb-hover: rgba(255,255,255,0.35);
+    --scrollbar-bg: #111110;
+    --scrollbar-thumb: rgba(255,255,255,0.12);
+    --scrollbar-thumb-hover: rgba(255,255,255,0.22);
 
     /* ===== SELECTION ===== */
 
-    --selection-bg: rgba(236, 72, 153, 0.35);
-    --selection-text: #FFFFFF;
+    --selection-bg: rgba(232, 221, 208, 0.2);
+    --selection-text: #1A1815;
 
     /* ===== SHADOWS ===== */
 
-    --shadow-soft: 0 4px 12px rgba(0,0,0,0.25);
-    --shadow-medium: 0 8px 24px rgba(0,0,0,0.35);
-    --shadow-strong: 0 12px 40px rgba(0,0,0,0.45);
+    --shadow-soft: 0 2px 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+    --shadow-medium: 0 8px 28px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+    --shadow-strong: 0 16px 48px rgba(0,0,0,0.65), 0 4px 12px rgba(0,0,0,0.4);
 
     /* ===== BASE COLORS ===== */
 
@@ -95,29 +99,29 @@
 
     /* ===== OVERLAYS ===== */
 
-    --overlay-main: rgba(0,0,0,0.6);
-    --overlay-soft: rgba(0,0,0,0.35);
+    --overlay-main: rgba(0,0,0,0.7);
+    --overlay-soft: rgba(0,0,0,0.4);
 
     /* ===== GLASS SURFACES ===== */
 
-    --glass-bg-subtle: rgba(255,255,255,0.05);
-    --glass-bg-medium: rgba(255,255,255,0.08);
-    --glass-bg-strong: rgba(255,255,255,0.18);
-    --glass-border-soft: rgba(255,255,255,0.08);
-    --glass-border-medium: rgba(255,255,255,0.12);
-    --glass-border-strong: rgba(255,255,255,0.15);
-    --glass-text-faint: rgba(255,255,255,0.45);
-    --glass-checkbox-border: rgba(255,255,255,0.5);
+    --glass-bg-subtle: rgba(255,255,255,0.04);
+    --glass-bg-medium: rgba(255,255,255,0.07);
+    --glass-bg-strong: rgba(255,255,255,0.14);
+    --glass-border-soft: rgba(255,255,255,0.06);
+    --glass-border-medium: rgba(255,255,255,0.10);
+    --glass-border-strong: rgba(255,255,255,0.14);
+    --glass-text-faint: rgba(255,255,255,0.38);
+    --glass-checkbox-border: rgba(255,255,255,0.4);
 
     /* ===== UI ELEMENTS ===== */
 
-    --ui-muted-bg: rgba(255,255,255,0.06);
-    --ui-muted-bg-hover: rgba(255,255,255,0.1);
-    --ui-muted-border: rgba(255,255,255,0.1);
+    --ui-muted-bg: rgba(255,255,255,0.04);
+    --ui-muted-bg-hover: rgba(255,255,255,0.08);
+    --ui-muted-border: rgba(255,255,255,0.08);
 
     /* ===== DIVIDER ===== */
 
-    --divider: rgba(255,255,255,0.1);
+    --divider: rgba(255,255,255,0.08);
 
     /* ===== DANGER ===== */
 
@@ -130,10 +134,18 @@
 
     /* ==== ONLINE ==== */
     --online: #22C55E;
+
+    /* ===== AVATAR TEXT ===== */
+    --avatar-text: #1A1815;
 }
 
 * {
     box-sizing: border-box;
+}
+
+::selection {
+    background: var(--selection-bg);
+    color: var(--selection-text);
 }
 
 html, body {
@@ -147,10 +159,9 @@ body {
     color: var(--text-primary);
 
     font-family:
+            "Plus Jakarta Sans",
             -apple-system,
             BlinkMacSystemFont,
-            "Segoe UI",
-            Inter,
             sans-serif;
 }
 
@@ -214,7 +225,8 @@ button {
 .btn-primary {
     width: 100%;
     background: var(--accent-gradient);
-    color: var(--color-white);
+    color: var(--avatar-text);
+    font-weight: 600;
 }
 
 .btn-primary:hover {
@@ -251,9 +263,10 @@ button {
     display: flex;
     flex-direction: column;
 
-    background: var(--bg-sidebar);
+    background: linear-gradient(180deg, #0C0B09 0%, var(--bg-sidebar) 100%);
 
-    border-right: 1px solid var(--border);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 2px 0 28px rgba(0,0,0,0.4);
 
     height: 100%;
     position: relative;
@@ -280,9 +293,11 @@ button {
 .sidebar-header {
     display: flex;
     align-items: center;
-    height: 56px;
+    height: 58px;
     padding: 0 8px 0 14px;
     flex-shrink: 0;
+    background: linear-gradient(180deg, #0D0C0A 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
 .sidebar-title {
@@ -292,6 +307,14 @@ button {
     font-weight: 600;
     letter-spacing: 0.2px;
     color: var(--text-primary);
+}
+
+.sidebar-logo {
+    flex: 1;
+    height: 22px;
+    object-fit: contain;
+    object-position: center;
+    opacity: 0.9;
 }
 
 .sidebar-profile-btn {
@@ -315,13 +338,14 @@ button {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--accent);
-    color: var(--color-white);
+    background: var(--accent-gradient);
+    color: var(--avatar-text);
     font-size: 13px;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08);
 }
 
 .sidebar-create-btn {
@@ -352,7 +376,7 @@ button {
 .content {
     flex: 1;
     min-width: 0;
-    background: var(--bg-surface);
+    background: radial-gradient(ellipse 100% 50% at 50% 0%, #151310 0%, var(--bg-surface) 70%);
 }
 
 /* ===== CHAT CONTAINER ===== */
@@ -412,18 +436,21 @@ button {
 }
 
 .date-pill {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
-    color: var(--text-secondary);
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
 
     padding: 4px 14px;
 
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-soft);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 999px;
+    backdrop-filter: blur(16px);
 
     white-space: nowrap;
     user-select: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .message-group {
@@ -436,8 +463,8 @@ button {
 .group-sender-label {
     font-size: 11px;
     font-weight: 600;
-    color: var(--accent-hover);
-    opacity: 0.85;
+    color: var(--accent-soft);
+    letter-spacing: 0.2px;
     margin-bottom: 3px;
     padding-left: calc(30px + 8px + 2px);
 }
@@ -517,14 +544,17 @@ button {
 }
 
 .message-row.mine .message-time {
-    color: var(--color-white);
-    opacity: 0.6;
+    color: var(--bubble-outgoing-text);
+    opacity: 0.5;
 }
 
 .message-row.mine .message-bubble {
     background: var(--accent-gradient);
-    color: var(--text-primary);
+    color: var(--bubble-outgoing-text);
     border: none;
+    box-shadow:
+        0 2px 12px rgba(220, 210, 194, 0.12),
+        0 1px 3px rgba(0,0,0,0.3);
 }
 
 .message-row-collapse:last-child .message-row.mine .message-bubble {
@@ -533,6 +563,8 @@ button {
 
 .message-row.other .message-bubble {
     background: var(--bubble-incoming);
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
 }
 
 .message-row-collapse:last-child .message-row.other .message-bubble {
@@ -548,12 +580,12 @@ button {
     transform: translateX(-50%);
     z-index: 20;
 
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255,255,255,0.1);
 
-    background: var(--bg-elevated);
+    background: #1E1C19;
 
     display: flex;
     align-items: center;
@@ -562,7 +594,9 @@ button {
     padding: 0;
     cursor: pointer;
 
-    box-shadow: var(--shadow-medium);
+    box-shadow:
+        0 4px 16px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(255,255,255,0.05);
 
     animation: fadeInBtn 0.15s ease;
     transition: background 0.15s ease, transform 0.15s ease;
@@ -644,8 +678,11 @@ button {
     padding: 0 20px 0px 10px;
     min-height: 70px;
 
-    background: var(--bg-sidebar);
-    border-top: 1px solid var(--border);
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+        0 -1px 0 rgba(255,255,255,0.03),
+        inset 0 1px 0 rgba(255,255,255,0.025);
 
     flex-shrink: 0;
 }
@@ -656,13 +693,14 @@ button {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 2px;
+    height: 1px;
 
-    background: var(--accent);
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, var(--accent) 80%, transparent 100%);
+    opacity: 0.6;
 
     transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 .chat-input-bar:has(.chat-input-field:focus)::after {
@@ -920,9 +958,10 @@ button {
 }
 
 .chat-tile.active {
-    background: var(--bg-active);
-    border-left: 3px solid var(--accent);
-    padding-left: 13px;
+    background: linear-gradient(90deg, rgba(234,224,210,0.12) 0%, rgba(234,224,210,0.04) 100%);
+    border-left: 2px solid var(--accent);
+    padding-left: 14px;
+    box-shadow: inset 1px 0 0 rgba(234,224,210,0.08);
 }
 
 .chat-avatar-wrap {
@@ -937,8 +976,9 @@ button {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #3fc96b;
+    background: var(--online);
     border: 2px solid var(--bg-sidebar);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
 .chat-avatar {
@@ -953,10 +993,9 @@ button {
     font-weight: 600;
     font-size: 16px;
 
-    background: var(--ui-muted-bg-hover);
-    backdrop-filter: blur(10px);
-
-    border: 1px solid var(--glass-border-strong);
+    background: #201E1B;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .chat-info {
@@ -1012,18 +1051,16 @@ button {
     height: 20px;
     padding: 0 7px;
 
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
+    letter-spacing: 0.3px;
 
-    color: var(--color-white);
+    color: var(--avatar-text);
 
     border-radius: 999px;
 
-    background: linear-gradient(
-            135deg,
-            var(--accent),
-            var(--accent-hover)
-    );
+    background: var(--accent-gradient);
+    box-shadow: 0 2px 8px rgba(234,224,210,0.15);
 
     animation: badgeAppear 0.2s ease;
 }
@@ -1102,18 +1139,21 @@ button {
     left: 0;
     right: 0;
 
-    height: 80px;
+    height: 72px;
 
     display: flex;
     align-items: center;
     gap: 16px;
 
-    padding: 0 40px;
+    padding: 0 32px;
 
-    background: var(--bg-sidebar);
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
 
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 15px 20px rgba(0, 0, 0, 0.65);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.04),
+        0 8px 32px rgba(0,0,0,0.6),
+        0 2px 8px rgba(0,0,0,0.4);
 }
 
 .chat-header-avatar {
@@ -1125,13 +1165,17 @@ button {
     align-items: center;
     justify-content: center;
 
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
 
-    background: var(--accent);
+    background: var(--accent-gradient);
 
-    color: var(--color-white);
+    color: var(--avatar-text);
 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    box-shadow:
+        0 4px 16px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.1),
+        0 1px 0 rgba(255,255,255,0.15) inset;
 }
 
 .chat-header-name {
@@ -1178,18 +1222,19 @@ button {
 
 .sidebar-search-input {
     width: 100%;
-    padding: 10px 14px;
+    padding: 9px 14px;
     border-radius: 10px;
-    background: var(--ui-muted-bg);
-    border: 1px solid var(--ui-muted-border);
-    color: var(--color-white);
-    backdrop-filter: blur(12px);
-    transition: all 0.2s ease;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sidebar-search-input:focus {
     outline: none;
-    border: 1px solid var(--accent-border);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(234,224,210,0.3);
+    box-shadow: 0 0 0 3px rgba(234,224,210,0.06);
 }
 
 .fade-item {
@@ -1321,15 +1366,21 @@ button {
 .logout-popup {
     width: 320px;
 
-    padding: 24px;
-    border-radius: 18px;
+    padding: 26px;
+    border-radius: 20px;
 
-    background: var(--glass-bg-medium);
-    backdrop-filter: blur(25px);
+    background: #1C1A17;
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
 
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid rgba(255,255,255,0.1);
 
-    animation: popupIn 0.2s ease;
+    box-shadow:
+        0 24px 64px rgba(0,0,0,0.7),
+        0 4px 16px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(255,255,255,0.04);
+
+    animation: popupIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .logout-title {
@@ -1533,15 +1584,11 @@ button {
 
     border-radius: 14px;
 
-    background: linear-gradient(
-            135deg,
-            var(--accent),
-            var(--accent-hover)
-    );
+    background: var(--accent-gradient);
     border: none;
 
-    color: var(--color-white);
-    font-weight: 500;
+    color: var(--avatar-text);
+    font-weight: 600;
     font-size: 15px;
 
     cursor: pointer;
@@ -1834,14 +1881,10 @@ button {
     border-radius: 14px;
     border: none;
 
-    background: linear-gradient(
-            135deg,
-            var(--accent),
-            var(--accent-hover)
-    );
+    background: var(--accent-gradient);
 
-    color: var(--color-white);
-    font-weight: 500;
+    color: var(--avatar-text);
+    font-weight: 600;
     font-size: 15px;
 
     cursor: pointer;
@@ -1858,14 +1901,19 @@ button {
     position: fixed;
     z-index: 9999;
 
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-strong);
-    border-radius: 10px;
+    background: #1C1A17;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
 
     padding: 4px;
-    min-width: 130px;
+    min-width: 140px;
 
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.6),
+        0 2px 8px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(255,255,255,0.04);
 
     animation: contextMenuIn 0.12s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -1921,7 +1969,8 @@ button {
 }
 
 .message-row.mine .message-edited-icon {
-    filter: brightness(0) invert(1);
+    filter: none;
+    opacity: 0.4;
 }
 
 .message-row.other .message-edited-icon {
@@ -2159,8 +2208,8 @@ button {
 /* ===== MESSAGE HIGHLIGHT (scroll-to) ===== */
 
 @keyframes messageHighlight {
-    0%   { background: rgba(99, 102, 241, 0.18); }
-    70%  { background: rgba(99, 102, 241, 0.12); }
+    0%   { background: rgba(232, 221, 208, 0.15); }
+    70%  { background: rgba(232, 221, 208, 0.08); }
     100% { background: transparent; }
 }
 
@@ -2402,7 +2451,7 @@ button {
     content: "Drop images here";
     position: absolute;
     inset: 0;
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(232, 221, 208, 0.06);
     border: 2px dashed var(--accent);
     border-radius: 8px;
     display: flex;
@@ -2601,4 +2650,182 @@ button {
     font-size: 11px;
     font-weight: 600;
     width: 44px;
+}
+
+/* ===== SYNK: AVATAR TEXT ON CREAM BACKGROUND ===== */
+
+.sidebar-avatar-sm,
+.sidebar-avatar,
+.message-avatar,
+.chat-header-avatar,
+.search-avatar,
+.group-user-avatar,
+.info-avatar,
+.info-chat-avatar,
+.user-info-avatar,
+.search-person-avatar,
+.iv-avatar {
+    color: var(--avatar-text);
+}
+
+/* ===== SYNK: REPLY PREVIEW INSIDE OUTGOING BUBBLE ===== */
+
+.message-row.mine .message-reply-preview {
+    background: rgba(26, 24, 21, 0.08);
+    border-left-color: rgba(26, 24, 21, 0.35);
+}
+
+.message-row.mine .message-reply-preview:hover {
+    background: rgba(26, 24, 21, 0.14);
+}
+
+.message-row.mine .reply-preview-sender {
+    color: rgba(26, 24, 21, 0.65);
+}
+
+.message-row.mine .reply-preview-content {
+    color: rgba(26, 24, 21, 0.5);
+}
+
+/* ===== SYNK: DEPTH ENHANCEMENTS ===== */
+
+/* Unread chat name — full white for maximum contrast */
+.chat-display-name.unread {
+    color: #FFFFFF;
+}
+
+/* Chat tile hover — warm subtle lift */
+.chat-tile:hover {
+    background: linear-gradient(90deg, rgba(234,224,210,0.06) 0%, rgba(234,224,210,0.02) 100%);
+}
+
+/* Send button — elevated treatment */
+.chat-send-btn:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    filter: drop-shadow(0 2px 8px rgba(234,224,210,0.12));
+}
+
+/* Message avatar (group chat sender) — defined with border */
+.message-avatar {
+    background: #201E1B;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+/* Info panel & user avatars — gradient treatment */
+.info-avatar,
+.info-chat-avatar,
+.search-avatar,
+.user-info-avatar,
+.search-person-avatar,
+.group-user-avatar {
+    background: var(--accent-gradient);
+}
+
+/* IV (image viewer) avatar */
+.iv-avatar {
+    background: var(--accent-gradient);
+}
+
+/* Chat info panel — elevated bg */
+.chat-info-panel {
+    background: #0C0B09;
+}
+
+.chat-info-panel.open {
+    border-left: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Info member tiles */
+.info-member {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.info-member:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.1);
+}
+
+/* Edit/reply bar — slightly elevated */
+.chat-edit-bar,
+.chat-reply-bar {
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Edit bar accent stripe — warm */
+.chat-edit-bar-accent,
+.chat-reply-bar-accent {
+    background: var(--accent-gradient);
+}
+
+/* Unread dot — warm */
+.unread-dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(234,224,210,0.25);
+}
+
+/* Unread messages divider — warm milk lines */
+.unread-messages-divider::before,
+.unread-messages-divider::after {
+    background: rgba(234,224,210,0.2);
+}
+
+/* Group create card — elevated */
+.group-create-card {
+    background: #161513;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* Group user selected state */
+.group-user-item.selected {
+    border: 1px solid rgba(234,224,210,0.35);
+    background: rgba(234,224,210,0.05);
+}
+
+/* User info card — elevated */
+.user-info-card {
+    background: #161513;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+/* Login/register card */
+.card {
+    background: #161513;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+/* Message highlight — warm */
+.message-highlight .message-bubble {
+    animation: messageHighlightNew 1.4s ease forwards;
+}
+
+@keyframes messageHighlightNew {
+    0%   { outline: 1.5px solid rgba(234,224,210,0.25); }
+    60%  { outline: 1.5px solid rgba(234,224,210,0.1); }
+    100% { outline: 1.5px solid transparent; }
+}
+
+/* Chat FAB button — elevated */
+.chat-fab {
+    background: #1C1A17;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.chat-fab:hover {
+    background: #242118;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* Sidebar resizer hover — warm glow */
+.sidebar-resizer:hover {
+    background: linear-gradient(180deg, transparent, rgba(234,224,210,0.08), transparent);
 }
