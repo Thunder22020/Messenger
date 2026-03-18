@@ -43,6 +43,22 @@ export default function AppLayout({ children, rightPanel }: {
         } catch { /* empty */ }
     }
 
+    const [theme, setTheme] = useState<"dark" | "light">(() => {
+        const saved = localStorage.getItem("theme") as "dark" | "light" | null;
+        const t = saved || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        return t;
+    });
+
+    const toggleTheme = () => {
+        const next = theme === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+        setTheme(next);
+    };
+
+    const [activeTab, setActiveTab] = useState<"chats" | "settings">("chats");
+
     const [sidebarWidth, setSidebarWidth] = useState(() => {
         const saved = localStorage.getItem("sidebarWidth");
         return saved ? Number(saved) : 300;
@@ -236,181 +252,245 @@ export default function AppLayout({ children, rightPanel }: {
     return (
         <div className="app-layout">
             <div className="sidebar" style={{ width: sidebarWidth }}>
+
+                {/* ── Header ── */}
                 <div className="sidebar-header">
-                    <button className="sidebar-profile-btn" onClick={() => setShowLogoutPopup(true)}>
-                        <div className="sidebar-avatar-sm">
-                            {currentUsername.charAt(0).toUpperCase()}
-                        </div>
-                    </button>
+                    <div className="sidebar-header-left">
+                        <button className="sidebar-profile-btn" onClick={() => setShowLogoutPopup(true)}>
+                            <div className="sidebar-avatar-sm">
+                                {currentUsername.charAt(0).toUpperCase()}
+                            </div>
+                        </button>
+                    </div>
 
                     <img src="/logo/synk_white.svg" alt="Synk" className="sidebar-logo" />
 
-                    <button className="sidebar-create-btn" onClick={() => navigate("/group")}>
-                        <img src="/icons/people.png" alt="create group" />
-                    </button>
+                    <div className="sidebar-header-right">
+                        <button className="sidebar-create-btn" onClick={() => navigate("/group")}>
+                            <img src="/icons/people.png" alt="create group" />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="sidebar-search-wrapper">
-                    <input
-                        className="sidebar-search-input"
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
+                {/* ── Search (chats tab only) ── */}
+                {activeTab === "chats" && (
+                    <>
+                        <div className="sidebar-search-wrapper">
+                            <input
+                                className="sidebar-search-input"
+                                placeholder="Search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="sidebar-divider" />
+                    </>
+                )}
 
-                <div className="sidebar-divider" />
+                {/* ── Dynamic content ── */}
+                <div className="sidebar-main-content">
 
-                <div className="chat-list-wrapper">
-                    {!searchQuery.trim() ? (
-                        <div className="chat-list">
-                            {chats.length === 0 && (
-                                <div className="chat-list-empty">
-                                    No chats yet
-                                </div>
-                            )}
-
-                            {chats.map((chat) => {
-                                const formattedTime = chat.lastMessageCreatedAt
-                                    ? new Date(chat.lastMessageCreatedAt).toLocaleTimeString([], {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    })
-                                    : "";
-
-                                return (
-                                    <div
-                                        key={chat.chatId}
-                                        className={`chat-tile fade-item ${
-                                            String(chat.chatId) === chatId ? "active" : ""
-                                        }`}
-                                        onClick={() => navigate(`/chat/${chat.chatId}`)}
-                                    >
-                                        <div className="chat-avatar-wrap">
-                                            <div className="chat-avatar">
-                                                {chat.displayName.charAt(0).toUpperCase()}
-                                            </div>
-                                            {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
-                                                <span className="presence-dot" />
-                                            )}
+                    {/* Chats tab */}
+                    {activeTab === "chats" && (
+                        <div className="chat-list-wrapper">
+                            {!searchQuery.trim() ? (
+                                <div className="chat-list">
+                                    {chats.length === 0 && (
+                                        <div className="chat-list-empty">
+                                            No chats yet
                                         </div>
+                                    )}
 
-                                        <div className="chat-info">
-                                            <div className="chat-top">
-                                                <div className={`chat-display-name ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                    {chat.displayName}
+                                    {chats.map((chat) => {
+                                        const formattedTime = chat.lastMessageCreatedAt
+                                            ? new Date(chat.lastMessageCreatedAt).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })
+                                            : "";
+
+                                        return (
+                                            <div
+                                                key={chat.chatId}
+                                                className={`chat-tile fade-item ${
+                                                    String(chat.chatId) === chatId ? "active" : ""
+                                                }`}
+                                                onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                            >
+                                                <div className="chat-avatar-wrap">
+                                                    <div className="chat-avatar">
+                                                        {chat.displayName.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                        <span className="presence-dot" />
+                                                    )}
                                                 </div>
 
-                                                <div className="chat-tile-meta">
-                                                    <div className="chat-time">{formattedTime}</div>
+                                                <div className="chat-info">
+                                                    <div className="chat-top">
+                                                        <div className={`chat-display-name ${chat.unreadCount > 0 ? "unread" : ""}`}>
+                                                            {chat.displayName}
+                                                        </div>
 
-                                                    {chat.unreadCount > 0 && (
-                                                        <span className="unread-badge">
-                                                            {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
-                                                        </span>
+                                                        <div className="chat-tile-meta">
+                                                            <div className="chat-time">{formattedTime}</div>
+
+                                                            {chat.unreadCount > 0 && (
+                                                                <span className="unread-badge">
+                                                                    {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {getSidebarTypingLabel(chat) ? (
+                                                        <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
+                                                    ) : (
+                                                        <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
+                                                            {chat.lastMessageContent ?? "No messages yet"}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="search-results-panel">
+                                    {filteredChats.length > 0 && (
+                                        <div className="search-section">
+                                            <div className="search-section-label">Chats</div>
+                                            <div className="search-chat-list">
+                                                {filteredChats.map((chat) => {
+                                                    const formattedTime = chat.lastMessageCreatedAt
+                                                        ? new Date(chat.lastMessageCreatedAt).toLocaleTimeString([], {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })
+                                                        : "";
 
-                                            {getSidebarTypingLabel(chat) ? (
-                                                <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
-                                            ) : (
-                                                <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                    {chat.lastMessageContent ?? "No messages yet"}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="search-results-panel">
-                            {filteredChats.length > 0 && (
-                                <div className="search-section">
-                                    <div className="search-section-label">Chats</div>
-                                    <div className="search-chat-list">
-                                        {filteredChats.map((chat) => {
-                                            const formattedTime = chat.lastMessageCreatedAt
-                                                ? new Date(chat.lastMessageCreatedAt).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })
-                                                : "";
-
-                                            return (
-                                                <div
-                                                    key={chat.chatId}
-                                                    className={`chat-tile fade-item ${
-                                                        String(chat.chatId) === chatId ? "active" : ""
-                                                    }`}
-                                                    onClick={() => navigate(`/chat/${chat.chatId}`)}
-                                                >
-                                                    <div className="chat-avatar-wrap">
-                                                        <div className="chat-avatar">
-                                                            {chat.displayName.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
-                                                            <span className="presence-dot" />
-                                                        )}
-                                                    </div>
-
-                                                    <div className="chat-info">
-                                                        <div className="chat-top">
-                                                            <div className={`chat-display-name ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                                {chat.displayName}
+                                                    return (
+                                                        <div
+                                                            key={chat.chatId}
+                                                            className={`chat-tile fade-item ${
+                                                                String(chat.chatId) === chatId ? "active" : ""
+                                                            }`}
+                                                            onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                                        >
+                                                            <div className="chat-avatar-wrap">
+                                                                <div className="chat-avatar">
+                                                                    {chat.displayName.charAt(0).toUpperCase()}
+                                                                </div>
+                                                                {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                                    <span className="presence-dot" />
+                                                                )}
                                                             </div>
 
-                                                            <div className="chat-tile-meta">
-                                                                <div className="chat-time">{formattedTime}</div>
+                                                            <div className="chat-info">
+                                                                <div className="chat-top">
+                                                                    <div className={`chat-display-name ${chat.unreadCount > 0 ? "unread" : ""}`}>
+                                                                        {chat.displayName}
+                                                                    </div>
 
-                                                                {chat.unreadCount > 0 && (
-                                                                    <span className="unread-badge">
-                                                                        {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
-                                                                    </span>
+                                                                    <div className="chat-tile-meta">
+                                                                        <div className="chat-time">{formattedTime}</div>
+
+                                                                        {chat.unreadCount > 0 && (
+                                                                            <span className="unread-badge">
+                                                                                {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {getSidebarTypingLabel(chat) ? (
+                                                                    <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
+                                                                ) : (
+                                                                    <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
+                                                                        {chat.lastMessageContent ?? "No messages yet"}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
 
-                                                        {getSidebarTypingLabel(chat) ? (
-                                                            <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
-                                                        ) : (
-                                                            <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                                {chat.lastMessageContent ?? "No messages yet"}
-                                                            </div>
-                                                        )}
+                                    <div className="search-section">
+                                        <div className="search-section-label">People</div>
+
+                                        {searchResults.length === 0 ? (
+                                            <div className="search-section-empty">No people found</div>
+                                        ) : (
+                                            searchResults.map((user) => (
+                                                <div
+                                                    key={user.id}
+                                                    className="search-person-tile fade-item"
+                                                    onClick={() => navigate(`/user/${user.id}`)}
+                                                >
+                                                    <div className="search-person-avatar">
+                                                        {user.username.charAt(0).toUpperCase()}
                                                     </div>
+                                                    <span className="search-person-name">{user.username}</span>
                                                 </div>
-                                            );
-                                        })}
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
 
-                            <div className="search-section">
-                                <div className="search-section-label">People</div>
+                    {/* Settings tab */}
+                    {activeTab === "settings" && (
+                        <div className="sidebar-settings">
+                            <div className="settings-section">
+                                <div className="settings-row" onClick={toggleTheme}>
+                                    <span className="settings-row-label">Change the theme</span>
+                                    <button
+                                        className={`settings-theme-toggle ${theme === "light" ? "on" : "off"}`}
+                                        onClick={(e) => { e.stopPropagation(); toggleTheme(); }}
+                                    >
+                                        <span className="settings-toggle-knob" />
+                                    </button>
+                                </div>
+                            </div>
 
-                                {searchResults.length === 0 ? (
-                                    <div className="search-section-empty">No people found</div>
-                                ) : (
-                                    searchResults.map((user) => (
-                                        <div
-                                            key={user.id}
-                                            className="search-person-tile fade-item"
-                                            onClick={() => navigate(`/user/${user.id}`)}
-                                        >
-                                            <div className="search-person-avatar">
-                                                {user.username.charAt(0).toUpperCase()}
-                                            </div>
-                                            <span className="search-person-name">{user.username}</span>
-                                        </div>
-                                    ))
-                                )}
+                            <div className="settings-logout-area">
+                                <button
+                                    className="settings-logout-btn"
+                                    onClick={() => setShowLogoutPopup(true)}
+                                >
+                                    <img src="/icons/log-out.png" alt="" className="settings-logout-icon" />
+                                    Log out
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
 
+                {/* ── Bottom navigation ── */}
+                <div className="sidebar-bottom-nav">
+                    <button
+                        className={`sidebar-nav-btn ${activeTab === "chats" ? "active" : ""}`}
+                        onClick={() => setActiveTab("chats")}
+                        title="Chats"
+                    >
+                        <img src="/icons/chat-bubble.png" alt="Chats" className="sidebar-nav-icon" />
+                    </button>
+
+                    <button
+                        className={`sidebar-nav-btn ${activeTab === "settings" ? "active" : ""}`}
+                        onClick={() => setActiveTab("settings")}
+                        title="Settings"
+                    >
+                        <img src="/icons/setting.png" alt="Settings" className="sidebar-nav-icon" />
+                    </button>
+                </div>
+
+                {/* ── Logout popup ── */}
                 {showLogoutPopup && (
                     <div className="logout-popup-overlay">
                         <div className="logout-popup">
