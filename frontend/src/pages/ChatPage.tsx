@@ -289,6 +289,13 @@ export default function ChatPage() {
                     const containerTop = container.getBoundingClientRect().top;
                     const dividerTop = divider.getBoundingClientRect().top;
                     container.scrollTop += dividerTop - containerTop;
+                    // If the chat is too short to scroll (or divider is near the bottom),
+                    // scrollTop won't change so no scroll event fires — mark as read manually.
+                    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                    if (distFromBottom <= 150 && !hasMoreNewerRef.current) {
+                        isAtBottomRef.current = true;
+                        triggerMarkAsRead();
+                    }
                 } else {
                     container.scrollTop = container.scrollHeight;
                     isAtBottomRef.current = true;
@@ -955,6 +962,7 @@ export default function ChatPage() {
                     oldestIdRef={oldestIdRef}
                     newestIdRef={newestIdRef}
                     isAtBottomRef={isAtBottomRef}
+                    shouldScrollToBottomRef={shouldScrollToBottom}
                     triggerMarkAsRead={triggerMarkAsRead}
                 />
 

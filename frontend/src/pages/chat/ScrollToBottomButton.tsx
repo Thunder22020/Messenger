@@ -13,6 +13,7 @@ export function ScrollToBottomButton(props: {
   oldestIdRef: { current: number | null };
   newestIdRef: { current: number | null };
   isAtBottomRef: { current: boolean };
+  shouldScrollToBottomRef: { current: boolean };
   triggerMarkAsRead: () => void;
 }) {
   const {
@@ -28,6 +29,7 @@ export function ScrollToBottomButton(props: {
     oldestIdRef,
     newestIdRef,
     isAtBottomRef,
+    shouldScrollToBottomRef,
     triggerMarkAsRead,
   } = props;
 
@@ -50,19 +52,14 @@ export function ScrollToBottomButton(props: {
           hasMoreNewerRef.current = false;
           if (visibleMessages.length > 0) {
             oldestIdRef.current = visibleMessages[0].id;
-            newestIdRef.current =
-              visibleMessages[visibleMessages.length - 1].id;
+            newestIdRef.current = visibleMessages[visibleMessages.length - 1].id;
           }
           isAtBottomRef.current = true;
+          shouldScrollToBottomRef.current = true;
           triggerMarkAsRead();
         } else {
-          const container = document.querySelector<HTMLDivElement>(
-            ".chat-messages"
-          );
-          container?.scrollTo({
-            top: container.scrollHeight,
-            behavior: "smooth",
-          });
+          const container = document.querySelector<HTMLDivElement>(".chat-messages");
+          if (container) container.scrollTop = container.scrollHeight;
         }
       }}
     >
@@ -70,4 +67,3 @@ export function ScrollToBottomButton(props: {
     </button>
   );
 }
-

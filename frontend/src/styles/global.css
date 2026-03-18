@@ -2889,6 +2889,10 @@ button {
     color: #FFFFFF;
 }
 
+[data-theme="light"] .chat-display-name.unread {
+    color: var(--text-primary);
+}
+
 /* Chat tile hover — warm subtle lift */
 .chat-tile:hover {
     background: linear-gradient(90deg, rgba(234,224,210,0.06) 0%, rgba(234,224,210,0.02) 100%);
