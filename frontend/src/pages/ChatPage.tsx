@@ -365,11 +365,21 @@ export default function ChatPage() {
                     // Existing message deleted: trigger collapse animation instead of instant removal
                     if (body.deletedAt) {
                         shouldAnimateDelete = true;
-                        return prev; // animation callback will remove it after COLLAPSE_MS
+                        // Clear stale replyPreview content in messages that replied to this one
+                        return prev.map(m =>
+                            m.replyPreview?.messageId === body.id
+                                ? { ...m, replyPreview: { ...m.replyPreview, content: "", attachmentType: null } }
+                                : m
+                        );
                     }
                     const next = [...prev];
                     next[idx] = body;
-                    return next;
+                    // Sync replyPreview.content in messages that replied to this one
+                    return next.map(m =>
+                        m.replyPreview?.messageId === body.id
+                            ? { ...m, replyPreview: { ...m.replyPreview, content: body.content } }
+                            : m
+                    );
                 });
                 if (appearedAsNew && isAtBottomRef.current) {
                     triggerMarkAsRead();
