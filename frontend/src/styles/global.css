@@ -4066,7 +4066,7 @@ body,
 /* ----- Info / group / user cards ----- */
 
 [data-theme="light"] .chat-info-panel {
-    background: #EAE4DA;
+    background: var(--bg-sidebar);
 }
 
 [data-theme="light"] .chat-info-panel.open {
