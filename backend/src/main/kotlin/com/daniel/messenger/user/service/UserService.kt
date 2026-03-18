@@ -29,8 +29,7 @@ class UserService(
 
     fun searchUsers(query: String, currentUserId: Long) =
         userRepository
-            .findTop50ByUsernameStartingWith(query)
-            .filter { it.id != currentUserId }
+            .findTop50ByUsernameStartingWithAndIdNot(query, currentUserId)
             .map {
                 UserSearchResponse(
                     id = requireNotNull(it.id),
@@ -46,6 +45,8 @@ class UserService(
         userRepository.findById(id).orElseThrow {
             UserNotFoundException("User with ID:$id not found")
         }
+
+    fun findAllByIds(ids: List<Long>): List<User> = userRepository.findAllById(ids)
 
     fun getReference(id: Long): User = userRepository.getReferenceById(id)
 

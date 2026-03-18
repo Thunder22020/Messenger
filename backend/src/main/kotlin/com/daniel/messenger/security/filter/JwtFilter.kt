@@ -44,10 +44,11 @@ class JwtFilter(
     }
 
     private fun authenticate(token: String, request: HttpServletRequest) {
-        val username = jwtService.extractUsername(token)
-        val userDetails = userDetailsService.loadUserByUsername(username)
+        val claims = jwtService.parseToken(token) ?: return
+        val username = claims.subject ?: return
+        if (claims.expiration.before(java.util.Date())) return
 
-        if (!jwtService.validateToken(token, userDetails.username)) return
+        val userDetails = userDetailsService.loadUserByUsername(username)
 
         val authToken = UsernamePasswordAuthenticationToken(
             userDetails,

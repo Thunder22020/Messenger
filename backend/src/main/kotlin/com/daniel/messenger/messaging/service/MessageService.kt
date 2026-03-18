@@ -66,13 +66,11 @@ class MessageService(
         message.content = request.content
         message.editedAt = Instant.now()
 
-        val saved = messageRepository.save(message)
+        val response = toMessageResponse(message)
 
-        val response = toMessageResponse(saved)
-
-        val chatId = requireNotNull(saved.chat.id)
+        val chatId = requireNotNull(message.chat.id)
         notifyMessageUpdated(response, chatId)
-        chatService.handleLastMessageEdited(chatId, requireNotNull(saved.id), saved.content)
+        chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), message.content)
 
         return response
     }
@@ -85,20 +83,20 @@ class MessageService(
 
         message.deletedAt = Instant.now()
 
-        val saved = messageRepository.save(message)
+        val response = toMessageResponse(message)
 
-        val response = toMessageResponse(saved)
-
-        notifyMessageUpdated(response, requireNotNull(saved.chat.id))
+        val chatId = requireNotNull(message.chat.id)
+        notifyMessageUpdated(response, chatId)
 
         chatService.handleMessageDeleted(
-            deletedMessageId = requireNotNull(saved.id),
-            chatId = requireNotNull(saved.chat.id),
+            deletedMessageId = requireNotNull(message.id),
+            chatId = chatId,
         )
 
         return response
     }
 
+    @Transactional(readOnly = true)
     fun getMessages(chatId: Long, userId: Long, before: Long?): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
 
@@ -123,6 +121,7 @@ class MessageService(
         )
     }
 
+    @Transactional(readOnly = true)
     fun getMessagesAfter(chatId: Long, userId: Long, afterId: Long): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
 
@@ -143,6 +142,7 @@ class MessageService(
         )
     }
 
+    @Transactional(readOnly = true)
     fun getMessagesAround(chatId: Long, userId: Long, aroundId: Long): PagedMessageResponse {
         chatService.isChatParticipantOrThrow(chatId, userId)
 

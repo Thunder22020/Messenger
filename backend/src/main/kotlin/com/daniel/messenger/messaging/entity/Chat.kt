@@ -16,7 +16,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "chats")
-data class Chat(
+class Chat(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,

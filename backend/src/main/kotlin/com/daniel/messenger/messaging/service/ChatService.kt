@@ -72,8 +72,8 @@ class ChatService(
 
         val chat = chatRepository.save(Chat(type = ChatType.GROUP, title = title))
         val allParticipantIds = (participantIds + creatorId).distinct()
-        val participants = allParticipantIds.map { userId ->
-            val user = userService.findByIdOrThrow(userId)
+        val users = userService.findAllByIds(allParticipantIds)
+        val participants = users.map { user ->
             ChatParticipant(id = ChatParticipantId(chat.id, user.id), chat = chat, user = user)
         }
         chatParticipantRepository.saveAll(participants)
@@ -119,7 +119,6 @@ class ChatService(
             .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
             .firstOrNull()
         updateChatLastMessage(chat, newLast)
-        chatRepository.save(chat)
 
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
         participants.forEach { participant ->
@@ -127,10 +126,6 @@ class ChatService(
             if (deletedMessageId > lastReadId && participant.unreadCount > 0) {
                 participant.unreadCount--
             }
-        }
-        chatParticipantRepository.saveAll(participants)
-
-        participants.forEach { participant ->
             chatNotificationService.sendSidebarUpdate(
                 participant.user.username,
                 ChatUpdateEvent(
@@ -143,6 +138,7 @@ class ChatService(
         }
     }
 
+    @Transactional(readOnly = true)
     fun getUserChats(userId: Long): List<MyChatResponse> =
         chatRepository.findAllUserChatsWithParticipants(userId).map { chat ->
             val myParticipant = chat.participants.first { it.user.id == userId }
@@ -157,6 +153,7 @@ class ChatService(
             )
         }
 
+    @Transactional(readOnly = true)
     fun getChatParticipants(chatId: Long, userId: Long): List<ChatParticipantResponse> {
         isChatParticipantOrThrow(chatId, userId)
         return chatParticipantRepository.findAllWithUserByChatId(chatId).map {
@@ -226,7 +223,7 @@ class ChatService(
         }
     }
 
-    fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
+    internal fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
         chat.lastMessageId = message?.id
         chat.lastMessageContent = message?.content
         chat.lastMessageCreatedAt = message?.createdAt

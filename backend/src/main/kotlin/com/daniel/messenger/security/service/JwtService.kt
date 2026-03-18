@@ -30,27 +30,23 @@ class JwtService(
             .compact()
     }
 
-    fun extractUsername(token: String): String {
-        return extractAllClaims(token).subject
-    }
-
-    private fun extractAllClaims(token: String): Claims {
-        return Jwts.parser()
-            .verifyWith(key)
-            .build()
-            .parseSignedClaims(token)
-            .payload
-    }
-
-    fun validateToken(token: String, username: String): Boolean {
+    fun parseToken(token: String): Claims? {
         return try {
-            extractUsername(token) == username && !isTokenExpired(token)
+            Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .payload
         } catch (e: JwtException) {
-            false
+            null
         }
     }
 
-    private fun isTokenExpired(token: String): Boolean {
-        return extractAllClaims(token).expiration.before(Date())
+    fun extractUsername(token: String): String? =
+        parseToken(token)?.subject
+
+    fun validateToken(token: String, username: String): Boolean {
+        val claims = parseToken(token) ?: return false
+        return claims.subject == username && !claims.expiration.before(Date())
     }
 }

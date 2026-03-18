@@ -10,9 +10,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface UserRepository : JpaRepository<User, Long> {
-    fun findByUsername(username: String) : User?
-    fun findTop50ByOrderByIdAsc(): List<User>
-    fun findTop50ByUsernameStartingWith(query: String): List<User>
+    fun findByUsername(username: String): User?
+    fun findTop50ByUsernameStartingWithAndIdNot(query: String, excludeId: Long): List<User>
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM User u WHERE u.id = :id")

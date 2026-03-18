@@ -64,7 +64,7 @@ class UserServiceTest {
 
     @Test
     fun `searchUsers - should return matching users excluding the current user`() {
-        given(userRepository.findTop50ByUsernameStartingWith(searchQuery)).willReturn(otherUsers + currentUser)
+        given(userRepository.findTop50ByUsernameStartingWithAndIdNot(searchQuery, currentUser.id!!)).willReturn(otherUsers)
 
         val result = userService.searchUsers(searchQuery, currentUserId = currentUser.id!!)
 
