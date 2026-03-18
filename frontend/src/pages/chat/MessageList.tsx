@@ -229,7 +229,7 @@ export function MessageList(props: {
                                 {isMediaOnly && (
                                   <div className="message-meta-overlay">
                                     {msg.editedAt && (
-                                      <img src="/icons/edit.png" className="message-edited-icon" alt="edited" />
+                                      <span className="message-edited-icon" role="img" aria-label="edited" />
                                     )}
                                     <span className="message-time">{formattedTime}</span>
                                   </div>
@@ -242,11 +242,7 @@ export function MessageList(props: {
                                 <span className="message-text">{msg.content}</span>
                                 <span className="message-time">
                                   {msg.editedAt && (
-                                    <img
-                                      src="/icons/edit.png"
-                                      className="message-edited-icon"
-                                      alt="edited"
-                                    />
+                                    <span className="message-edited-icon" role="img" aria-label="edited" />
                                   )}
                                   {formattedTime}
                                 </span>

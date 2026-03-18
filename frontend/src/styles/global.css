@@ -1960,39 +1960,23 @@ button {
 /* ===== MESSAGE EDITED ICON ===== */
 
 .message-edited-icon {
+    display: inline-block;
     width: 10px;
     height: 10px;
-    opacity: 0.7;
-    object-fit: contain;
     flex-shrink: 0;
     vertical-align: middle;
     position: relative;
     top: -1px;
     margin-right: 3px;
-}
-
-/* dark theme: mine bubble = cream, icon is dark → visible */
-.message-row.mine .message-edited-icon {
-    filter: none;
-    opacity: 0.65;
-}
-
-/* dark theme: other bubble = dark, icon needs to be light */
-.message-row.other .message-edited-icon {
-    filter: brightness(0) invert(1);
-    opacity: 0.7;
-}
-
-/* light theme: mine bubble = dark espresso, icon needs to be light */
-[data-theme="light"] .message-row.mine .message-edited-icon {
-    filter: brightness(0) invert(1);
-    opacity: 0.65;
-}
-
-/* light theme: other bubble = near-white, icon needs to be dark */
-[data-theme="light"] .message-row.other .message-edited-icon {
-    filter: brightness(0);
-    opacity: 0.55;
+    background-color: currentColor;
+    -webkit-mask-image: url('../../public/icons/edit.png');
+    mask-image: url('../../public/icons/edit.png');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
 
 /* ===== UNREAD DOT ===== */
@@ -2351,16 +2335,20 @@ button {
     display: flex;
     align-items: center;
     gap: 3px;
-    padding: 2px 7px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.38);
-    backdrop-filter: blur(4px);
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(8, 7, 6, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     pointer-events: none;
+    color: #EAE0D2;
 }
 
 .message-meta-overlay .message-time {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.95);
+    font-weight: 500;
+    color: inherit;
     opacity: 1;
     line-height: 1.4;
 }
@@ -2368,7 +2356,6 @@ button {
 .message-meta-overlay .message-edited-icon {
     width: 11px;
     height: 11px;
-    opacity: 0.85;
 }
 
 /* --- Grid layout --- */
@@ -3632,6 +3619,8 @@ body,
     opacity: 1;
 }
 
+
+
 [data-theme="light"] .message-avatar {
     background: linear-gradient(145deg, #3A332C 0%, #2A241F 50%);
     border: 1px solid rgba(0,0,0,0.07);
@@ -3926,3 +3915,23 @@ body,
 }
 
 /* ----- @starting-style still applies on light theme (inherited) ----- */
+
+/* ===== MEDIA OVERLAY — static colors, placed last to win all specificity battles ===== */
+
+/* mine: medium cream — baked alpha so icon (currentColor) and text match exactly */
+.message-row.mine .message-meta-overlay {
+    color: rgba(234, 224, 210, 0.82);
+}
+.message-row.mine .message-meta-overlay .message-time {
+    color: rgba(234, 224, 210, 0.82);
+    opacity: 1;
+}
+
+/* other: more tinted — matches muted feel of other-bubble timestamps */
+.message-row.other .message-meta-overlay {
+    color: rgba(234, 224, 210, 0.58);
+}
+.message-row.other .message-meta-overlay .message-time {
+    color: rgba(234, 224, 210, 0.58);
+    opacity: 1;
+}
