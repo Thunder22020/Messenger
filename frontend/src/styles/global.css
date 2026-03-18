@@ -148,6 +148,28 @@
     color: var(--selection-text);
 }
 
+/* Mine bubble: dark theme = light cream bg, light theme = dark espresso bg */
+.message-row.mine .message-bubble ::selection {
+    background: rgba(25, 22, 15, 0.22);
+    color: var(--bubble-outgoing-text);
+}
+
+[data-theme="light"] .message-row.mine .message-bubble ::selection {
+    background: rgba(234, 224, 210, 0.32);
+    color: #EAE0D2;
+}
+
+/* Other bubble is dark — selection text must stay light */
+.message-row.other .message-bubble ::selection {
+    background: rgba(234, 224, 210, 0.32);
+    color: #F0EBE3;
+}
+
+[data-theme="light"] .message-row.other .message-bubble ::selection {
+    background: rgba(48, 42, 36, 0.20);
+    color: #302A24;
+}
+
 html, body {
     margin: 0;
     height: 100%;
