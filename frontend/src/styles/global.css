@@ -3221,7 +3221,7 @@ button {
 .search-section-label {
     letter-spacing: 1px;
     font-size: 10px;
-    color: var(--text-disabled);
+    color: var(--text-muted);
 }
 
 /* ===== CONTEXT MENU ITEMS — refined hover ===== */
