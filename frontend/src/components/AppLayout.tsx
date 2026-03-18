@@ -478,7 +478,7 @@ export default function AppLayout({ children, rightPanel }: {
                         onClick={() => setActiveTab("chats")}
                         title="Chats"
                     >
-                        <img src="/icons/chat-bubble.png" alt="Chats" className="sidebar-nav-icon" />
+                        <span className="sidebar-nav-icon sidebar-nav-icon--chats" />
                     </div>
 
                     <div
@@ -486,7 +486,7 @@ export default function AppLayout({ children, rightPanel }: {
                         onClick={() => setActiveTab("settings")}
                         title="Settings"
                     >
-                        <img src="/icons/setting.png" alt="Settings" className="sidebar-nav-icon" />
+                        <span className="sidebar-nav-icon sidebar-nav-icon--settings" />
                     </div>
                 </div>
 

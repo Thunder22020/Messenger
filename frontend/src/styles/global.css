@@ -3113,22 +3113,36 @@ button {
 }
 
 .sidebar-nav-icon {
+    display: inline-block;
     width: 22px;
     height: 22px;
-    object-fit: contain;
-    filter: brightness(0) invert(1) sepia(0.22) saturate(0.55);
+    background-color: var(--accent);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
     opacity: 0.42;
-    transition: opacity 0.2s ease, filter 0.2s ease;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-nav-icon--chats {
+    -webkit-mask-image: url('/icons/chat-bubble.png');
+    mask-image: url('/icons/chat-bubble.png');
+}
+
+.sidebar-nav-icon--settings {
+    -webkit-mask-image: url('/icons/setting.png');
+    mask-image: url('/icons/setting.png');
 }
 
 .sidebar-nav-btn.active .sidebar-nav-icon {
     opacity: 1;
-    filter: brightness(0) invert(1) sepia(0.22) saturate(0.55);
 }
 
-.sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon,
-.sidebar-nav-btn:focus-visible:not(.active) .sidebar-nav-icon {
-    opacity: 0.75;
+.sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon {
+    opacity: 0.72;
 }
 
 /* ===== SETTINGS PANEL ===== */
@@ -3890,21 +3904,7 @@ body,
         inset 0 1px 0 rgba(255,255,255,0.20);
 }
 
-/* light mode icons: warm brown (#302A24) */
-[data-theme="light"] .sidebar-nav-icon {
-    filter: brightness(0) sepia(1) saturate(0.55) brightness(0.22);
-    opacity: 0.45;
-}
-
-[data-theme="light"] .sidebar-nav-btn.active .sidebar-nav-icon {
-    opacity: 1;
-    filter: brightness(0) sepia(1) saturate(0.55) brightness(0.22);
-}
-
-[data-theme="light"] .sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon,
-[data-theme="light"] .sidebar-nav-btn:focus-visible:not(.active) .sidebar-nav-icon {
-    opacity: 0.75;
-}
+/* light mode: --accent resolves to #302A24, background-color handles it automatically */
 
 /* ----- Settings panel — light theme ----- */
 
