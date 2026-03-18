@@ -558,9 +558,6 @@ button {
     background: var(--accent-gradient);
     color: var(--bubble-outgoing-text);
     border: none;
-    box-shadow:
-        0 2px 12px rgba(220, 210, 194, 0.12),
-        0 1px 3px rgba(0,0,0,0.3);
 }
 
 .message-row-collapse:last-child .message-row.mine .message-bubble {
@@ -570,7 +567,6 @@ button {
 .message-row.other .message-bubble {
     background: var(--bubble-incoming);
     border: 1px solid rgba(255,255,255,0.07);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
 }
 
 .message-row-collapse:last-child .message-row.other .message-bubble {
@@ -3612,16 +3608,9 @@ body,
 
 /* ----- Message bubbles ----- */
 
-[data-theme="light"] .message-row.mine .message-bubble {
-    box-shadow:
-        0 2px 12px rgba(48,42,36,0.20),
-        0 1px 3px rgba(0,0,0,0.14);
-}
-
 [data-theme="light"] .message-row.other .message-bubble {
     background: #FEFAF5;
-    border: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 1px 4px rgba(80,60,40,0.09);
+    border: 1px solid rgba(0,0,0,0.18);
 }
 
 [data-theme="light"] .message-row.other .message-time {
