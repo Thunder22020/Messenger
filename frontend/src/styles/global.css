@@ -2215,14 +2215,37 @@ button {
 
 /* ===== MESSAGE HIGHLIGHT (scroll-to) ===== */
 
-@keyframes messageHighlight {
-    0%   { background: rgba(232, 221, 208, 0.15); }
-    70%  { background: rgba(232, 221, 208, 0.08); }
-    100% { background: transparent; }
+@keyframes bubble-wash-bright {
+    0%   { background: rgba(234, 224, 210, 0);    }
+    8%   { background: rgba(234, 224, 210, 0.19);  }
+    30%  { background: rgba(234, 224, 210, 0.19);  }
+    100% { background: rgba(234, 224, 210, 0);    }
 }
 
-.message-highlight .message-bubble {
-    animation: messageHighlight 1.2s ease forwards;
+@keyframes bubble-wash-dark {
+    0%   { background: rgba(20, 17, 12, 0);    }
+    8%   { background: rgba(20, 17, 12, 0.17);  }
+    30%  { background: rgba(20, 17, 12, 0.17);  }
+    100% { background: rgba(20, 17, 12, 0);    }
+}
+
+/* Shared pseudo-element setup */
+.message-highlight .message-bubble::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* Dark theme: incoming bubble is dark → bright warm overlay */
+.message-highlight .message-row.other .message-bubble::after {
+    animation: bubble-wash-bright 1.6s cubic-bezier(0.25, 0, 0.4, 1) forwards;
+}
+
+/* Dark theme: outgoing bubble is cream → dark overlay */
+.message-highlight .message-row.mine .message-bubble::after {
+    animation: bubble-wash-dark 1.6s cubic-bezier(0.25, 0, 0.4, 1) forwards;
 }
 
 /* ===== ATTACH BUTTON ===== */
@@ -2332,6 +2355,7 @@ button {
     position: absolute;
     bottom: 8px;
     right: 10px;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 3px;
@@ -2970,17 +2994,6 @@ button {
     background: #161513;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-}
-
-/* Message highlight — warm */
-.message-highlight .message-bubble {
-    animation: messageHighlightNew 1.4s ease forwards;
-}
-
-@keyframes messageHighlightNew {
-    0%   { outline: 1.5px solid rgba(234,224,210,0.25); }
-    60%  { outline: 1.5px solid rgba(234,224,210,0.1); }
-    100% { outline: 1.5px solid transparent; }
 }
 
 /* Chat FAB button — elevated */
@@ -4088,16 +4101,18 @@ body,
     box-shadow: 0 16px 48px rgba(80,60,40,0.14);
 }
 
-/* ----- Message highlight animation — light variant ----- */
+/* ----- Message highlight animation — light theme overrides ----- */
 
-[data-theme="light"] .message-highlight .message-bubble {
-    animation: messageHighlightLight 1.4s ease forwards;
+/* Light theme: incoming bubble is warm parchment → dark overlay */
+[data-theme="light"] .message-highlight .message-row.other .message-bubble::after {
+    background: rgba(48, 42, 36, 0.12);
+    animation: bubble-wash-dark 1.6s cubic-bezier(0.25, 0, 0.4, 1) forwards;
 }
 
-@keyframes messageHighlightLight {
-    0%   { outline: 1.5px solid rgba(48,42,36,0.28); }
-    60%  { outline: 1.5px solid rgba(48,42,36,0.10); }
-    100% { outline: 1.5px solid transparent; }
+/* Light theme: outgoing bubble is dark espresso → bright overlay */
+[data-theme="light"] .message-highlight .message-row.mine .message-bubble::after {
+    background: rgba(234, 224, 210, 0.20);
+    animation: bubble-wash-bright 1.6s cubic-bezier(0.25, 0, 0.4, 1) forwards;
 }
 
 /* ----- Online pulse — green stays, just ensure it shows ----- */
