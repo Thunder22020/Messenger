@@ -3984,7 +3984,7 @@ body,
 .intro-stage {
     display: flex;
     align-items: flex-end;
-    gap: 12px;
+    gap: 6px;
 }
 
 /* "Ready to" text — bigger, cohesive with Synk */

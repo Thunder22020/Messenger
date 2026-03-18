@@ -30,6 +30,7 @@ export default function Login({
     setTimeout(() => setLogoGreen(false), 1500);
   }, []);
   const handleDone = useCallback(() => {
+    localStorage.setItem("synk_intro_seen", "1");
     setIntroState("done");
   }, []);
 
