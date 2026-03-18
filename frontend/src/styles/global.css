@@ -1151,11 +1151,12 @@ button {
 
     background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
 
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
     box-shadow:
-        0 1px 0 rgba(255,255,255,0.04),
-        0 8px 32px rgba(0,0,0,0.6),
-        0 2px 8px rgba(0,0,0,0.4);
+            0 1px 0 rgba(255,255,255,0.03),
+            0 4px 12px rgba(0,0,0,0.18),
+            0 12px 40px rgba(0,0,0,0.22),
+            0 24px 64px rgba(0,0,0,0.12);
 }
 
 .chat-header-avatar {
@@ -2850,7 +2851,10 @@ button {
     left: 0;
     right: 0;
     height: 52px;
-    background: linear-gradient(180deg, var(--bg-surface) 0%, transparent 100%);
+    background: linear-gradient(180deg,
+        rgba(23,21,18,0.55) 0%,
+        rgba(23,21,18,0)    100%
+    );
     pointer-events: none;
     z-index: 5;
 }
@@ -3482,9 +3486,10 @@ body,
     background: linear-gradient(180deg, #CBBFAC 0%, #C7BBAA 100%);
     border-bottom: 1px solid rgba(0,0,0,0.11);
     box-shadow:
-        0 1px 0 rgba(255,255,255,0.28),
-        0 8px 32px rgba(80,60,40,0.12),
-        0 2px 8px rgba(80,60,40,0.07);
+            0 1px 0 rgba(255,255,255,0.18),
+            0 4px 12px rgba(80,60,40,0.08),
+            0 12px 40px rgba(80,60,40,0.10),
+            0 24px 64px rgba(80,60,40,0.05);
 }
 
 [data-theme="light"] .chat-input-bar {
@@ -3681,7 +3686,10 @@ body,
 /* ----- Chat messages area ----- */
 
 [data-theme="light"] .chat-messages-wrapper::before {
-    background: linear-gradient(180deg, var(--bg-surface) 0%, transparent 100%);
+    background: linear-gradient(180deg,
+        rgba(243,238,230,0.55) 0%,
+        rgba(243,238,230,0)    100%
+    );
 }
 
 [data-theme="light"] .chat-messages {
