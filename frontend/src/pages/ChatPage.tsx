@@ -550,6 +550,22 @@ export default function ChatPage() {
         return () => document.removeEventListener("keydown", onKeyDown);
     }, [contextMenu, editingMessageId, replyingTo]);
 
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            if (editingMessageId !== null) return;
+            if (!e.clipboardData) return;
+            const imageFiles = Array.from(e.clipboardData.items)
+                .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+                .map(item => item.getAsFile())
+                .filter((f): f is File => f !== null);
+            if (imageFiles.length === 0) return;
+            e.preventDefault();
+            handleFilesSelected(imageFiles);
+        };
+        document.addEventListener("paste", handlePaste);
+        return () => document.removeEventListener("paste", handlePaste);
+    }, [editingMessageId, pendingFiles]);
+
     const adjustTextarea = () => {
         const el = inputRef.current;
         if (!el) return;
