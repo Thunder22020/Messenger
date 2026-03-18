@@ -213,10 +213,16 @@ class MessageService(
     private fun loadReplyPreview(message: MessageEntity): ReplyPreviewDto? =
         message.replyToMessageId?.let { replyId ->
             messageRepository.findByIdWithSender(replyId)?.let { reply ->
+                val deleted = reply.deletedAt != null
+                val attachmentType = if (!deleted)
+                    attachmentRepository.findAllByMessageIdIn(listOf(replyId))
+                        .firstOrNull()?.attachmentType?.name
+                else null
                 ReplyPreviewDto(
                     messageId = replyId,
                     sender = reply.sender.username,
-                    content = if (reply.deletedAt != null) "" else reply.content.take(100),
+                    content = if (deleted) "" else reply.content.take(100),
+                    attachmentType = attachmentType,
                 )
             }
         }
@@ -228,15 +234,24 @@ class MessageService(
 
         if (ids.isEmpty()) return emptyMap()
 
-        return messageRepository
-            .findAllByIdInWithSender(ids)
-            .associate { m ->
-                requireNotNull(m.id) to ReplyPreviewDto(
-                    messageId = requireNotNull(m.id),
-                    sender = m.sender.username,
-                    content = if (m.deletedAt != null) "" else m.content.take(100),
-                )
-            }
+        val replyMessages = messageRepository.findAllByIdInWithSender(ids)
+        val attachmentsByMessageId = attachmentRepository
+            .findAllByMessageIdIn(ids)
+            .mapNotNull { att -> att.message?.id?.let { mid -> mid to att } }
+            .groupBy({ it.first }, { it.second })
+
+        return replyMessages.associate { m ->
+            val deleted = m.deletedAt != null
+            val attachmentType = if (!deleted)
+                attachmentsByMessageId[m.id]?.firstOrNull()?.attachmentType?.name
+            else null
+            requireNotNull(m.id) to ReplyPreviewDto(
+                messageId = requireNotNull(m.id),
+                sender = m.sender.username,
+                content = if (deleted) "" else m.content.take(100),
+                attachmentType = attachmentType,
+            )
+        }
     }
 
     private fun loadMessageAttachments(messageId: Long): List<AttachmentDto> =

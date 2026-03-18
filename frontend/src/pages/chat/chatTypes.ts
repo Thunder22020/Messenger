@@ -2,6 +2,7 @@ export interface ReplyPreview {
   messageId: number;
   sender: string;
   content: string;
+  attachmentType?: string | null;
 }
 
 export interface AttachmentDto {

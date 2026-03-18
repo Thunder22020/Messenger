@@ -1969,8 +1969,8 @@ button {
     top: -1px;
     margin-right: 3px;
     background-color: currentColor;
-    -webkit-mask-image: url('../../public/icons/edit.png');
-    mask-image: url('../../public/icons/edit.png');
+    -webkit-mask-image: url('/icons/edit.png');
+    mask-image: url('/icons/edit.png');
     -webkit-mask-size: contain;
     mask-size: contain;
     -webkit-mask-repeat: no-repeat;
@@ -3307,13 +3307,13 @@ button {
 }
 
 .sidebar-nav-icon--chats {
-    -webkit-mask-image: url('../../public/icons/chat-bubble.png');
-    mask-image: url('../../public/icons/chat-bubble.png');
+    -webkit-mask-image: url('/icons/chat-bubble.png');
+    mask-image: url('/icons/chat-bubble.png');
 }
 
 .sidebar-nav-icon--settings {
-    -webkit-mask-image: url('../../public/icons/setting.png');
-    mask-image: url('../../public/icons/setting.png');
+    -webkit-mask-image: url('/icons/setting.png');
+    mask-image: url('/icons/setting.png');
 }
 
 .sidebar-nav-btn.active .sidebar-nav-icon {

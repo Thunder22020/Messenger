@@ -14,7 +14,8 @@ export function ReplyBar(props: {
         <span className="chat-reply-bar-label">{replyingTo.sender}</span>
         <span className="chat-edit-bar-preview">
           {replyingTo.content ||
-            (replyingTo.attachments?.length ? "📎 Photo" : "")}
+            (replyingTo.attachments?.some(a => a.type === "PHOTO") ? "📎 Photo" :
+             replyingTo.attachments?.length ? "📎 File" : "")}
         </span>
       </div>
       <button className="chat-edit-cancel-btn" onClick={onCancel}>

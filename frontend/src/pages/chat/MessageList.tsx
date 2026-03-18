@@ -259,7 +259,10 @@ export function MessageList(props: {
                                   {msg.replyPreview.sender}
                                 </div>
                                 <div className="reply-preview-content">
-                                  {msg.replyPreview.content || "Deleted message"}
+                                  {msg.replyPreview.content ||
+                                    (msg.replyPreview.attachmentType === "PHOTO" ? "📎 Photo" :
+                                     msg.replyPreview.attachmentType === "FILE" ? "📎 File" :
+                                     "Deleted message")}
                                 </div>
                               </div>
                             )}
