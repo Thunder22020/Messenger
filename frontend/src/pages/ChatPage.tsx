@@ -601,10 +601,28 @@ export default function ChatPage() {
     };
 
     const handleFilesSelected = (files: FileList | File[]) => {
-        Promise.all(
-            Array.from(files)
-                .filter(f => f.type.startsWith("image/"))
-                .map(async f => {
+        const incoming = Array.from(files);
+        if (incoming.length === 0) return;
+
+        const incomingHasImages = incoming.some(f => f.type.startsWith("image/"));
+        const incomingHasNonImages = incoming.some(f => !f.type.startsWith("image/"));
+
+        if (incomingHasImages && incomingHasNonImages) {
+            alert("Cannot mix images and files in the same message. Please select only images or only files.");
+            return;
+        }
+
+        if (pendingFiles.length > 0) {
+            const existingAreImages = pendingFiles[0].isImage;
+            if (existingAreImages !== incomingHasImages) {
+                alert("Cannot mix images and files in the same message. Remove the current attachments first.");
+                return;
+            }
+        }
+
+        if (incomingHasImages) {
+            Promise.all(
+                incoming.map(async f => {
                     const previewUrl = URL.createObjectURL(f);
                     let naturalWidth = 280, naturalHeight = 200;
                     try {
@@ -613,9 +631,20 @@ export default function ChatPage() {
                         naturalHeight = bm.height;
                         bm.close();
                     } catch {}
-                    return { localId: crypto.randomUUID(), file: f, previewUrl, naturalWidth, naturalHeight };
+                    return { localId: crypto.randomUUID(), file: f, previewUrl, naturalWidth, naturalHeight, isImage: true as const };
                 })
-        ).then(newFiles => setPendingFiles(prev => [...prev, ...newFiles]));
+            ).then(newFiles => setPendingFiles(prev => [...prev, ...newFiles]));
+        } else {
+            const newFiles = incoming.map(f => ({
+                localId: crypto.randomUUID(),
+                file: f,
+                previewUrl: "",
+                naturalWidth: 0,
+                naturalHeight: 0,
+                isImage: false as const,
+            }));
+            setPendingFiles(prev => [...prev, ...newFiles]);
+        }
     };
 
     const sendMessage = async () => {
@@ -939,7 +968,6 @@ export default function ChatPage() {
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
                         multiple
                         style={{ display: "none" }}
                         onChange={(e) => {

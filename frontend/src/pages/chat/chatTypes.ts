@@ -16,9 +16,10 @@ export interface AttachmentDto {
 export interface PendingFile {
   localId: string;
   file: File;
-  previewUrl: string;
-  naturalWidth: number;
-  naturalHeight: number;
+  previewUrl: string;   // empty string for non-image files
+  naturalWidth: number; // 0 for non-image files
+  naturalHeight: number; // 0 for non-image files
+  isImage: boolean;
 }
 
 export interface UploadingBubble {

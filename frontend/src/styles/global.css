@@ -2456,6 +2456,166 @@ button {
     text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
+/* ===== FILE ATTACHMENT CARDS ===== */
+
+.file-attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+.file-attachment-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease;
+    min-width: 0;
+    max-width: 280px;
+}
+
+.file-attachment-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.message-row.mine .file-attachment-card {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.message-row.mine .file-attachment-card:hover {
+    background: rgba(0, 0, 0, 0.14);
+}
+
+.file-attachment-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.message-row.mine .file-attachment-icon {
+    background: rgba(0, 0, 0, 0.12);
+    color: var(--bubble-outgoing-text);
+    opacity: 0.65;
+}
+
+.file-attachment-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.file-attachment-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.message-row.mine .file-attachment-name {
+    color: var(--bubble-outgoing-text);
+}
+
+.file-attachment-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    line-height: 1.4;
+}
+
+.message-row.mine .file-attachment-meta {
+    color: var(--bubble-outgoing-text);
+    opacity: 0.55;
+}
+
+/* Uploading file list */
+
+.uploading-file-list .file-attachment-card {
+    opacity: 0.75;
+    cursor: default;
+}
+
+.uploading-file-list .file-attachment-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.uploading-file-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.uploading-file-bar-wrap {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    min-width: 40px;
+}
+
+.uploading-file-bar {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent-soft);
+    transition: width 0.2s ease;
+}
+
+/* Pending file item in attachments bar */
+
+.pending-attachment-file {
+    width: 110px;
+    height: 56px;
+    border-radius: 8px;
+    background: var(--bg-hover);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    min-width: 0;
+    border: 1px solid var(--border-soft);
+}
+
+.pending-attachment-file-ext {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent-muted);
+    background: var(--bg-elevated);
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+}
+
+.pending-attachment-file-name {
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    line-height: 1.3;
+}
+
 /* ===== DRAG OVER ===== */
 
 .chat-messages-wrapper.drag-over::after {
@@ -3797,6 +3957,44 @@ body,
 [data-theme="light"] .chat-attachments-bar {
     background: linear-gradient(180deg, #CBBFAC 0%, #C7BBAA 100%);
     border-top: 1px solid rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .file-attachment-card {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .file-attachment-card:hover {
+    background: rgba(0, 0, 0, 0.09);
+}
+
+[data-theme="light"] .message-row.mine .file-attachment-card {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .message-row.mine .file-attachment-card:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="light"] .file-attachment-icon {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .message-row.mine .file-attachment-icon {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--bubble-outgoing-text);
+}
+
+[data-theme="light"] .uploading-file-bar-wrap {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .uploading-file-bar {
+    background: var(--accent-muted);
+}
+
+[data-theme="light"] .pending-attachment-file {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.10);
 }
 
 /* ----- Context menu ----- */

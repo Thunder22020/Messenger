@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
-import { formatMessageTime } from "./chatFormat";
+import { formatMessageTime, formatFileSize, fileExtension } from "./chatFormat";
 
 const IMAGE_CORNER_R = 13; // bubble outer radius (16) minus bubble padding (3)
 
@@ -69,6 +69,28 @@ function singleImageSize(nw: number, nh: number): { width: number; height: numbe
   return { width: Math.round(nw * scale), height: Math.round(nh * scale) };
 }
 
+function FileAttachmentList({ files }: { files: AttachmentDto[] }) {
+  return (
+    <div className="file-attachment-list">
+      {files.map((f) => (
+        <a
+          key={f.id}
+          href={f.url}
+          download={f.fileName}
+          className="file-attachment-card"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="file-attachment-icon">{fileExtension(f.fileName)}</div>
+          <div className="file-attachment-info">
+            <div className="file-attachment-name">{f.fileName}</div>
+            <div className="file-attachment-meta">{formatFileSize(f.fileSize)}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function UploadingAttachmentGrid({ files, progress, hasTextBelow = false }: { files: PendingFile[]; progress: number; hasTextBelow?: boolean }) {
   const isSingle = files.length === 1;
   const rows = distributeIntoRows(files, buildAttachmentRows(files.length));
@@ -102,6 +124,27 @@ function UploadingAttachmentGrid({ files, progress, hasTextBelow = false }: { fi
               </div>
             );
           })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function UploadingFileList({ files, progress }: { files: PendingFile[]; progress: number }) {
+  return (
+    <div className="file-attachment-list uploading-file-list">
+      {files.map((pf) => (
+        <div key={pf.localId} className="file-attachment-card uploading-file-card">
+          <div className="file-attachment-icon">{fileExtension(pf.file.name)}</div>
+          <div className="file-attachment-info">
+            <div className="file-attachment-name">{pf.file.name}</div>
+            <div className="file-attachment-meta uploading-file-progress">
+              <span className="uploading-file-bar-wrap">
+                <span className="uploading-file-bar" style={{ width: `${progress}%` }} />
+              </span>
+              <span>{progress}%</span>
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -167,7 +210,9 @@ export function MessageList(props: {
                     const formattedTime = formatMessageTime(msg.createdAt);
                     const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
                     const photos = msg.attachments?.filter(a => a.type === "PHOTO") ?? [];
+                    const fileDtos = msg.attachments?.filter(a => a.type === "FILE") ?? [];
                     const hasMedia = photos.length > 0;
+                    const hasFiles = fileDtos.length > 0;
                     const isMediaOnly = hasMedia && !msg.content;
 
                     return (
@@ -237,6 +282,10 @@ export function MessageList(props: {
                               </div>
                             )}
 
+                            {hasFiles && (
+                              <FileAttachmentList files={fileDtos} />
+                            )}
+
                             {!isMediaOnly && (
                               <div className="message-content">
                                 <span className="message-text">{msg.content}</span>
@@ -261,13 +310,14 @@ export function MessageList(props: {
       ))}
 
       {uploadingBubbles.map((bubble) => {
-        const hasMedia = bubble.files.length > 0;
-        const isMediaOnly = hasMedia && !bubble.content;
+        const hasImages = bubble.files.some(f => f.isImage);
+        const hasFiles = bubble.files.length > 0 && !hasImages;
+        const isMediaOnly = hasImages && !bubble.content;
         return (
           <div key={bubble.tempId} className="message-group mine">
             <div className="message-row-collapse">
               <div className="message-row mine">
-                <div className={`message-bubble${isMediaOnly ? " media-only" : hasMedia ? " has-media" : ""}`}>
+                <div className={`message-bubble${isMediaOnly ? " media-only" : hasImages ? " has-media" : ""}`}>
                   {bubble.replyPreview && (
                     <div className="message-reply-preview">
                       <div className="reply-preview-sender">{bubble.replyPreview.sender}</div>
@@ -277,7 +327,7 @@ export function MessageList(props: {
                     </div>
                   )}
 
-                  {hasMedia && (
+                  {hasImages && (
                     <div className="attachment-grid-wrapper">
                       <UploadingAttachmentGrid files={bubble.files} progress={bubble.progress} hasTextBelow={!isMediaOnly} />
                       {isMediaOnly && (
@@ -286,6 +336,10 @@ export function MessageList(props: {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {hasFiles && (
+                    <UploadingFileList files={bubble.files} progress={bubble.progress} />
                   )}
 
                   {!isMediaOnly && (
@@ -303,4 +357,3 @@ export function MessageList(props: {
     </div>
   );
 }
-
