@@ -12,9 +12,7 @@ export default function Register() {
 
         const res = await fetch(`${API_URL}/api/auth/register`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password }),
         });
 
@@ -28,31 +26,31 @@ export default function Register() {
 
     return (
         <div className="page-center">
-            <div className="card">
-                <h2>Sign up</h2>
-
-                <form onSubmit={handleRegister}>
-                    <div className="form-group">
-                        <input
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
-
-                    <button className="btn-primary" type="submit">
-                        Register
-                    </button>
-                </form>
+            <div className="login-with-logo login-with-logo--ready">
+                <div className="auth-page-logo" role="img" aria-label="Synk" />
+                <div className="card">
+                    <h2>Sign up</h2>
+                    <form onSubmit={handleRegister}>
+                        <div className="form-group">
+                            <input
+                                placeholder="Username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+                        <button className="btn-primary" type="submit">
+                            Register
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );
