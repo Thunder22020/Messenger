@@ -69,7 +69,7 @@ class MessageService(
         val response = toMessageResponse(message)
 
         val chatId = requireNotNull(message.chat.id)
-        notifyMessageUpdated(response, chatId)
+        chatNotificationService.broadcastChatMessage(chatId, response)
         chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), message.content)
 
         return response
@@ -86,7 +86,7 @@ class MessageService(
         val response = toMessageResponse(message)
 
         val chatId = requireNotNull(message.chat.id)
-        notifyMessageUpdated(response, chatId)
+        chatNotificationService.broadcastChatMessage(chatId, response)
 
         chatService.handleMessageDeleted(
             deletedMessageId = requireNotNull(message.id),
@@ -213,55 +213,44 @@ class MessageService(
     private fun loadReplyPreview(message: MessageEntity): ReplyPreviewDto? =
         message.replyToMessageId?.let { replyId ->
             messageRepository.findByIdWithSender(replyId)?.let { reply ->
-                val deleted = reply.deletedAt != null
-                val attachmentType = if (!deleted)
+                val attachmentType = if (reply.deletedAt == null)
                     attachmentRepository.findAllByMessageIdIn(listOf(replyId))
                         .firstOrNull()?.attachmentType?.name
                 else null
-                ReplyPreviewDto(
-                    messageId = replyId,
-                    sender = reply.sender.username,
-                    content = if (deleted) "" else reply.content.take(100),
-                    attachmentType = attachmentType,
-                )
+                buildReplyPreviewDto(reply, attachmentType)
             }
         }
 
     private fun loadReplyPreviews(messages: List<MessageEntity>): Map<Long, ReplyPreviewDto> {
-        val ids = messages
-            .mapNotNull { it.replyToMessageId }
-            .distinct()
+        val replyIds = messages.mapNotNull { it.replyToMessageId }.distinct()
+        if (replyIds.isEmpty()) return emptyMap()
 
-        if (ids.isEmpty()) return emptyMap()
-
-        val replyMessages = messageRepository.findAllByIdInWithSender(ids)
+        val replyMessages = messageRepository.findAllByIdInWithSender(replyIds)
         val attachmentsByMessageId = attachmentRepository
-            .findAllByMessageIdIn(ids)
+            .findAllByMessageIdIn(replyIds)
             .mapNotNull { att -> att.message?.id?.let { mid -> mid to att } }
             .groupBy({ it.first }, { it.second })
 
         return replyMessages.associate { m ->
-            val deleted = m.deletedAt != null
-            val attachmentType = if (!deleted)
+            val attachmentType = if (m.deletedAt == null)
                 attachmentsByMessageId[m.id]?.firstOrNull()?.attachmentType?.name
             else null
-            requireNotNull(m.id) to ReplyPreviewDto(
-                messageId = requireNotNull(m.id),
-                sender = m.sender.username,
-                content = if (deleted) "" else m.content.take(100),
-                attachmentType = attachmentType,
-            )
+            requireNotNull(m.id) to buildReplyPreviewDto(m, attachmentType)
         }
     }
 
-    private fun loadMessageAttachments(messageId: Long): List<AttachmentDto> =
-        attachmentRepository
-            .findAllByMessageIdIn(listOf(messageId))
-            .map { it.toDto() }
+    private fun buildReplyPreviewDto(message: MessageEntity, attachmentTypeName: String?): ReplyPreviewDto {
+        val deleted = message.deletedAt != null
+        return ReplyPreviewDto(
+            messageId = requireNotNull(message.id),
+            sender = message.sender.username,
+            content = if (deleted) "" else message.content.take(100),
+            attachmentType = if (deleted) null else attachmentTypeName,
+        )
+    }
 
     private fun loadAttachments(messages: List<MessageEntity>): Map<Long, List<AttachmentDto>> {
         val ids = messages.mapNotNull { it.id }
-
         if (ids.isEmpty()) return emptyMap()
 
         return attachmentRepository
@@ -270,17 +259,16 @@ class MessageService(
             .mapValues { (_, list) -> list.map { it.toDto() } }
     }
 
-    private fun notifyMessageUpdated(message: MessageResponse, chatId: Long) {
-        chatNotificationService.broadcastChatMessage(chatId, message)
-    }
-
     private fun toMessageResponse(message: MessageEntity): MessageResponse =
         if (message.deletedAt != null) {
             message.toResponse()
         } else {
+            val attachments = attachmentRepository
+                .findAllByMessageIdIn(listOf(requireNotNull(message.id)))
+                .map { it.toDto() }
             message.toResponse(
                 replyPreview = loadReplyPreview(message),
-                attachments = loadMessageAttachments(requireNotNull(message.id)),
+                attachments = attachments,
             )
         }
 

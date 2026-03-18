@@ -7,7 +7,6 @@ import com.daniel.messenger.security.exception.RefreshTokenExpiredException
 import com.daniel.messenger.security.repository.RefreshTokenRepository
 import com.daniel.messenger.user.service.UserService
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.time.temporal.ChronoUnit

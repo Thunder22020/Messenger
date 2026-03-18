@@ -89,17 +89,8 @@ class ChatService(
 
         participant.unreadCount = 0
         participant.lastReadMessageId = chat.lastMessageId
-        chatParticipantRepository.save(participant)
 
-        chatNotificationService.sendSidebarUpdate(
-            participant.user.username,
-            ChatUpdateEvent(
-                chatId = chatId,
-                lastMessageContent = chat.lastMessageContent ?: "",
-                lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
-                unreadCount = 0,
-            ),
-        )
+        sendSidebarUpdate(participant, chatId, chat)
 
         val lastReadId = chat.lastMessageId ?: return
         chatNotificationService.broadcastReadAck(
@@ -126,16 +117,8 @@ class ChatService(
             if (deletedMessageId > lastReadId && participant.unreadCount > 0) {
                 participant.unreadCount--
             }
-            chatNotificationService.sendSidebarUpdate(
-                participant.user.username,
-                ChatUpdateEvent(
-                    chatId = chatId,
-                    lastMessageContent = chat.lastMessageContent ?: "",
-                    lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
-                    unreadCount = participant.unreadCount,
-                ),
-            )
         }
+        broadcastSidebarUpdate(participants, chatId, chat)
     }
 
     @Transactional(readOnly = true)
@@ -207,26 +190,35 @@ class ChatService(
         if (chat.lastMessageId != messageId) return
 
         chat.lastMessageContent = newContent
-        chatRepository.save(chat)
 
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
-        participants.forEach { participant ->
-            chatNotificationService.sendSidebarUpdate(
-                participant.user.username,
-                ChatUpdateEvent(
-                    chatId = chatId,
-                    lastMessageContent = newContent,
-                    lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
-                    unreadCount = participant.unreadCount,
-                ),
-            )
-        }
+        broadcastSidebarUpdate(participants, chatId, chat)
     }
 
     internal fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
         chat.lastMessageId = message?.id
         chat.lastMessageContent = message?.content
         chat.lastMessageCreatedAt = message?.createdAt
+    }
+
+    private fun broadcastSidebarUpdate(
+        participants: List<ChatParticipant>,
+        chatId: Long,
+        chat: Chat,
+    ) {
+        participants.forEach { sendSidebarUpdate(it, chatId, chat) }
+    }
+
+    private fun sendSidebarUpdate(participant: ChatParticipant, chatId: Long, chat: Chat) {
+        chatNotificationService.sendSidebarUpdate(
+            participant.user.username,
+            ChatUpdateEvent(
+                chatId = chatId,
+                lastMessageContent = chat.lastMessageContent ?: "",
+                lastMessageCreatedAt = chat.lastMessageCreatedAt ?: Instant.now(),
+                unreadCount = participant.unreadCount,
+            ),
+        )
     }
 
     private fun getDisplayName(chat: Chat, userId: Long): String = when (chat.type) {
