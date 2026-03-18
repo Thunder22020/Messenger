@@ -3102,25 +3102,20 @@ button {
 }
 
 .sidebar-nav-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
     border: none;
-    background: transparent;
+    background: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    position: relative;
-    transition: background 0.15s ease;
+    outline: none;
 }
 
 .sidebar-nav-icon {
     width: 22px;
     height: 22px;
     object-fit: contain;
-    /* milk-white (#EAE0D2) — warm white tint */
     filter: brightness(0) invert(1) sepia(0.22) saturate(0.55);
     opacity: 0.42;
     transition: opacity 0.2s ease, filter 0.2s ease;
@@ -3131,8 +3126,9 @@ button {
     filter: brightness(0) invert(1) sepia(0.22) saturate(0.55);
 }
 
-.sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon {
-    opacity: 0.68;
+.sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon,
+.sidebar-nav-btn:focus-visible:not(.active) .sidebar-nav-icon {
+    opacity: 0.75;
 }
 
 /* ===== SETTINGS PANEL ===== */
@@ -3155,7 +3151,7 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 13px 18px;
+    padding: 18px 18px;
     cursor: pointer;
     transition: background 0.15s ease;
     border-bottom: 1px solid var(--border);
@@ -3179,32 +3175,32 @@ button {
 /* Horizontal slider toggle */
 .settings-theme-toggle {
     width: 52px;
-    height: 24px;
+    height: 18px;
     border-radius: 4px;
     border: 1px solid var(--border-strong);
     cursor: pointer;
-    padding: 3px;
+    padding: 0;
+    overflow: hidden;
     position: relative;
     flex-shrink: 0;
     background: var(--bg-elevated);
     display: flex;
-    align-items: center;
+    align-items: stretch;
     box-sizing: border-box;
 }
 
 .settings-toggle-knob {
-    width: 22px;
-    height: 100%;
+    width: 26px;
+    flex-shrink: 0;
     border-radius: 3px;
     background: var(--accent-gradient);
     box-shadow: 0 1px 6px rgba(0,0,0,0.45);
     transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateX(0);
-    flex-shrink: 0;
 }
 
 .settings-theme-toggle.on .settings-toggle-knob {
-    transform: translateX(calc(52px - 22px - 6px - 2px));
+    transform: translateX(24px);
 }
 
 /* Logout at bottom of settings */
@@ -3905,8 +3901,9 @@ body,
     filter: brightness(0) sepia(1) saturate(0.55) brightness(0.22);
 }
 
-[data-theme="light"] .sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon {
-    opacity: 0.70;
+[data-theme="light"] .sidebar-nav-btn:hover:not(.active) .sidebar-nav-icon,
+[data-theme="light"] .sidebar-nav-btn:focus-visible:not(.active) .sidebar-nav-icon {
+    opacity: 0.75;
 }
 
 /* ----- Settings panel — light theme ----- */

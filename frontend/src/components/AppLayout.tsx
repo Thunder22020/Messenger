@@ -448,7 +448,7 @@ export default function AppLayout({ children, rightPanel }: {
                         <div className="sidebar-settings">
                             <div className="settings-section">
                                 <div className="settings-row" onClick={toggleTheme}>
-                                    <span className="settings-row-label">Change the theme</span>
+                                    <span className="settings-row-label">Light theme</span>
                                     <button
                                         className={`settings-theme-toggle ${theme === "light" ? "on" : "off"}`}
                                         onClick={(e) => { e.stopPropagation(); toggleTheme(); }}
@@ -473,21 +473,21 @@ export default function AppLayout({ children, rightPanel }: {
 
                 {/* ── Bottom navigation ── */}
                 <div className="sidebar-bottom-nav">
-                    <button
+                    <div
                         className={`sidebar-nav-btn ${activeTab === "chats" ? "active" : ""}`}
                         onClick={() => setActiveTab("chats")}
                         title="Chats"
                     >
                         <img src="/icons/chat-bubble.png" alt="Chats" className="sidebar-nav-icon" />
-                    </button>
+                    </div>
 
-                    <button
+                    <div
                         className={`sidebar-nav-btn ${activeTab === "settings" ? "active" : ""}`}
                         onClick={() => setActiveTab("settings")}
                         title="Settings"
                     >
                         <img src="/icons/setting.png" alt="Settings" className="sidebar-nav-icon" />
-                    </button>
+                    </div>
                 </div>
 
                 {/* ── Logout popup ── */}
