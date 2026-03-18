@@ -263,7 +263,7 @@ export default function AppLayout({ children, rightPanel }: {
                         </button>
                     </div>
 
-                    <img src="/logo/synk_white.svg" alt="Synk" className="sidebar-logo" />
+                    <div className="sidebar-logo" role="img" aria-label="Synk" />
 
                     <div className="sidebar-header-right">
                         <button className="sidebar-create-btn" onClick={() => navigate("/group")}>

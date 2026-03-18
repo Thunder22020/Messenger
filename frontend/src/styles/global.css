@@ -314,7 +314,6 @@ button {
 .sidebar-logo {
     flex: 0 0 auto;
     height: 22px;
-    object-fit: contain;
     object-position: center;
     opacity: 0.9;
 }
@@ -3001,9 +3000,32 @@ button {
 /* ===== LOGO AREA — brand breathing room ===== */
 
 .sidebar-logo {
+    position: relative;
+    width: 72px;
     height: 20px;
-    opacity: 0.85;
-    filter: drop-shadow(0 1px 4px rgba(255,255,255,0.08));
+    cursor: default;
+}
+
+.sidebar-logo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: url('/logo/synk_milk.svg');
+}
+
+.sidebar-logo:hover::before {
+    background-image: url('/logo/synk_milk_green_dot.svg');
+}
+
+[data-theme="light"] .sidebar-logo::before {
+    background-image: url('/logo/synk_coffee.svg');
+}
+
+[data-theme="light"] .sidebar-logo:hover::before {
+    background-image: url('/logo/synk_coffee_green_dot.svg');
 }
 
 /* ===== CHAT HEADER NAME — slightly tighter tracking ===== */
@@ -3066,10 +3088,6 @@ button {
     justify-content: flex-end;
 }
 
-/* Logo loses its own flex:1 since the side containers balance it */
-.sidebar-logo {
-    flex-shrink: 0;
-}
 
 /* ===== SIDEBAR MAIN CONTENT — dynamic middle area ===== */
 
@@ -3489,10 +3507,6 @@ body,
 
 /* ----- Sidebar elements ----- */
 
-[data-theme="light"] .sidebar-logo {
-    filter: brightness(0);
-    opacity: 0.72;
-}
 
 [data-theme="light"] .theme-toggle-switch {
     border-color: rgba(0,0,0,0.14);
