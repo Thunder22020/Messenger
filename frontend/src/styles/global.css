@@ -351,7 +351,7 @@ button {
 }
 
 .sidebar-create-btn {
-    padding: 14px 7px 7px 7px;
+    padding: 14px 12px 10px 7px;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -360,7 +360,6 @@ button {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    cursor: pointer;
 }
 
 .sidebar-create-btn img {
@@ -1220,7 +1219,7 @@ button {
 /* ===== SIDEBAR SEARCH ===== */
 
 .sidebar-search-wrapper {
-    padding: 4px 14px 8px;
+    padding: 4px 14px 4px;
     flex-shrink: 0;
 }
 
@@ -3124,13 +3123,13 @@ button {
 }
 
 .sidebar-nav-icon--chats {
-    -webkit-mask-image: url('/icons/chat-bubble.png');
-    mask-image: url('/icons/chat-bubble.png');
+    -webkit-mask-image: url('../../public/icons/chat-bubble.png');
+    mask-image: url('../../public/icons/chat-bubble.png');
 }
 
 .sidebar-nav-icon--settings {
-    -webkit-mask-image: url('/icons/setting.png');
-    mask-image: url('/icons/setting.png');
+    -webkit-mask-image: url('../../public/icons/setting.png');
+    mask-image: url('../../public/icons/setting.png');
 }
 
 .sidebar-nav-btn.active .sidebar-nav-icon {
