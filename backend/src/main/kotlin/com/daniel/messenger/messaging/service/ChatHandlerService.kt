@@ -29,28 +29,13 @@ class ChatHandlerService(
     fun sendMessage(message: SendMessageRequest, sender: User) {
         val response = messageService.sendMessage(message, sender)
         val participants = chatParticipantRepository.findAllWithUserByChatId(message.chatId)
-        val snapshots = updateUnreadCountsAndBuildParticipantSnapshots(
-            message.chatId,
-            requireNotNull(sender.id),
-            participants
-        )
-        eventPublisher.publishEvent(MessageSentEvent(message.chatId, response, snapshots))
-    }
 
-    private fun updateUnreadCountsAndBuildParticipantSnapshots(
-        chatId: Long,
-        senderId: Long,
-        participants: List<ChatParticipant>,
-    ): List<ParticipantSnapshot> {
-        val viewingUserIds = getViewingUserIds(participants, chatId)
-        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, senderId, viewingUserIds)
-        return participants.map { p ->
-            val incremented = p.user.id != senderId && p.user.id !in viewingUserIds
-            ParticipantSnapshot(
-                username = p.user.username,
-                unreadCount = p.unreadCount + if (incremented) 1 else 0,
-            )
-        }
+        val senderId = requireNotNull(sender.id)
+        val viewingUserIds = getViewingUserIds(participants, message.chatId)
+        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(message.chatId, senderId, viewingUserIds)
+
+        val snapshots = convertToParticipantSnapshots(participants, senderId, viewingUserIds)
+        eventPublisher.publishEvent(MessageSentEvent(message.chatId, response, snapshots))
     }
 
     private fun getViewingUserIds(participants: List<ChatParticipant>, chatId: Long) =
@@ -64,8 +49,21 @@ class ChatHandlerService(
             ?.any { session -> session.subscriptions.any { it.destination == "/topic/chat.$chatId" } }
             ?: false
 
+    private fun convertToParticipantSnapshots(
+        participants: List<ChatParticipant>,
+        senderId: Long,
+        viewingUserIds: List<Long>,
+    ): List<ParticipantSnapshot> =
+        participants.map { p ->
+            val incremented = p.user.id != senderId && p.user.id !in viewingUserIds
+            ParticipantSnapshot(
+                username = p.user.username,
+                unreadCount = p.unreadCount + if (incremented) 1 else 0,
+            )
+        }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onMessageSent(event: MessageSentEvent) {
+    private fun onMessageSent(event: MessageSentEvent) {
         chatNotificationService.broadcastChatMessage(event.chatId, event.response)
         event.participants.forEach {
             sendSidebarChatsUpdateEvent(event.chatId, it, event.response)
