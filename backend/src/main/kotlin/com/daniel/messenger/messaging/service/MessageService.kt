@@ -25,9 +25,9 @@ class MessageService(
     private val messageRepository: MessageRepository,
     private val chatService: ChatService,
     private val userService: UserService,
-    private val chatNotificationService: ChatNotificationService,
     private val attachmentService: AttachmentService,
     private val attachmentRepository: AttachmentRepository,
+    private val chatNotificationService: ChatNotificationService,
 ) {
 
     @Transactional
@@ -70,7 +70,7 @@ class MessageService(
 
         val chatId = requireNotNull(message.chat.id)
         chatNotificationService.broadcastChatMessage(chatId, response)
-        chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), message.content)
+        chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), message.content, response)
 
         return response
     }
@@ -88,13 +88,11 @@ class MessageService(
 
         val chatId = requireNotNull(message.chat.id)
         chatNotificationService.broadcastChatMessage(chatId, response)
-
         chatService.handleMessageDeleted(
-            deletedMessageId = requireNotNull(message.id),
-            chatId = chatId,
+            requireNotNull(message.id),
+            chatId,
+            response
         )
-
-        attachmentService.deleteByMessageId(messageId)
 
         return response
     }
@@ -274,10 +272,6 @@ class MessageService(
                 attachments = attachments,
             )
         }
-
-    fun findLastNonDeletedByChatId(chatId: Long) = messageRepository
-            .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
-            .firstOrNull()
 
     companion object {
         private const val PAGE_SIZE = 50

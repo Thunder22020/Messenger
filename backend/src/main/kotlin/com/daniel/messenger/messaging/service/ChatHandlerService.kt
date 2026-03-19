@@ -2,9 +2,9 @@ package com.daniel.messenger.messaging.service
 
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.event.MessageSentEvent
-import com.daniel.messenger.messaging.dto.event.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.dto.event.TypingEvent
+import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.request.TypingRequest
 import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.entity.ChatParticipant

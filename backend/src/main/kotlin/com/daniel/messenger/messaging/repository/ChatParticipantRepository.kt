@@ -48,4 +48,15 @@ interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatPartici
         @Param("senderId") senderId: Long,
         @Param("viewingUserIds") viewingUserIds: List<Long>
     )
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        UPDATE ChatParticipant
+        SET unreadCount = unreadCount - 1
+        WHERE chat.id=:chatId AND (lastReadMessageId IS NULL OR :deletedMessageId > lastReadMessageId) AND unreadCount > 0
+    """)
+    fun bulkDecrementUnreadCounts(
+        @Param("chatId") chatId: Long,
+        @Param("deletedMessageId") deletedMessageId: Long
+    )
 }
