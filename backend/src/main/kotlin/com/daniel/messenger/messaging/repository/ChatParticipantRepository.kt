@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.repository
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -33,4 +34,14 @@ interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatPartici
           )
     """)
     fun findPrivateChatIdByUserIds(userIds: List<Long>): Long?
+
+    @Modifying
+    @Query("""
+        UPDATE ChatParticipant
+        SET unreadCount = unreadCount + 1
+        WHERE chat.id=:chatId
+            AND user.id != :senderId
+            AND user.id NOT IN (:viewingUserIds)
+    """)
+    fun bulkUpdateUnreadCountsNotInViewing(chatId: Long, senderId: Long, viewingUserIds: List<Long>)
 }

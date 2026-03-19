@@ -1,16 +1,21 @@
 package com.daniel.messenger.messaging.service
 
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.event.MessageSentEvent
+import com.daniel.messenger.messaging.dto.event.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.dto.event.TypingEvent
 import com.daniel.messenger.messaging.dto.request.TypingRequest
+import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.user.entity.User
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.messaging.simp.user.SimpUserRegistry
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 
 @Service
 class ChatHandlerService(
@@ -18,33 +23,40 @@ class ChatHandlerService(
     private val chatNotificationService: ChatNotificationService,
     private val chatParticipantRepository: ChatParticipantRepository,
     private val simpUserRegistry: SimpUserRegistry,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun sendMessage(message: SendMessageRequest, sender: User) {
         val response = messageService.sendMessage(message, sender)
-        chatNotificationService.broadcastChatMessage(message.chatId, response)
-        updateAndNotifyParticipants(message.chatId, requireNotNull(sender.id), response)
+        val participants = chatParticipantRepository.findAllWithUserByChatId(message.chatId)
+        val snapshots = updateUnreadCountsAndBuildParticipantSnapshots(
+            message.chatId,
+            requireNotNull(sender.id),
+            participants
+        )
+        eventPublisher.publishEvent(MessageSentEvent(message.chatId, response, snapshots))
     }
 
-    private fun updateAndNotifyParticipants(chatId: Long, senderId: Long, response: MessageResponse) {
-        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
-        updateUnreadCounts(participants, senderId, chatId)
-        chatParticipantRepository.saveAll(participants)
-        participants.forEach {
-            sendChatUpdateEvent(chatId, it, response)
+    private fun updateUnreadCountsAndBuildParticipantSnapshots(
+        chatId: Long,
+        senderId: Long,
+        participants: List<ChatParticipant>,
+    ): List<ParticipantSnapshot> {
+        val viewingUserIds = getViewingUserIds(participants, chatId)
+        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, senderId, viewingUserIds)
+        return participants.map { p ->
+            val incremented = p.user.id != senderId && p.user.id !in viewingUserIds
+            ParticipantSnapshot(
+                username = p.user.username,
+                unreadCount = p.unreadCount + if (incremented) 1 else 0,
+            )
         }
     }
 
-    private fun updateUnreadCounts(participants: List<ChatParticipant>, senderId: Long, chatId: Long) {
-        participants.forEach { participant ->
-            if (participant.user.id == senderId) return@forEach
-            if (isUserViewingChat(participant.user.username, chatId)) {
-                participant.unreadCount = 0
-            } else {
-                participant.unreadCount += 1
-            }
-        }
-    }
+    private fun getViewingUserIds(participants: List<ChatParticipant>, chatId: Long) =
+        participants
+            .filter { isUserViewingChat(it.user.username, chatId) }
+            .mapNotNull { it.user.id }
 
     private fun isUserViewingChat(username: String, chatId: Long): Boolean =
         simpUserRegistry.getUser(username)
@@ -52,9 +64,17 @@ class ChatHandlerService(
             ?.any { session -> session.subscriptions.any { it.destination == "/topic/chat.$chatId" } }
             ?: false
 
-    private fun sendChatUpdateEvent(chatId: Long, participant: ChatParticipant, response: MessageResponse) {
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onMessageSent(event: MessageSentEvent) {
+        chatNotificationService.broadcastChatMessage(event.chatId, event.response)
+        event.participants.forEach {
+            sendSidebarChatsUpdateEvent(event.chatId, it, event.response)
+        }
+    }
+
+    private fun sendSidebarChatsUpdateEvent(chatId: Long, participant: ParticipantSnapshot, response: MessageResponse) {
         chatNotificationService.sendSidebarUpdate(
-            participant.user.username,
+            participant.username,
             ChatUpdateEvent(
                 chatId = chatId,
                 lastMessageContent = response.content,
