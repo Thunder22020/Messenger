@@ -18,7 +18,7 @@ import java.time.Instant
 @Table(name = "chat_participants", indexes = [
     Index(name = "idx_chat_participants_user_id", columnList = "user_id")
 ])
-data class ChatParticipant(
+class ChatParticipant(
     @EmbeddedId
     var id: ChatParticipantId = ChatParticipantId(),
 
