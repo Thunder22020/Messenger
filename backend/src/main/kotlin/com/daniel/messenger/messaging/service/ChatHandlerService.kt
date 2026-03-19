@@ -63,7 +63,7 @@ class ChatHandlerService(
         }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    private fun onMessageSent(event: MessageSentEvent) {
+    fun onMessageSent(event: MessageSentEvent) {
         chatNotificationService.broadcastChatMessage(event.chatId, event.response)
         event.participants.forEach {
             sendSidebarChatsUpdateEvent(event.chatId, it, event.response)
