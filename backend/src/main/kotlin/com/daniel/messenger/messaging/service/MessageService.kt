@@ -81,6 +81,7 @@ class MessageService(
 
         assertMessageOwner(message.sender.id, userId)
 
+        message.content = null
         message.deletedAt = Instant.now()
 
         val response = toMessageResponse(message)
@@ -92,6 +93,8 @@ class MessageService(
             deletedMessageId = requireNotNull(message.id),
             chatId = chatId,
         )
+
+        attachmentService.deleteByMessageId(messageId)
 
         return response
     }
@@ -244,7 +247,7 @@ class MessageService(
         return ReplyPreviewDto(
             messageId = requireNotNull(message.id),
             sender = message.sender.username,
-            content = if (deleted) "" else message.content.take(100),
+            content = if (deleted) "" else message.content?.take(100),
             attachmentType = if (deleted) null else attachmentTypeName,
         )
     }
@@ -271,6 +274,10 @@ class MessageService(
                 attachments = attachments,
             )
         }
+
+    fun findLastNonDeletedByChatId(chatId: Long) = messageRepository
+            .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
+            .firstOrNull()
 
     companion object {
         private const val PAGE_SIZE = 50

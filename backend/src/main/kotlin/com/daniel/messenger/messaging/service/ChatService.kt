@@ -185,7 +185,7 @@ class ChatService(
     }
 
     @Transactional
-    fun handleLastMessageEdited(chatId: Long, messageId: Long, newContent: String) {
+    fun handleLastMessageEdited(chatId: Long, messageId: Long, newContent: String?) {
         val chat = findByIdOrThrow(chatId)
         if (chat.lastMessageId != messageId) return
 

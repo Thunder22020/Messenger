@@ -29,7 +29,7 @@ class MessageEntity(
     var sender: User,
 
     @Column(columnDefinition = "TEXT")
-    var content: String,
+    var content: String?,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id", nullable = false)

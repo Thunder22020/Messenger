@@ -41,16 +41,22 @@ class AttachmentService(
         return attachment.toDto()
     }
 
-    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
-        if (attachmentIds.isEmpty()) return emptyList()
-        attachmentRepository.bulkLinkToMessage(attachmentIds, message)
-        return attachmentRepository.findAllByMessageIdIn(listOf(requireNotNull(message.id)))
-    }
-
     private fun detectType(contentType: String): AttachmentType = when {
         contentType.startsWith("image/") -> AttachmentType.PHOTO
         contentType.startsWith("video/") -> AttachmentType.VIDEO
         contentType.startsWith("audio/") -> AttachmentType.AUDIO
         else -> AttachmentType.FILE
+    }
+
+    fun deleteByMessageId(messageId: Long) {
+        attachmentRepository.deleteAllByMessageIdReturningFilePaths(messageId)
+            .map { it.substringAfterLast("/") }
+            .forEach { s3StorageService.delete(it) }
+    }
+
+    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
+        if (attachmentIds.isEmpty()) return emptyList()
+        attachmentRepository.bulkLinkToMessage(attachmentIds, message)
+        return attachmentRepository.findAllByMessageIdIn(listOf(requireNotNull(message.id)))
     }
 }

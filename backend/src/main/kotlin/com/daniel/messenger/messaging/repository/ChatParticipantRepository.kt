@@ -43,5 +43,9 @@ interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatPartici
             AND user.id != :senderId
             AND user.id NOT IN (:viewingUserIds)
     """)
-    fun bulkUpdateUnreadCountsNotInViewing(chatId: Long, senderId: Long, viewingUserIds: List<Long>)
+    fun bulkUpdateUnreadCountsNotInViewing(
+        @Param("chatId") chatId: Long,
+        @Param("senderId") senderId: Long,
+        @Param("viewingUserIds") viewingUserIds: List<Long>
+    )
 }

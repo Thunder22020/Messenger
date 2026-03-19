@@ -9,7 +9,8 @@ import java.time.Instant
     Index(name = "idx_attachments_message_id", columnList = "message_id")
 ])
 class Attachment(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)

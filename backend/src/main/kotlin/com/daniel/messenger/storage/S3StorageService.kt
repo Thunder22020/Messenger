@@ -3,6 +3,7 @@ package com.daniel.messenger.storage
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.InputStream
 
@@ -22,5 +23,14 @@ class S3StorageService(
             RequestBody.fromInputStream(inputStream, size),
         )
         return "${props.fetchUrl.trimEnd('/')}/$key"
+    }
+
+    fun delete(key: String) {
+        s3Client.deleteObject(
+            DeleteObjectRequest.builder()
+                .bucket(props.bucket)
+                .key(key)
+                .build()
+        )
     }
 }

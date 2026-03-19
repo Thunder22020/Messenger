@@ -6,7 +6,7 @@ import java.time.Instant
 
 data class MessageResponse(
     val id: Long,
-    val content: String,
+    val content: String?,
     val sender: String,
     val createdAt: Instant,
     val editedAt: Instant?,

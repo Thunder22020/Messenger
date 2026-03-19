@@ -13,6 +13,17 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("SELECT a FROM Attachment a WHERE a.message.id IN :messageIds")
     fun findAllByMessageIdIn(@Param("messageIds") messageIds: Collection<Long>): List<Attachment>
 
+    @Modifying
+    @Query(
+        """
+        DELETE FROM attachments
+        WHERE message_id = :messageId
+        RETURNING file_path
+        """,
+        nativeQuery = true
+    )
+    fun deleteAllByMessageIdReturningFilePaths(@Param("messageId") messageId: Long): List<String>
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids")
     fun bulkLinkToMessage(@Param("ids") ids: List<Long>, @Param("message") message: MessageEntity): Int
