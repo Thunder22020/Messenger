@@ -8,6 +8,7 @@ import com.daniel.messenger.security.repository.RefreshTokenRepository
 import com.daniel.messenger.user.service.UserService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -56,4 +57,9 @@ class RefreshTokenService(
             ?: throw InvalidRefreshTokenException(
                 "Refresh token ${token.take(5)}... not found"
             )
+
+    @Transactional
+    fun deleteExpiredTokens() {
+        refreshTokenRepository.deleteExpiredTokens()
+    }
 }
