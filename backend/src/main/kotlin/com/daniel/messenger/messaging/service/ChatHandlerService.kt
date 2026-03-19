@@ -26,17 +26,6 @@ class ChatHandlerService(
         updateAndNotifyParticipants(message.chatId, requireNotNull(sender.id), response)
     }
 
-    fun broadcastTyping(request: TypingRequest, username: String) {
-        chatNotificationService.broadcastTyping(
-            request.chatId,
-            TypingEvent(
-                chatId = request.chatId,
-                username = username,
-                isTyping = request.isTyping
-            ),
-        )
-    }
-
     private fun updateAndNotifyParticipants(chatId: Long, senderId: Long, response: MessageResponse) {
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
         updateUnreadCounts(participants, senderId, chatId)
@@ -71,6 +60,17 @@ class ChatHandlerService(
                 lastMessageContent = response.content,
                 lastMessageCreatedAt = response.createdAt,
                 unreadCount = participant.unreadCount,
+            ),
+        )
+    }
+
+    fun broadcastTyping(request: TypingRequest, username: String) {
+        chatNotificationService.broadcastTyping(
+            request.chatId,
+            TypingEvent(
+                chatId = request.chatId,
+                username = username,
+                isTyping = request.isTyping
             ),
         )
     }
