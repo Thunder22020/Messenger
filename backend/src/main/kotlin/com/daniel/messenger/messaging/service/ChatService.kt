@@ -153,20 +153,39 @@ class ChatService(
     }
 
     @Transactional(readOnly = true)
-    fun getUserChats(userId: Long): List<MyChatResponse> =
-        chatRepository.findAllUserChatsWithParticipants(userId).map { chat ->
-            val myParticipant = chat.participants.first { it.user.id == userId }
+    fun getUserChats(userId: Long): List<MyChatResponse> {
+        val chats = chatRepository.findMyChats(userId)
+
+        val privateChatIds = chats
+            .filter { it.getType() == ChatType.PRIVATE.name }
+            .map { it.getChatId() }
+
+        val displayNameMap = if (privateChatIds.isNotEmpty()) {
+            chatRepository.findPrivateChatDisplayNames(privateChatIds, userId)
+                .associate { it.getChatId() to it.getUsername() }
+        } else {
+            emptyMap()
+        }
+
+        return chats.map { chat ->
+            val displayName = if (chat.getType() == ChatType.PRIVATE.name) {
+                displayNameMap[chat.getChatId()] ?: ""
+            } else {
+                chat.getTitle() ?: ""
+            }
+
             MyChatResponse(
-                chatId = requireNotNull(chat.id),
-                type = chat.type,
-                displayName = getDisplayName(chat, userId),
-                lastMessageContent = chat.lastMessageContent,
-                lastMessageSender = chat.lastMessageSender,
-                lastMessageCreatedAt = chat.lastMessageCreatedAt,
-                unreadCount = myParticipant.unreadCount,
-                lastReadMessageId = myParticipant.lastReadMessageId,
+                chatId = chat.getChatId(),
+                type = ChatType.valueOf(chat.getType()),
+                displayName = displayName,
+                lastMessageContent = chat.getLastMessageContent(),
+                lastMessageSender = chat.getLastMessageSender(),
+                lastMessageCreatedAt = chat.getLastMessageCreatedAt(),
+                unreadCount = chat.getUnreadCount(),
+                lastReadMessageId = chat.getLastReadMessageId(),
             )
         }
+    }
 
     @Transactional(readOnly = true)
     fun getChatParticipants(chatId: Long, userId: Long): List<ChatParticipantResponse> {
@@ -240,8 +259,4 @@ class ChatService(
         )
     }
 
-    private fun getDisplayName(chat: Chat, userId: Long): String = when (chat.type) {
-        ChatType.PRIVATE -> chat.participants.first { it.user.id != userId }.user.username
-        ChatType.GROUP -> requireNotNull(chat.title)
-    }
 }
