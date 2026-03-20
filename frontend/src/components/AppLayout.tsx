@@ -13,6 +13,7 @@ type ChatListItem = {
     displayName: string;
     type: "PRIVATE" | "GROUP";
     lastMessageContent?: string | null;
+    lastMessageSender?: string | null;
     lastMessageCreatedAt?: string | null;
     unreadCount: number;
 };
@@ -116,6 +117,7 @@ export default function AppLayout({ children, rightPanel }: {
                             ? {
                                 ...chat,
                                 lastMessageContent: body.lastMessageContent,
+                                lastMessageSender: body.lastMessageSender ?? null,
                                 lastMessageCreatedAt: body.lastMessageCreatedAt,
                                 unreadCount: body.unreadCount ?? 0,
                             }
@@ -187,6 +189,15 @@ export default function AppLayout({ children, rightPanel }: {
         if (users.length === 1) return `${users[0]} is typing...`;
         if (users.length === 2) return `${users[0]}, ${users[1]} are typing...`;
         return `${users[0]}, ${users[1]} and ${users.length - 2} other${users.length - 2 > 1 ? "s" : ""} are typing...`;
+    };
+
+    const getLastMessagePreview = (chat: ChatListItem): string => {
+        if (!chat.lastMessageContent && chat.lastMessageContent !== "") return "No messages yet";
+        const sender = chat.lastMessageSender;
+        if (chat.type === "GROUP" && sender && sender !== currentUsername) {
+            return `${sender}: ${chat.lastMessageContent}`;
+        }
+        return chat.lastMessageContent ?? "No messages yet";
     };
 
     const filteredChats = searchQuery.trim()
@@ -347,7 +358,7 @@ export default function AppLayout({ children, rightPanel }: {
                                                         <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
                                                     ) : (
                                                         <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                            {chat.lastMessageContent ?? "No messages yet"}
+                                                            {getLastMessagePreview(chat)}
                                                         </div>
                                                     )}
                                                 </div>

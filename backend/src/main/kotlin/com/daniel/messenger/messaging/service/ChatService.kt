@@ -161,6 +161,7 @@ class ChatService(
                 type = chat.type,
                 displayName = getDisplayName(chat, userId),
                 lastMessageContent = chat.lastMessageContent,
+                lastMessageSender = chat.lastMessageSender,
                 lastMessageCreatedAt = chat.lastMessageCreatedAt,
                 unreadCount = myParticipant.unreadCount,
                 lastReadMessageId = myParticipant.lastReadMessageId,
@@ -218,6 +219,7 @@ class ChatService(
     internal fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
         chat.lastMessageId = message?.id
         chat.lastMessageContent = message?.content
+        chat.lastMessageSender = message?.sender?.username
         chat.lastMessageCreatedAt = message?.createdAt
     }
 
@@ -231,6 +233,7 @@ class ChatService(
             ChatUpdateEvent(
                 chatId = requireNotNull(chat.id),
                 lastMessageContent = chat.lastMessageContent,
+                lastMessageSender = chat.lastMessageSender,
                 lastMessageCreatedAt = chat.lastMessageCreatedAt,
                 unreadCount = participant.unreadCount,
             ),

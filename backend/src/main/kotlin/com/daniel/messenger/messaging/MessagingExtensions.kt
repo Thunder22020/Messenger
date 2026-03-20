@@ -42,6 +42,7 @@ fun Chat.toDto(): ChatDTO = ChatDTO(
     title = title ?: "",
     lastMessageId = lastMessageId ?: 0,
     lastMessageContent = lastMessageContent ?: "",
+    lastMessageSender = lastMessageSender,
     lastMessageCreatedAt = lastMessageCreatedAt ?: Instant.now(),
     createdAt = createdAt
 )

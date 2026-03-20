@@ -32,6 +32,8 @@ class Chat(
     @Column(columnDefinition = "TEXT")
     var lastMessageContent: String? = null,
 
+    var lastMessageSender: String? = null,
+
     var lastMessageCreatedAt: Instant? = null,
 
     @Column(nullable = false)

@@ -76,6 +76,7 @@ class ChatHandlerService(
             ChatUpdateEvent(
                 chatId = chatId,
                 lastMessageContent = response.content,
+                lastMessageSender = response.sender,
                 lastMessageCreatedAt = response.createdAt,
                 unreadCount = participant.unreadCount,
             ),

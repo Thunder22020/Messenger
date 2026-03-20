@@ -9,6 +9,7 @@ data class ChatDTO(
     val title: String,
     val lastMessageId: Long,
     val lastMessageContent: String,
+    val lastMessageSender: String?,
     val lastMessageCreatedAt: Instant,
     val createdAt: Instant,
 )
