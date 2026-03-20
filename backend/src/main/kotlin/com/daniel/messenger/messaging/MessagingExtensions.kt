@@ -54,10 +54,10 @@ fun ChatParticipant.toSnapshot() = ParticipantSnapshot(
 )
 
 fun attachmentPreviewText(type: AttachmentType, count: Int): String = when (type) {
-    AttachmentType.PHOTO -> if (count == 1) "\uD83D\uDCF7 Photo" else "\uD83D\uDCF7 $count photos"
-    AttachmentType.VIDEO -> if (count == 1) "\uD83C\uDFA5 Video" else "\uD83C\uDFA5 $count videos"
-    AttachmentType.AUDIO -> if (count == 1) "\uD83C\uDFA7 Audio" else "\uD83C\uDFA7 $count audios"
-    AttachmentType.FILE -> if (count == 1) "\uD83D\uDCC4 File" else "\uD83D\uDCC4 $count files"
+    AttachmentType.PHOTO -> if (count == 1) "📷 Photo" else "📷 $count photos"
+    AttachmentType.VIDEO -> if (count == 1) "🎥 Video" else "🎥 $count videos"
+    AttachmentType.AUDIO -> if (count == 1) "🎧 Audio" else "🎧 $count audios"
+    AttachmentType.FILE -> if (count == 1) "📄 File" else "📄 $count files"
 }
 
 fun resolveContentPreview(response: MessageResponse): String? {
