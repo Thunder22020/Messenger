@@ -1,12 +1,14 @@
 package com.daniel.messenger.messaging.service
 
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
+import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.dto.event.TypingEvent
 import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.request.TypingRequest
 import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.user.entity.User
@@ -75,7 +77,8 @@ class ChatHandlerService(
             participant.username,
             ChatUpdateEvent(
                 chatId = chatId,
-                lastMessageContent = response.content,
+                type = ChatUpdateType.CONTENT,
+                lastMessageContent = resolveContentPreview(response),
                 lastMessageSender = response.sender,
                 lastMessageCreatedAt = response.createdAt,
                 unreadCount = participant.unreadCount,

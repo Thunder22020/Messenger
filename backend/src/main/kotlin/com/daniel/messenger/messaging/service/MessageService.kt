@@ -27,7 +27,6 @@ class MessageService(
     private val userService: UserService,
     private val attachmentService: AttachmentService,
     private val attachmentRepository: AttachmentRepository,
-    private val chatNotificationService: ChatNotificationService,
 ) {
 
     @Transactional
@@ -48,7 +47,7 @@ class MessageService(
 
         val attachments = attachmentService.linkToMessage(request.attachmentIds, message)
 
-        chatService.updateChatLastMessage(chat, message)
+        chatService.updateChatLastMessage(chat, message, sender.username, attachments)
 
         return message.toResponse(
             senderUsername = sender.username,
@@ -69,8 +68,7 @@ class MessageService(
         val response = toMessageResponse(message)
 
         val chatId = requireNotNull(message.chat.id)
-        chatNotificationService.broadcastChatMessage(chatId, response)
-        chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), message.content, response)
+        chatService.handleLastMessageEdited(chatId, requireNotNull(message.id), response)
 
         return response
     }
@@ -87,7 +85,6 @@ class MessageService(
         val response = toMessageResponse(message)
 
         val chatId = requireNotNull(message.chat.id)
-        chatNotificationService.broadcastChatMessage(chatId, response)
         chatService.handleMessageDeleted(
             requireNotNull(message.id),
             chatId,

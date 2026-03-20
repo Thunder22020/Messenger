@@ -154,26 +154,31 @@ export function useChatMessages({
 
         const subscription = client.subscribe(`/topic/chat.${numericChatId}`, (msg: { body: string }) => {
             const body: Message = JSON.parse(msg.body);
+
+            if (body.deletedAt) {
+                setMessages(prev => {
+                    const idx = prev.findIndex(m => m.id === body.id);
+                    if (idx === -1) return prev;
+                    return prev.map(m =>
+                        m.replyPreview?.messageId === body.id
+                            ? { ...m, replyPreview: { ...m.replyPreview, content: "", attachmentType: null } }
+                            : m
+                    );
+                });
+                startCollapseAnimation(body.id);
+                return;
+            }
+
             let appearedAsNew = false;
-            let shouldAnimateDelete = false;
             setMessages(prev => {
                 const idx = prev.findIndex(m => m.id === body.id);
                 if (idx === -1) {
-                    if (body.deletedAt) return prev;
                     if (hasMoreNewerRef.current) return prev;
                     appearedAsNew = true;
                     if (isAtBottomRef.current) {
                         shouldScrollToBottom.current = true;
                     }
                     return [...prev, body];
-                }
-                if (body.deletedAt) {
-                    shouldAnimateDelete = true;
-                    return prev.map(m =>
-                        m.replyPreview?.messageId === body.id
-                            ? { ...m, replyPreview: { ...m.replyPreview, content: "", attachmentType: null } }
-                            : m
-                    );
                 }
                 const next = [...prev];
                 next[idx] = body;
@@ -185,9 +190,6 @@ export function useChatMessages({
             });
             if (appearedAsNew && isAtBottomRef.current) {
                 triggerMarkAsRead();
-            }
-            if (shouldAnimateDelete) {
-                startCollapseAnimation(body.id);
             }
         });
 

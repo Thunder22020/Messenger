@@ -9,6 +9,7 @@ import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.MessageEntity
+import com.daniel.messenger.messaging.enum.AttachmentType
 import java.time.Instant
 
 fun MessageEntity.toResponse(
@@ -51,3 +52,16 @@ fun ChatParticipant.toSnapshot() = ParticipantSnapshot(
     username = user.username,
     unreadCount = unreadCount,
 )
+
+fun attachmentPreviewText(type: AttachmentType, count: Int): String = when (type) {
+    AttachmentType.PHOTO -> if (count == 1) "\uD83D\uDCF7 Photo" else "\uD83D\uDCF7 $count photos"
+    AttachmentType.VIDEO -> if (count == 1) "\uD83C\uDFA5 Video" else "\uD83C\uDFA5 $count videos"
+    AttachmentType.AUDIO -> if (count == 1) "\uD83C\uDFA7 Audio" else "\uD83C\uDFA7 $count audios"
+    AttachmentType.FILE -> if (count == 1) "\uD83D\uDCC4 File" else "\uD83D\uDCC4 $count files"
+}
+
+fun resolveContentPreview(response: MessageResponse): String? {
+    if (!response.content.isNullOrBlank()) return response.content
+    if (response.attachments.isEmpty()) return response.content
+    return attachmentPreviewText(response.attachments.first().type, response.attachments.size)
+}

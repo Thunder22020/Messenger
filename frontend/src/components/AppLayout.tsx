@@ -112,17 +112,19 @@ export default function AppLayout({ children, rightPanel }: {
                         return prev;
                     }
 
-                    const updated = prev.map(chat =>
-                        chat.chatId === body.chatId
-                            ? {
-                                ...chat,
-                                lastMessageContent: body.lastMessageContent,
-                                lastMessageSender: body.lastMessageSender ?? null,
-                                lastMessageCreatedAt: body.lastMessageCreatedAt,
-                                unreadCount: body.unreadCount ?? 0,
-                            }
-                            : chat
-                    );
+                    const updated = prev.map(chat => {
+                        if (chat.chatId !== body.chatId) return chat;
+                        if (body.type === "READ_ACK") {
+                            return { ...chat, unreadCount: body.unreadCount ?? 0 };
+                        }
+                        return {
+                            ...chat,
+                            lastMessageContent: body.lastMessageContent ?? null,
+                            lastMessageSender: body.lastMessageSender ?? null,
+                            lastMessageCreatedAt: body.lastMessageCreatedAt ?? chat.lastMessageCreatedAt,
+                            unreadCount: body.unreadCount ?? 0,
+                        };
+                    });
 
                     return [...updated].sort(sortByLastMessage);
                 });

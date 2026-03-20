@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.service
 import com.daniel.messenger.messaging.dto.ChatDTO
 import com.daniel.messenger.messaging.dto.response.ChatParticipantResponse
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
+import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageEditedEvent
 import com.daniel.messenger.messaging.dto.response.MyChatResponse
@@ -14,6 +15,9 @@ import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
 import com.daniel.messenger.messaging.entity.MessageEntity
+import com.daniel.messenger.messaging.attachmentPreviewText
+import com.daniel.messenger.messaging.resolveContentPreview
+import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.enum.ChatType
 import com.daniel.messenger.messaging.exception.CannotAddParticipantToPrivateChatException
 import com.daniel.messenger.messaging.exception.CannotCreateChatWithYourselfException
@@ -29,7 +33,6 @@ import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -102,7 +105,14 @@ class ChatService(
         participant.unreadCount = 0
         participant.lastReadMessageId = chat.lastMessageId
 
-        sendSidebarUpdate(participant.toSnapshot(), chat.toDto())
+        chatNotificationService.sendSidebarUpdate(
+            participant.user.username,
+            ChatUpdateEvent(
+                chatId = chatId,
+                type = ChatUpdateType.READ_ACK,
+                unreadCount = 0,
+            ),
+        )
 
         val lastReadId = chat.lastMessageId ?: return
         chatNotificationService.broadcastReadAck(
@@ -121,18 +131,18 @@ class ChatService(
         val newLast = messageRepository
             .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
             .firstOrNull()
-        updateChatLastMessage(chat, newLast)
+        updateChatLastMessage(chat, newLast, attachments = newLast?.attachments ?: emptyList())
         chatParticipantRepository.bulkDecrementUnreadCounts(chatId, deletedMessageId)
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId).map { it.toSnapshot() }
         eventPublisher.publishEvent(MessageDeletedEvent(chat.toDto(), participants, response))
     }
 
     @Transactional
-    fun handleLastMessageEdited(chatId: Long, messageId: Long, newContent: String?, response: MessageResponse) {
+    fun handleLastMessageEdited(chatId: Long, messageId: Long, response: MessageResponse) {
         val chat = findByIdOrThrow(chatId)
         if (chat.lastMessageId != messageId) return
 
-        chat.lastMessageContent = newContent
+        chat.lastMessageContent = resolveContentPreview(response)
 
         val participants = chatParticipantRepository
             .findAllWithUserByChatId(chatId)
@@ -141,14 +151,15 @@ class ChatService(
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun onMessageDeleted(event: MessageDeletedEvent) {
+        chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
         broadcastSidebarUpdate(event.participants, event.chat)
         attachmentService.deleteByMessageId(event.response.id)
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onMessageEdited(event: MessageEditedEvent) {
+        chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
         broadcastSidebarUpdate(event.participants, event.chat)
     }
 
@@ -235,11 +246,24 @@ class ChatService(
         }
     }
 
-    internal fun updateChatLastMessage(chat: Chat, message: MessageEntity?) {
+    internal fun updateChatLastMessage(
+        chat: Chat,
+        message: MessageEntity?,
+        senderUsername: String? = null,
+        attachments: List<Attachment> = emptyList(),
+    ) {
         chat.lastMessageId = message?.id
-        chat.lastMessageContent = message?.content
-        chat.lastMessageSender = message?.sender?.username
+        chat.lastMessageContent = resolveLastMessageContent(message, attachments)
+        chat.lastMessageSender = senderUsername ?: message?.sender?.username
         chat.lastMessageCreatedAt = message?.createdAt
+        chatRepository.save(chat)
+    }
+
+    private fun resolveLastMessageContent(message: MessageEntity?, attachments: List<Attachment>): String? {
+        if (message == null) return null
+        if (!message.content.isNullOrBlank()) return message.content
+        if (attachments.isEmpty()) return message.content
+        return attachmentPreviewText(attachments.first().attachmentType, attachments.size)
     }
 
     private fun broadcastSidebarUpdate(participants: List<ParticipantSnapshot>, chat: ChatDTO) {
@@ -251,6 +275,7 @@ class ChatService(
             participant.username,
             ChatUpdateEvent(
                 chatId = requireNotNull(chat.id),
+                type = ChatUpdateType.CONTENT,
                 lastMessageContent = chat.lastMessageContent,
                 lastMessageSender = chat.lastMessageSender,
                 lastMessageCreatedAt = chat.lastMessageCreatedAt,
