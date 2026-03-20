@@ -3706,7 +3706,7 @@ body,
 
 [data-theme="light"] .chat-input-bar::after {
     background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, var(--accent) 80%, transparent 100%);
-    opacity: 0.25;
+    opacity: 0.5;
 }
 
 /* ----- Sidebar elements ----- */
