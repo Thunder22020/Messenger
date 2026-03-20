@@ -79,7 +79,8 @@ export function useChatScroll(numericChatId: number | null) {
             if (divider) {
                 const containerTop = container.getBoundingClientRect().top;
                 const dividerTop = divider.getBoundingClientRect().top;
-                container.scrollTop += dividerTop - containerTop;
+                // Offset by 60px so the divider isn't hidden behind the top gradient/date pill
+                container.scrollTop += dividerTop - containerTop - 60;
                 pendingDividerScrollRef.current = false;
                 const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
                 if (distFromBottom <= 150 && !hasMoreNewerRef.current) {
