@@ -69,6 +69,40 @@ function singleImageSize(nw: number, nh: number): { width: number; height: numbe
   return { width: Math.round(nw * scale), height: Math.round(nh * scale) };
 }
 
+function VideoAttachmentList({ videos }: { videos: AttachmentDto[] }) {
+  return (
+    <div className="video-attachment-list">
+      {videos.map((v) => (
+        <video
+          key={v.id}
+          src={v.url}
+          controls
+          preload="metadata"
+          className="message-video"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AudioAttachmentList({ audios }: { audios: AttachmentDto[] }) {
+  return (
+    <div className="audio-attachment-list">
+      {audios.map((a) => (
+        <audio
+          key={a.id}
+          src={a.url}
+          controls
+          preload="metadata"
+          className="message-audio"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ))}
+    </div>
+  );
+}
+
 function FileAttachmentList({ files }: { files: AttachmentDto[] }) {
   return (
     <div className="file-attachment-list">
@@ -210,10 +244,14 @@ export function MessageList(props: {
                     const formattedTime = formatMessageTime(msg.createdAt);
                     const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
                     const photos = msg.attachments?.filter(a => a.type === "PHOTO") ?? [];
+                    const videos = msg.attachments?.filter(a => a.type === "VIDEO") ?? [];
+                    const audios = msg.attachments?.filter(a => a.type === "AUDIO") ?? [];
                     const fileDtos = msg.attachments?.filter(a => a.type === "FILE") ?? [];
                     const hasMedia = photos.length > 0;
+                    const hasVideos = videos.length > 0;
+                    const hasAudios = audios.length > 0;
                     const hasFiles = fileDtos.length > 0;
-                    const isMediaOnly = hasMedia && !msg.content;
+                    const isMediaOnly = hasMedia && !msg.content && !hasVideos && !hasAudios && !hasFiles;
 
                     return (
                       <div
@@ -260,8 +298,10 @@ export function MessageList(props: {
                                 </div>
                                 <div className="reply-preview-content">
                                   {msg.replyPreview.content ||
-                                    (msg.replyPreview.attachmentType === "PHOTO" ? "📎 Photo" :
-                                     msg.replyPreview.attachmentType === "FILE" ? "📎 File" :
+                                    (msg.replyPreview.attachmentType === "PHOTO" ? "📷 Photo" :
+                                     msg.replyPreview.attachmentType === "VIDEO" ? "🎥 Video" :
+                                     msg.replyPreview.attachmentType === "AUDIO" ? "🎧 Audio" :
+                                     msg.replyPreview.attachmentType === "FILE" ? "📄 File" :
                                      "Deleted message")}
                                 </div>
                               </div>
@@ -283,6 +323,14 @@ export function MessageList(props: {
                                   </div>
                                 )}
                               </div>
+                            )}
+
+                            {hasVideos && (
+                              <VideoAttachmentList videos={videos} />
+                            )}
+
+                            {hasAudios && (
+                              <AudioAttachmentList audios={audios} />
                             )}
 
                             {hasFiles && (

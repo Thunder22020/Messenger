@@ -2625,6 +2625,33 @@ button {
     transition: width 0.2s ease;
 }
 
+/* ===== VIDEO & AUDIO ATTACHMENTS ===== */
+
+.video-attachment-list,
+.audio-attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.message-video {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    max-height: 240px;
+    border-radius: 10px;
+    background: #000;
+    outline: none;
+}
+
+.message-audio {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    outline: none;
+}
+
 /* Pending file item in attachments bar */
 
 .pending-attachment-file {
