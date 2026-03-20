@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
 import { useNavigate, useParams } from "react-router-dom";
@@ -49,7 +49,7 @@ export default function ChatPage() {
         chatContainerRef, shouldScrollToBottom: shouldScrollToBottomRef,
         isAtBottomRef, hasMoreNewerRef, pendingScrollToMessageIdRef,
         triggerMarkAsRead, prepareForOlderLoad, scrollToBottom,
-        applyPendingScroll, syncHasMoreNewer, handleScrollPosition,
+        requestDividerScroll, applyPendingScroll, syncHasMoreNewer, handleScrollPosition,
     } = useChatScroll(numericChatId);
 
     // --- Messages ---
@@ -69,6 +69,7 @@ export default function ChatPage() {
         triggerMarkAsRead,
         prepareForOlderLoad,
         scrollToBottom,
+        requestDividerScroll,
     });
 
     // --- Subscriptions ---
@@ -128,11 +129,11 @@ export default function ChatPage() {
         return () => { cancelled = true; };
     }, [numericChatId]);
 
-    // Apply pending scroll actions after messages change
-    useEffect(() => {
+    // Apply pending scroll actions after messages/divider change (useLayoutEffect = before paint)
+    useLayoutEffect(() => {
         if (messages.length === 0) return;
         applyPendingScroll();
-    }, [messages, applyPendingScroll]);
+    }, [messages, unreadDividerMessageId, applyPendingScroll]);
 
     // Context menu close on click outside
     useEffect(() => {

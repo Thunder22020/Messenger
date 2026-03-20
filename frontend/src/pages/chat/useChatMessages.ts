@@ -17,6 +17,7 @@ interface UseChatMessagesParams {
     triggerMarkAsRead: () => void;
     prepareForOlderLoad: () => void;
     scrollToBottom: () => void;
+    requestDividerScroll: () => void;
 }
 
 export function useChatMessages({
@@ -30,6 +31,7 @@ export function useChatMessages({
     triggerMarkAsRead,
     prepareForOlderLoad,
     scrollToBottom,
+    requestDividerScroll,
 }: UseChatMessagesParams) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [hasMoreOlder, setHasMoreOlder] = useState(false);
@@ -43,7 +45,6 @@ export function useChatMessages({
     const [unreadDividerMessageId, setUnreadDividerMessageId] = useState<number | null | undefined>(undefined);
     const dividerDeterminedRef = useRef(false) as MutableRefObject<boolean>;
     const dividerRef = useRef<HTMLDivElement | null>(null);
-    const initialScrollDoneRef = useRef(false) as MutableRefObject<boolean>;
     const oldestIdRef = useRef<number | null>(null) as MutableRefObject<number | null>;
     const newestIdRef = useRef<number | null>(null) as MutableRefObject<number | null>;
     const animatingDeleteIdsRef = useRef<Set<number>>(new Set()) as MutableRefObject<Set<number>>;
@@ -57,7 +58,6 @@ export function useChatMessages({
         oldestIdRef.current = null;
         newestIdRef.current = null;
         dividerDeterminedRef.current = false;
-        initialScrollDoneRef.current = false;
         setUnreadDividerMessageId(undefined);
         setInitialLastReadMessageId(undefined);
     }, [numericChatId]);
@@ -106,6 +106,13 @@ export function useChatMessages({
             if (cancelled) return;
 
             const visible = data.messages.filter((m: Message) => !m.deletedAt);
+
+            // For "no unread" case: set scroll-to-bottom BEFORE setMessages
+            // so applyPendingScroll handles it on the same render
+            if (initialLastReadMessageId === null && !data.hasMoreNewer) {
+                shouldScrollToBottom.current = true;
+            }
+
             setMessages(visible);
             setHasMoreOlder(data.hasMoreOlder);
             setHasMoreNewer(data.hasMoreNewer);
@@ -117,9 +124,9 @@ export function useChatMessages({
 
         loadMessages();
         return () => { cancelled = true; };
-    }, [numericChatId, initialLastReadMessageId]);
+    }, [numericChatId, initialLastReadMessageId, shouldScrollToBottom]);
 
-    // Determine divider position once
+    // Determine divider position once, then request scroll
     useEffect(() => {
         if (dividerDeterminedRef.current) return;
         if (initialLastReadMessageId === undefined) return;
@@ -129,41 +136,17 @@ export function useChatMessages({
         const firstUnread = messages.find(
             m => m.id > (initialLastReadMessageId ?? -1) && m.sender !== currentUsername
         );
-        setUnreadDividerMessageId(firstUnread?.id ?? null);
-    }, [messages, initialLastReadMessageId, currentUsername]);
 
-    // Initial scroll to divider or bottom
-    useEffect(() => {
-        if (initialScrollDoneRef.current) return;
-        if (unreadDividerMessageId === undefined) return;
-        if (messages.length === 0) return;
-        initialScrollDoneRef.current = true;
-        const container = document.querySelector<HTMLDivElement>(".chat-messages");
-        if (!container) return;
-        if (unreadDividerMessageId === null) {
-            container.scrollTop = container.scrollHeight;
-            isAtBottomRef.current = true;
-            if (!hasMoreNewerRef.current) triggerMarkAsRead();
+        if (firstUnread) {
+            setUnreadDividerMessageId(firstUnread.id);
+            requestDividerScroll();
         } else {
-            requestAnimationFrame(() => {
-                const divider = dividerRef.current;
-                if (divider) {
-                    const containerTop = container.getBoundingClientRect().top;
-                    const dividerTop = divider.getBoundingClientRect().top;
-                    container.scrollTop += dividerTop - containerTop;
-                    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-                    if (distFromBottom <= 150 && !hasMoreNewerRef.current) {
-                        isAtBottomRef.current = true;
-                        triggerMarkAsRead();
-                    }
-                } else {
-                    container.scrollTop = container.scrollHeight;
-                    isAtBottomRef.current = true;
-                    if (!hasMoreNewerRef.current) triggerMarkAsRead();
-                }
-            });
+            setUnreadDividerMessageId(null);
+            // Everything is read - scroll to bottom
+            // (already set in loadMessages for null case, but cover the "around" case too)
+            shouldScrollToBottom.current = true;
         }
-    }, [unreadDividerMessageId, messages, isAtBottomRef, hasMoreNewerRef, triggerMarkAsRead]);
+    }, [messages, initialLastReadMessageId, currentUsername, requestDividerScroll, shouldScrollToBottom]);
 
     // WS subscription for messages
     useEffect(() => {

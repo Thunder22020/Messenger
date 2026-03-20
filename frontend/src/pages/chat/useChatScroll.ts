@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, type MutableRefObject } from "react";
+import { useRef, useEffect, useCallback, useLayoutEffect, type MutableRefObject } from "react";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
 
@@ -9,8 +9,21 @@ export function useChatScroll(numericChatId: number | null) {
     const savedScrollHeight = useRef(0) as MutableRefObject<number>;
     const isAtBottomRef = useRef(true) as MutableRefObject<boolean>;
     const pendingScrollToMessageIdRef = useRef<number | null>(null) as MutableRefObject<number | null>;
+    const pendingDividerScrollRef = useRef(false) as MutableRefObject<boolean>;
     const markAsReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null) as MutableRefObject<ReturnType<typeof setTimeout> | null>;
     const hasMoreNewerRef = useRef(false) as MutableRefObject<boolean>;
+
+    // Reset all scroll refs on chat change
+    useLayoutEffect(() => {
+        if (!numericChatId) return;
+        shouldScrollToBottom.current = false;
+        shouldRestoreScroll.current = false;
+        savedScrollHeight.current = 0;
+        isAtBottomRef.current = true;
+        pendingScrollToMessageIdRef.current = null;
+        pendingDividerScrollRef.current = false;
+        hasMoreNewerRef.current = false;
+    }, [numericChatId]);
 
     const triggerMarkAsRead = useCallback(() => {
         if (!numericChatId) return;
@@ -44,6 +57,10 @@ export function useChatScroll(numericChatId: number | null) {
         isAtBottomRef.current = true;
     }, []);
 
+    const requestDividerScroll = useCallback(() => {
+        pendingDividerScrollRef.current = true;
+    }, []);
+
     /** Call after each render where messages changed to apply pending scroll actions. */
     const applyPendingScroll = useCallback(() => {
         const container = chatContainerRef.current;
@@ -52,9 +69,24 @@ export function useChatScroll(numericChatId: number | null) {
         if (shouldScrollToBottom.current) {
             container.scrollTop = container.scrollHeight;
             shouldScrollToBottom.current = false;
+            isAtBottomRef.current = true;
+            if (!hasMoreNewerRef.current) triggerMarkAsRead();
         } else if (shouldRestoreScroll.current) {
             container.scrollTop = container.scrollHeight - savedScrollHeight.current;
             shouldRestoreScroll.current = false;
+        } else if (pendingDividerScrollRef.current) {
+            const divider = container.querySelector(".unread-messages-divider");
+            if (divider) {
+                const containerTop = container.getBoundingClientRect().top;
+                const dividerTop = divider.getBoundingClientRect().top;
+                container.scrollTop += dividerTop - containerTop;
+                pendingDividerScrollRef.current = false;
+                const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                if (distFromBottom <= 150 && !hasMoreNewerRef.current) {
+                    isAtBottomRef.current = true;
+                    triggerMarkAsRead();
+                }
+            }
         } else if (pendingScrollToMessageIdRef.current !== null) {
             const targetId = pendingScrollToMessageIdRef.current;
             pendingScrollToMessageIdRef.current = null;
@@ -67,7 +99,7 @@ export function useChatScroll(numericChatId: number | null) {
                 }
             });
         }
-    }, []);
+    }, [triggerMarkAsRead]);
 
     const syncHasMoreNewer = useCallback((value: boolean) => {
         hasMoreNewerRef.current = value;
@@ -96,6 +128,7 @@ export function useChatScroll(numericChatId: number | null) {
         triggerMarkAsRead,
         prepareForOlderLoad,
         scrollToBottom,
+        requestDividerScroll,
         applyPendingScroll,
         syncHasMoreNewer,
         handleScrollPosition,
