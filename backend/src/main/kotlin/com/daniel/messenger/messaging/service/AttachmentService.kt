@@ -63,12 +63,14 @@ class AttachmentService(
 
     @Async
     fun deleteFromS3Async(keys: List<String>) {
-        for (key in keys) {
-            try {
-                s3StorageService.delete(key)
-            } catch (e: Exception) {
-                log.warn("Failed to delete S3 object: {}", key, e)
-            }
+        keys.forEach { deleteFromS3OrLog(it) }
+    }
+
+    private fun deleteFromS3OrLog(key: String) {
+        try {
+            s3StorageService.delete(key)
+        } catch (e: Exception) {
+            log.warn("Failed to delete S3 object: {}", key, e)
         }
     }
 
