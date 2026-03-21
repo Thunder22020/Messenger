@@ -411,6 +411,7 @@ button {
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .chat-messages-wrapper {
@@ -1667,8 +1668,6 @@ button {
 }
 
 .chat-menu-btn {
-    margin-left: auto;
-
     background: none;
     border: none;
     padding: 6px;
@@ -3980,6 +3979,11 @@ body,
     opacity: 0.85;
 }
 
+[data-theme="light"] .chat-menu-btn.active img {
+    filter: brightness(0) sepia(1) hue-rotate(10deg) saturate(2);
+    opacity: 0.75;
+}
+
 [data-theme="light"] .chat-attach-btn img {
     filter: brightness(0);
     opacity: 0.55;
@@ -4385,4 +4389,212 @@ body,
 }
 .login-with-logo--ready {
     opacity: 1;
+}
+
+/* ===== MESSAGE SEARCH OVERLAY ===== */
+
+/* Group the two header icon buttons so they sit flush together */
+.chat-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* The overlay slides from behind the header (z-index < header's 20) */
+.message-search-overlay {
+    position: absolute;
+    top: 72px; /* header height */
+    left: 0;
+    right: 0;
+    z-index: 15; /* below header (z-index: 20) so it appears to come from behind */
+
+    display: flex;
+    flex-direction: column;
+
+    animation: searchSlideUnder 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.message-search-overlay--closing {
+    animation: searchSlideBack 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes searchSlideUnder {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(0); }
+}
+
+@keyframes searchSlideBack {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-100%); }
+}
+
+.message-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.28);
+}
+
+.message-search-icon-inner {
+    width: 16px;
+    height: 16px;
+    opacity: 0.45;
+    flex-shrink: 0;
+    filter: brightness(0) invert(1);
+}
+
+.message-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.message-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.message-search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+    transition: color 120ms;
+}
+
+.message-search-clear:hover {
+    color: var(--text-secondary);
+}
+
+.message-search-results {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    max-height: 60vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.32);
+}
+
+.message-search-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.message-search-result-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    cursor: pointer;
+    text-align: left;
+    transition: background 100ms;
+}
+
+.message-search-result-tile:last-child {
+    border-bottom: none;
+}
+
+.message-search-result-tile:hover {
+    background: var(--bg-hover);
+}
+
+.message-search-result-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    color: var(--avatar-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.message-search-result-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.message-search-result-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.message-search-result-sender {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-search-result-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.message-search-result-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-highlight {
+    background: rgba(255, 200, 80, 0.25);
+    color: var(--text-primary);
+    padding: 0 1px;
+}
+
+/* active state for search button */
+.chat-menu-btn.active img {
+    opacity: 1;
+    filter: brightness(0) invert(1) brightness(1.5);
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .message-search-bar,
+[data-theme="light"] .message-search-results {
+    background: var(--bg-elevated);
+    border-color: rgba(0,0,0,0.07);
+}
+
+[data-theme="light"] .message-search-icon-inner {
+    filter: none;
+}
+
+[data-theme="light"] .message-search-result-tile:hover {
+    background: var(--bg-hover);
+}
+
+[data-theme="light"] .search-highlight {
+    background: rgba(200, 140, 0, 0.2);
 }

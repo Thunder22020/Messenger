@@ -6,8 +6,10 @@ export function ChatHeader(props: {
   typingText?: string;
   onHeaderClick: () => void;
   onToggleInfo: () => void;
+  onToggleSearch: () => void;
+  isSearchOpen: boolean;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo } = props;
+  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen } = props;
 
   const renderSubtitle = () => {
     if (chatType === "PRIVATE") {
@@ -39,9 +41,19 @@ export function ChatHeader(props: {
         {renderSubtitle()}
       </div>
 
-      <button className="chat-menu-btn" onClick={onToggleInfo}>
-        <img src="/icons/menu.png" alt="menu" />
-      </button>
+      <div className="chat-header-actions">
+        <button
+          className={`chat-menu-btn${isSearchOpen ? " active" : ""}`}
+          onClick={onToggleSearch}
+          title="Search messages"
+        >
+          <img src="/icons/search.png" alt="search" />
+        </button>
+
+        <button className="chat-menu-btn" onClick={onToggleInfo}>
+          <img src="/icons/menu.png" alt="menu" />
+        </button>
+      </div>
     </div>
   );
 }

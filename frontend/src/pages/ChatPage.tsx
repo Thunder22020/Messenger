@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
 import { useNavigate, useParams } from "react-router-dom";
@@ -16,6 +16,7 @@ import { MessageList } from "./chat/MessageList";
 import { ImageViewer } from "./chat/ImageViewer";
 import { ReplyBar, EditBar } from "./chat/ReplyEditBars";
 import { ScrollToBottomButton } from "./chat/ScrollToBottomButton";
+import { MessageSearch } from "./chat/MessageSearch";
 import { useChatScroll } from "./chat/useChatScroll";
 import { useChatMessages } from "./chat/useChatMessages";
 import { useChatSubscriptions } from "./chat/useChatSubscriptions";
@@ -34,6 +35,23 @@ export default function ChatPage() {
     const [chatName, setChatName] = useState("");
     const [chatType, setChatType] = useState<string | null>(null);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isSearchClosing, setIsSearchClosing] = useState(false);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const openSearch = useCallback(() => {
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        setIsSearchClosing(false);
+        setIsSearchOpen(true);
+    }, []);
+
+    const closeSearch = useCallback(() => {
+        setIsSearchClosing(true);
+        searchTimerRef.current = setTimeout(() => {
+            setIsSearchOpen(false);
+            setIsSearchClosing(false);
+        }, 200);
+    }, []);
     const [contextMenu, setContextMenu] = useState<MessageContextMenuState | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -149,6 +167,8 @@ export default function ChatPage() {
             if (e.key !== "Escape") return;
             if (contextMenu) {
                 setContextMenu(null);
+            } else if (isSearchOpen) {
+                closeSearch();
             } else if (editingMessageId !== null) {
                 cancelEditing();
             } else if (replyingTo !== null) {
@@ -157,9 +177,13 @@ export default function ChatPage() {
         };
         document.addEventListener("keydown", onKeyDown);
         return () => document.removeEventListener("keydown", onKeyDown);
-    }, [contextMenu, editingMessageId, replyingTo, cancelEditing, cancelReply]);
+    }, [contextMenu, isSearchOpen, closeSearch, editingMessageId, replyingTo, cancelEditing, cancelReply]);
 
     // --- Handlers ---
+
+    const handleSearchNavigate = useCallback((messageId: number) => {
+        scrollToMessage(messageId);
+    }, [scrollToMessage]);
 
     const handleHeaderClick = () => {
         if (chatType === "PRIVATE") {
@@ -240,7 +264,18 @@ export default function ChatPage() {
                     typingText={typingUsers.length > 0 ? getTypingText() : undefined}
                     onHeaderClick={handleHeaderClick}
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
+                    onToggleSearch={() => isSearchOpen ? closeSearch() : openSearch()}
+                    isSearchOpen={isSearchOpen}
                 />
+
+                {isSearchOpen && numericChatId && (
+                    <MessageSearch
+                        chatId={numericChatId}
+                        onNavigate={handleSearchNavigate}
+                        onClose={closeSearch}
+                        isClosing={isSearchClosing}
+                    />
+                )}
 
                 <div
                     className={`chat-messages-wrapper${isDragging ? " drag-over" : ""}`}
