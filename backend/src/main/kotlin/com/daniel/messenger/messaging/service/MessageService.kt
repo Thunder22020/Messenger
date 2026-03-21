@@ -9,7 +9,6 @@ import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
 import com.daniel.messenger.messaging.exception.NotMessageOwnerException
-import com.daniel.messenger.messaging.repository.AttachmentRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.messaging.toResponse
@@ -25,8 +24,7 @@ class MessageService(
     private val messageRepository: MessageRepository,
     private val chatService: ChatService,
     private val userService: UserService,
-    private val attachmentService: AttachmentService,
-    private val attachmentRepository: AttachmentRepository,
+    private val attachmentService: AttachmentService
 ) {
 
     @Transactional
@@ -79,7 +77,7 @@ class MessageService(
 
         assertMessageOwner(message.sender.id, userId)
 
-        val hasAttachments = attachmentRepository.existsByMessageId(requireNotNull(message.id))
+        val hasAttachments = attachmentService.existsByMessageId(requireNotNull(message.id))
 
         message.content = null
         message.deletedAt = Instant.now()
@@ -98,16 +96,33 @@ class MessageService(
     }
 
     @Transactional(readOnly = true)
-    fun getMessages(chatId: Long, userId: Long, before: Long?): PagedMessageResponse {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+    fun getMessages(chatId: Long, userId: Long): PagedMessageResponse {
+        checkAccess(chatId, userId)
+
+        val pageable = PageRequest.of(0, PAGE_SIZE + 1)
+        val fetchedMessages = messageRepository.findLatestByChatId(chatId, pageable)
+
+        val hasMoreOlder = fetchedMessages.size > PAGE_SIZE
+
+        val messagesPage = fetchedMessages
+            .take(PAGE_SIZE)
+            .reversed()
+
+        return buildPagedResponse(
+            messagesPage,
+            hasMoreOlder = hasMoreOlder,
+            hasMoreNewer = false
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getMessagesBefore(chatId: Long, userId: Long, before: Long): PagedMessageResponse {
+        checkAccess(chatId, userId)
 
         val pageable = PageRequest.of(0, PAGE_SIZE + 1)
 
         val fetchedMessages =
-            if (before != null)
-                messageRepository.findByChatIdAndIdBefore(chatId, before, pageable)
-            else
-                messageRepository.findLatestByChatId(chatId, pageable)
+            messageRepository.findByChatIdAndIdBefore(chatId, before, pageable)
 
         val hasMoreOlder = fetchedMessages.size > PAGE_SIZE
 
@@ -124,7 +139,7 @@ class MessageService(
 
     @Transactional(readOnly = true)
     fun getMessagesAfter(chatId: Long, userId: Long, afterId: Long): PagedMessageResponse {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+        checkAccess(chatId, userId)
 
         val fetchedMessages = messageRepository.findByChatIdAndIdAfter(
             chatId,
@@ -145,7 +160,7 @@ class MessageService(
 
     @Transactional(readOnly = true)
     fun getMessagesAround(chatId: Long, userId: Long, aroundId: Long): PagedMessageResponse {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+        checkAccess(chatId, userId)
 
         val halfPageable = PageRequest.of(0, HALF_PAGE_SIZE + 1)
 
@@ -182,7 +197,7 @@ class MessageService(
     @Transactional(readOnly = true)
     fun searchMessagesByContent(chatId: Long, userId: Long, query: String): List<MessageResponse> {
         if (query.length < 3) return emptyList()
-        chatService.isChatParticipantOrThrow(chatId, userId)
+        checkAccess(chatId, userId)
         val ids = messageRepository.findIdsByContentLike(chatId, query)
         if (ids.isEmpty()) return emptyList()
         val messages = messageRepository.findAllByIdInWithSender(ids)
@@ -223,26 +238,28 @@ class MessageService(
         }
     }
 
+    private fun checkAccess(chatId: Long, userId: Long) {
+        chatService.isChatParticipantOrThrow(chatId, userId)
+    }
+
     private fun loadReplyPreview(message: MessageEntity): ReplyPreviewDto? =
         message.replyToMessageId?.let { replyId ->
             messageRepository.findByIdWithSender(replyId)?.let { reply ->
-                val attachmentType = if (reply.deletedAt == null)
-                    attachmentRepository.findAllByMessageIdIn(listOf(replyId))
-                        .firstOrNull()?.attachmentType?.name
-                else null
+                val attachmentType = getFirstAttachmentType(replyId)
                 buildReplyPreviewDto(reply, attachmentType)
             }
         }
+
+    private fun getFirstAttachmentType(messageId: Long) =
+        attachmentService.getAttachmentsByMessageId(messageId)
+            .firstOrNull()?.attachmentType?.name
 
     private fun loadReplyPreviews(messages: List<MessageEntity>): Map<Long, ReplyPreviewDto> {
         val replyIds = messages.mapNotNull { it.replyToMessageId }.distinct()
         if (replyIds.isEmpty()) return emptyMap()
 
         val replyMessages = messageRepository.findAllByIdInWithSender(replyIds)
-        val attachmentsByMessageId = attachmentRepository
-            .findAllByMessageIdIn(replyIds)
-            .mapNotNull { att -> att.message?.id?.let { mid -> mid to att } }
-            .groupBy({ it.first }, { it.second })
+        val attachmentsByMessageId = attachmentService.getAttachmentsGroupedByMessageId(replyIds)
 
         return replyMessages.associate { m ->
             val attachmentType = if (m.deletedAt == null)
@@ -266,9 +283,7 @@ class MessageService(
         val ids = messages.mapNotNull { it.id }
         if (ids.isEmpty()) return emptyMap()
 
-        return attachmentRepository
-            .findAllByMessageIdIn(ids)
-            .groupBy { requireNotNull(it.message?.id) }
+        return attachmentService.getAttachmentsGroupedByMessageId(ids)
             .mapValues { (_, list) -> list.map { it.toDto() } }
     }
 
@@ -276,8 +291,8 @@ class MessageService(
         if (message.deletedAt != null) {
             message.toResponse()
         } else {
-            val attachments = attachmentRepository
-                .findAllByMessageIdIn(listOf(requireNotNull(message.id)))
+            val attachments = attachmentService
+                .getAttachmentsByMessageId(requireNotNull(message.id))
                 .map { it.toDto() }
             message.toResponse(
                 replyPreview = loadReplyPreview(message),

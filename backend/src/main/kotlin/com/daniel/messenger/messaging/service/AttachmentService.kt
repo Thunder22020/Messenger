@@ -77,6 +77,16 @@ class AttachmentService(
     fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
         if (attachmentIds.isEmpty()) return emptyList()
         attachmentRepository.bulkLinkToMessage(attachmentIds, message)
-        return attachmentRepository.findAllByMessageIdIn(listOf(requireNotNull(message.id)))
+        return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
+
+    fun existsByMessageId(id: Long) =
+        attachmentRepository.existsByMessageId(id)
+
+    fun getAttachmentsByMessageId(messageId: Long) =
+        attachmentRepository.findAllByMessageId(messageId)
+
+    fun getAttachmentsGroupedByMessageId(messageIds: List<Long>) = attachmentRepository
+            .findAllByMessageIdIn(messageIds)
+            .groupBy{requireNotNull(it.message?.id)}
 }

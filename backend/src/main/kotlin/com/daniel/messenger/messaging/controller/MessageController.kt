@@ -20,20 +20,43 @@ import org.springframework.web.bind.annotation.RestController
 class MessageController(
     private val messageService: MessageService,
 ) {
-    @GetMapping("/{chatId}")
-    fun getMessages(
+    @GetMapping("/{chatId}", params = ["after"])
+    fun getMessagesAfter(
         @PathVariable chatId: Long,
-        @RequestParam(required = false) before: Long?,
-        @RequestParam(required = false) after: Long?,
-        @RequestParam(required = false) around: Long?,
+        @RequestParam(required = true) after: Long,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): PagedMessageResponse {
         val userId = requireNotNull(userPrincipal.user.id)
-        return when {
-            around != null -> messageService.getMessagesAround(chatId, userId, around)
-            after != null -> messageService.getMessagesAfter(chatId, userId, after)
-            else -> messageService.getMessages(chatId, userId, before)
-        }
+        return messageService.getMessagesAfter(chatId, userId, after)
+    }
+
+    @GetMapping("/{chatId}", params = ["before"])
+    fun getMessagesBefore(
+        @PathVariable chatId: Long,
+        @RequestParam(required = true) before: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): PagedMessageResponse {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return messageService.getMessagesBefore(chatId, userId, before)
+    }
+
+    @GetMapping("/{chatId}", params = ["around"])
+    fun getMessagesAround(
+        @PathVariable chatId: Long,
+        @RequestParam(required = true) around: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): PagedMessageResponse {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return messageService.getMessagesAround(chatId, userId, around)
+    }
+
+    @GetMapping("/{chatId}")
+    fun getMessages(
+        @PathVariable chatId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): PagedMessageResponse {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return messageService.getMessages(chatId, userId)
     }
 
     @PatchMapping("/{messageId}")
