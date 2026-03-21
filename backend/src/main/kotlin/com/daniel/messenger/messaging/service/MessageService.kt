@@ -79,6 +79,8 @@ class MessageService(
 
         assertMessageOwner(message.sender.id, userId)
 
+        val hasAttachments = attachmentRepository.existsByMessageId(requireNotNull(message.id))
+
         message.content = null
         message.deletedAt = Instant.now()
 
@@ -88,7 +90,8 @@ class MessageService(
         chatService.handleMessageDeleted(
             requireNotNull(message.id),
             chatId,
-            response
+            response,
+            hasAttachments,
         )
 
         return response

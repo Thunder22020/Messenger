@@ -13,6 +13,9 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("SELECT a FROM Attachment a WHERE a.message.id IN :messageIds")
     fun findAllByMessageIdIn(@Param("messageIds") messageIds: Collection<Long>): List<Attachment>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM attachments WHERE message_id = :messageId)", nativeQuery = true)
+    fun existsByMessageId(@Param("messageId") messageId: Long): Boolean
+
     @Modifying
     @Query(
         """

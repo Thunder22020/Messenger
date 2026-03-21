@@ -126,7 +126,7 @@ class ChatService(
     }
 
     @Transactional
-    fun handleMessageDeleted(deletedMessageId: Long, chatId: Long, response: MessageResponse) {
+    fun handleMessageDeleted(deletedMessageId: Long, chatId: Long, response: MessageResponse, hasAttachments: Boolean) {
         val chat = findByIdOrThrow(chatId)
         val newLast = messageRepository
             .findLastNonDeletedByChatId(chatId, PageRequest.of(0, 1))
@@ -134,7 +134,7 @@ class ChatService(
         updateChatLastMessage(chat, newLast, attachments = newLast?.attachments ?: emptyList())
         chatParticipantRepository.bulkDecrementUnreadCounts(chatId, deletedMessageId)
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId).map { it.toSnapshot() }
-        eventPublisher.publishEvent(MessageDeletedEvent(chat.toDto(), participants, response))
+        eventPublisher.publishEvent(MessageDeletedEvent(chat.toDto(), participants, response, hasAttachments))
     }
 
     @Transactional
@@ -154,7 +154,9 @@ class ChatService(
     fun onMessageDeleted(event: MessageDeletedEvent) {
         chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
         broadcastSidebarUpdate(event.participants, event.chat)
-        attachmentService.deleteByMessageId(event.response.id)
+        if (event.hasAttachments) {
+            attachmentService.deleteByMessageId(event.response.id)
+        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

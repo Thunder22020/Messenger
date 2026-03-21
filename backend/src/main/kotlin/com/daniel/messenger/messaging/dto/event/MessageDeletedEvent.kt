@@ -8,4 +8,5 @@ data class MessageDeletedEvent(
     val chat: ChatDTO,
     val participants: List<ParticipantSnapshot>,
     val response: MessageResponse,
+    val hasAttachments: Boolean,
 )
