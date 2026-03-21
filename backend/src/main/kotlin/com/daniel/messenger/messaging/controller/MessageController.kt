@@ -54,4 +54,14 @@ class MessageController(
         val userId = requireNotNull(userPrincipal.user.id)
         return messageService.deleteMessage(messageId, userId)
     }
+
+    @GetMapping("/search")
+    fun searchMessagesByContent(
+        @RequestParam("chatId") chatId: Long,
+        @RequestParam("q") query: String,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): List<MessageResponse> {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return messageService.searchMessagesByContent(chatId, userId, query)
+    }
 }

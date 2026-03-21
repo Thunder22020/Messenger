@@ -37,4 +37,21 @@ interface MessageRepository : JpaRepository<MessageEntity, Long> {
 
     @Query("SELECT m FROM MessageEntity m JOIN FETCH m.sender WHERE m.id IN :ids")
     fun findAllByIdInWithSender(@Param("ids") ids: Collection<Long>): List<MessageEntity>
+
+    @Query(
+        value = """
+            SELECT id
+            FROM messages
+            WHERE chat_id = :chatId
+              AND deleted_at IS NULL
+              AND content ILIKE '%' || :query || '%'
+            ORDER BY created_at DESC
+            LIMIT 20
+        """,
+        nativeQuery = true
+    )
+    fun findIdsByContentLike(
+        @Param("chatId") chatId: Long,
+        @Param("query") query: String,
+    ): List<Long>
 }

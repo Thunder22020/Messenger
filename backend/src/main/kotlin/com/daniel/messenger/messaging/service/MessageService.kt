@@ -179,6 +179,18 @@ class MessageService(
         )
     }
 
+    @Transactional(readOnly = true)
+    fun searchMessagesByContent(chatId: Long, userId: Long, query: String): List<MessageResponse> {
+        if (query.length < 3) return emptyList()
+        chatService.isChatParticipantOrThrow(chatId, userId)
+        val ids = messageRepository.findIdsByContentLike(chatId, query)
+        if (ids.isEmpty()) return emptyList()
+        val messages = messageRepository.findAllByIdInWithSender(ids)
+            .sortedByDescending { it.createdAt }
+        val attachments = loadAttachments(messages)
+        return messages.map { it.toResponse(attachments = attachments[it.id] ?: emptyList()) }
+    }
+
     private fun buildPagedResponse(
         messages: List<MessageEntity>,
         hasMoreOlder: Boolean,
