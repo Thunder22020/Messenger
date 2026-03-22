@@ -3039,37 +3039,42 @@ button {
     color: rgba(255, 255, 255, 0.65);
 }
 
-/* Thumbnail strip — centered, above corner elements */
-.iv-thumbnail-strip {
+/* Thumbnail strip wrapper — positions + clips + fades */
+.iv-thumbnail-strip-mask {
     position: absolute;
     bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
     max-width: 80%;
+    width: 80%;
     z-index: 2;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 2px 6px;
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
 
-    /* Fade edges so thumbnails dissolve behind the corners */
+    /* Fade exactly 56px on each edge */
     mask-image: linear-gradient(
         to right,
-        transparent 0%,
-        black 10%,
-        black 90%,
+        transparent 0px,
+        black 56px,
+        black calc(100% - 56px),
         transparent 100%
     );
     -webkit-mask-image: linear-gradient(
         to right,
-        transparent 0%,
-        black 10%,
-        black 90%,
+        transparent 0px,
+        black 56px,
+        black calc(100% - 56px),
         transparent 100%
     );
+}
+
+/* Inner scrollable row — padding = fade width so first/last items scroll into view */
+.iv-thumbnail-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px 56px;
+    align-items: center;
 }
 .iv-thumbnail-strip::-webkit-scrollbar { display: none; }
 

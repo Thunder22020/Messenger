@@ -3,6 +3,18 @@ import { createPortal } from "react-dom";
 import type { AttachmentDto } from "./chatTypes";
 import { formatMessageTime } from "./chatFormat";
 
+function formatViewerTime(createdAt: string): string {
+    const date = new Date(createdAt);
+    const now = new Date();
+    const time = formatMessageTime(createdAt);
+    if (date.toDateString() === now.toDateString()) return time;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) return `Yesterday, ${time}`;
+    const month = date.toLocaleDateString("en-US", { month: "short" });
+    return `${month}. ${date.getDate()}, ${time}`;
+}
+
 interface Props {
     items: AttachmentDto[];
     initialIndex: number;
@@ -111,8 +123,10 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
     const zoomOut   = (e: React.MouseEvent) => { stopProp(e); setScale(s => Math.max(0.25, s / 1.5)); };
     const zoomReset = (e: React.MouseEvent) => { stopProp(e); setScale(1); setPan({ x: 0, y: 0 }); };
 
-    const formattedTime = formatMessageTime(createdAt);
-    const avatarLetter = sender.charAt(0).toUpperCase();
+    const currentSender = item.senderUsername || sender;
+    const currentCreatedAt = item.createdAt || createdAt;
+    const formattedTime = formatViewerTime(currentCreatedAt);
+    const avatarLetter = currentSender.charAt(0).toUpperCase();
     const hasStrip = items.length > 1;
 
     return createPortal(
@@ -167,7 +181,8 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
 
             {/* Thumbnail strip */}
             {hasStrip && (
-                <div className="iv-thumbnail-strip" onClick={stopProp}>
+                <div className="iv-thumbnail-strip-mask" onClick={stopProp}>
+                <div className="iv-thumbnail-strip">
                     {items.map((p, i) => (
                         <div
                             key={p.id}
@@ -186,13 +201,14 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
                         </div>
                     ))}
                 </div>
+                </div>
             )}
 
             {/* Meta — pinned bottom-left */}
             <div className="iv-meta" onClick={stopProp}>
                 <div className="iv-avatar">{avatarLetter}</div>
                 <div className="iv-sender-info">
-                    <span className="iv-sender-name">{sender}</span>
+                    <span className="iv-sender-name">{currentSender}</span>
                     <span className="iv-time">{formattedTime}</span>
                 </div>
             </div>
