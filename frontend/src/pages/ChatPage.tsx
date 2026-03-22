@@ -256,6 +256,7 @@ export default function ChatPage() {
                     onMediaClick={(items, index, meta) =>
                         setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                     }
+                    onClose={() => setIsInfoOpen(false)}
                 />
             }
         >

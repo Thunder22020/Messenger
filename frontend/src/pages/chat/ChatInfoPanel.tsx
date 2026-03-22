@@ -127,8 +127,9 @@ export function ChatInfoPanel(props: {
   currentUsername: string | null;
   onUserClick: (userId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
+  onClose: () => void;
 }) {
-  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick } = props;
+  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose } = props;
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
 
@@ -214,6 +215,7 @@ export function ChatInfoPanel(props: {
   return (
     <div className={`chat-info-panel ${isOpen ? "open" : ""}`}>
       <div className="info-chat-header">
+        <span className="info-close-icon" onClick={onClose} />
         <div className="info-chat-avatar">
           {chatName ? chatName.charAt(0).toUpperCase() : "?"}
         </div>
