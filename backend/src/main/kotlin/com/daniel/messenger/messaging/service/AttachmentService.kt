@@ -19,7 +19,7 @@ import java.util.UUID
 class AttachmentService(
     private val s3StorageService: S3StorageService,
     private val attachmentRepository: AttachmentRepository,
-    private val chatService: ChatService,
+    private val chatAccessService: ChatAccessService,
 ) {
     private val log = LoggerFactory.getLogger(AttachmentService::class.java)
     fun upload(file: MultipartFile): AttachmentDto {
@@ -82,16 +82,28 @@ class AttachmentService(
         return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
 
-    fun getAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+    fun getMediaAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
+        checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllByChatId(chatId, pageable).map { it.toDto() }
+        return attachmentRepository.findAllMediaByChatId(chatId, pageable).map { it.toDto() }
     }
 
-    fun getAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+    fun getMediaAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
+        checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllByChatIdBefore(chatId, before, pageable).map { it.toDto() }
+        return attachmentRepository.findAllMediaByChatIdBefore(chatId, before, pageable).map { it.toDto() }
+    }
+
+    fun getFilesAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
+        checkAccess(chatId, userId)
+        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
+        return attachmentRepository.findAllFilesByChatId(chatId, pageable).map { it.toDto() }
+    }
+
+    fun getFilesAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
+        checkAccess(chatId, userId)
+        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
+        return attachmentRepository.findAllFilesByChatIdBefore(chatId, before, pageable).map { it.toDto() }
     }
 
     fun existsByMessageId(id: Long) =
@@ -103,6 +115,10 @@ class AttachmentService(
     fun getAttachmentsGroupedByMessageId(messageIds: List<Long>) = attachmentRepository
             .findAllByMessageIdIn(messageIds)
             .groupBy{requireNotNull(it.message?.id)}
+
+    private fun checkAccess(chatId: Long, userId: Long) {
+        chatAccessService.isChatParticipantOrThrow(chatId, userId)
+    }
 
     companion object {
         private const val ATT_PAGE_SIZE = 20

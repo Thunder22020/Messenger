@@ -39,17 +39,40 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
         FROM Attachment att
         WHERE att.message.chat.id = :chatId
             AND att.message.deletedAt IS NULL
+            AND att.attachmentType IN ('PHOTO', 'VIDEO')
         ORDER BY att.id DESC
     """)
-    fun findAllByChatId(chatId: Long, pageable: Pageable): List<Attachment>
+    fun findAllMediaByChatId(chatId: Long, pageable: Pageable): List<Attachment>
 
     @Query("""
         SELECT att
         FROM Attachment att
         WHERE att.message.chat.id = :chatId
             AND att.message.deletedAt IS NULL
+            AND att.attachmentType IN ('PHOTO', 'VIDEO')
             AND att.id < :beforeId
         ORDER BY att.id DESC
     """)
-    fun findAllByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
+    fun findAllMediaByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
+
+    @Query("""
+        SELECT att
+        FROM Attachment att
+        WHERE att.message.chat.id = :chatId
+            AND att.message.deletedAt IS NULL
+            AND att.attachmentType IN ('FILE', 'AUDIO')
+        ORDER BY att.id DESC
+    """)
+    fun findAllFilesByChatId(chatId: Long, pageable: Pageable): List<Attachment>
+
+    @Query("""
+        SELECT att
+        FROM Attachment att
+        WHERE att.message.chat.id = :chatId
+            AND att.message.deletedAt IS NULL
+            AND att.attachmentType IN ('FILE', 'AUDIO')
+            AND att.id < :beforeId
+        ORDER BY att.id DESC
+    """)
+    fun findAllFilesByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
 }

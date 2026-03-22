@@ -46,6 +46,7 @@ class ChatService(
     private val chatNotificationService: ChatNotificationService,
     private val eventPublisher: ApplicationEventPublisher,
     private val attachmentService: AttachmentService,
+    private val chatAccessService: ChatAccessService
 ) {
     @Transactional
     fun openPrivateChat(senderId: Long, receiverId: Long): OpenChatResponse {
@@ -99,8 +100,7 @@ class ChatService(
     @Transactional
     fun markAsRead(chatId: Long, userId: Long) {
         val chat = findByIdOrThrow(chatId)
-        val participant = chatParticipantRepository.findByChat_IdAndUser_Id(chatId, userId)
-            ?: throw NotChatParticipantException("Forbidden")
+        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
 
         participant.unreadCount = 0
         participant.lastReadMessageId = chat.lastMessageId
@@ -202,7 +202,7 @@ class ChatService(
 
     @Transactional(readOnly = true)
     fun getChatParticipants(chatId: Long, userId: Long): List<ChatParticipantResponse> {
-        isChatParticipantOrThrow(chatId, userId)
+        chatAccessService.isChatParticipantOrThrow(chatId, userId)
         return chatParticipantRepository.findAllWithUserByChatId(chatId).map {
             ChatParticipantResponse(
                 id = requireNotNull(it.user.id),
@@ -215,9 +215,10 @@ class ChatService(
     @Transactional
     fun addParticipant(chatId: Long, requesterId: Long, userId: Long) {
         val chat = findByIdOrThrow(chatId)
-        if (chat.type != ChatType.GROUP) throw CannotAddParticipantToPrivateChatException("Forbidden in private chat")
-        isChatParticipantOrThrow(chatId, requesterId)
-        if (chatParticipantRepository.existsByChat_IdAndUser_Id(chatId, userId)) return
+        if (chat.type != ChatType.GROUP) {
+            throw CannotAddParticipantToPrivateChatException("Forbidden in private chat")
+        }
+        chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
         val user = userService.findByIdOrThrow(userId)
         chatParticipantRepository.save(
             ChatParticipant(id = ChatParticipantId(chatId, userId), chat = chat, user = user)
@@ -226,27 +227,19 @@ class ChatService(
 
     @Transactional
     fun leaveChat(chatId: Long, userId: Long) {
-        val participant = chatParticipantRepository.findByChat_IdAndUser_Id(chatId, userId)
-            ?: throw NotChatParticipantException("Forbidden")
+        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
         chatParticipantRepository.delete(participant)
     }
 
     @Transactional
     fun removeParticipant(chatId: Long, requesterId: Long, userId: Long) {
-        isChatParticipantOrThrow(chatId, requesterId)
-        val participant = chatParticipantRepository.findByChat_IdAndUser_Id(chatId, userId)
-            ?: throw NotChatParticipantException("Forbidden")
+        chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
+        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
         chatParticipantRepository.delete(participant)
     }
 
     fun findByIdOrThrow(id: Long): Chat =
         chatRepository.findById(id).orElseThrow { ChatNotFoundException(id.toString()) }
-
-    fun isChatParticipantOrThrow(chatId: Long, userId: Long) {
-        if (!chatParticipantRepository.existsByChat_IdAndUser_Id(chatId, userId)) {
-            throw NotChatParticipantException("Forbidden")
-        }
-    }
 
     internal fun updateChatLastMessage(
         chat: Chat,

@@ -24,7 +24,8 @@ class MessageService(
     private val messageRepository: MessageRepository,
     private val chatService: ChatService,
     private val userService: UserService,
-    private val attachmentService: AttachmentService
+    private val attachmentService: AttachmentService,
+    private val chatAccessService: ChatAccessService
 ) {
 
     @Transactional
@@ -32,7 +33,7 @@ class MessageService(
         val chat = chatService.findByIdOrThrow(request.chatId)
         val senderId = requireNotNull(sender.id)
 
-        chatService.isChatParticipantOrThrow(requireNotNull(chat.id), senderId)
+        chatAccessService.isChatParticipantOrThrow(requireNotNull(chat.id), senderId)
 
         val message = messageRepository.save(
             MessageEntity(
@@ -238,8 +239,8 @@ class MessageService(
         }
     }
 
-    private fun checkAccess(chatId: Long, userId: Long) {
-        chatService.isChatParticipantOrThrow(chatId, userId)
+    fun checkAccess(chatId: Long, userId: Long) {
+        chatAccessService.isChatParticipantOrThrow(chatId, userId)
     }
 
     private fun loadReplyPreview(message: MessageEntity): ReplyPreviewDto? =
@@ -255,8 +256,7 @@ class MessageService(
             .firstOrNull()?.attachmentType?.name
 
     private fun loadReplyPreviews(messages: List<MessageEntity>): Map<Long, ReplyPreviewDto> {
-        val replyIds = messages.mapNotNull { it.replyToMessageId }.distinct()
-        if (replyIds.isEmpty()) return emptyMap()
+        val replyIds = messages.mapNotNull { it.replyToMessageId }.distinct().ifEmpty { return emptyMap() }
 
         val replyMessages = messageRepository.findAllByIdInWithSender(replyIds)
         val attachmentsByMessageId = attachmentService.getAttachmentsGroupedByMessageId(replyIds)
@@ -280,8 +280,7 @@ class MessageService(
     }
 
     private fun loadAttachments(messages: List<MessageEntity>): Map<Long, List<AttachmentDto>> {
-        val ids = messages.mapNotNull { it.id }
-        if (ids.isEmpty()) return emptyMap()
+        val ids = messages.mapNotNull { it.id }.ifEmpty { return emptyMap() }
 
         return attachmentService.getAttachmentsGroupedByMessageId(ids)
             .mapValues { (_, list) -> list.map { it.toDto() } }

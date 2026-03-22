@@ -19,17 +19,31 @@ class AttachmentController(private val attachmentService: AttachmentService) {
     fun upload(@RequestParam("file") file: MultipartFile): AttachmentDto =
         attachmentService.upload(file)
 
-    @GetMapping
-    fun getAttachments(
+    @GetMapping("/media")
+    fun getMediaAttachments(
         @RequestParam chatId: Long,
         @RequestParam(required = false) before: Long?,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): List<AttachmentDto> {
         val userId = requireNotNull(userPrincipal.user.id)
         return if (before == null) {
-            attachmentService.getAttachments(chatId, userId)
+            attachmentService.getMediaAttachments(chatId, userId)
         } else {
-            attachmentService.getAttachmentsBefore(chatId, before, userId)
+            attachmentService.getMediaAttachmentsBefore(chatId, before, userId)
+        }
+    }
+
+    @GetMapping("/files")
+    fun getFilesAttachments(
+        @RequestParam chatId: Long,
+        @RequestParam(required = false) before: Long?,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): List<AttachmentDto> {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return if (before == null) {
+            attachmentService.getFilesAttachments(chatId, userId)
+        } else {
+            attachmentService.getFilesAttachmentsBefore(chatId, before, userId)
         }
     }
 }
