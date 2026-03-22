@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import org.springframework.data.domain.Pageable
 
 @Repository
 interface AttachmentRepository : JpaRepository<Attachment, Long> {
@@ -32,4 +33,23 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids")
     fun bulkLinkToMessage(@Param("ids") ids: List<Long>, @Param("message") message: MessageEntity): Int
+
+    @Query("""
+        SELECT att
+        FROM Attachment att
+        WHERE att.message.chat.id = :chatId
+            AND att.message.deletedAt IS NULL
+        ORDER BY att.id DESC
+    """)
+    fun findAllByChatId(chatId: Long, pageable: Pageable): List<Attachment>
+
+    @Query("""
+        SELECT att
+        FROM Attachment att
+        WHERE att.message.chat.id = :chatId
+            AND att.message.deletedAt IS NULL
+            AND att.id < :beforeId
+        ORDER BY att.id DESC
+    """)
+    fun findAllByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
 }

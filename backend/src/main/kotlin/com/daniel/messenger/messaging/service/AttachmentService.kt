@@ -8,6 +8,7 @@ import com.daniel.messenger.messaging.repository.AttachmentRepository
 import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.storage.S3StorageService
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,6 +19,7 @@ import java.util.UUID
 class AttachmentService(
     private val s3StorageService: S3StorageService,
     private val attachmentRepository: AttachmentRepository,
+    private val chatService: ChatService,
 ) {
     private val log = LoggerFactory.getLogger(AttachmentService::class.java)
     fun upload(file: MultipartFile): AttachmentDto {
@@ -80,6 +82,18 @@ class AttachmentService(
         return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
 
+    fun getAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
+        chatService.isChatParticipantOrThrow(chatId, userId)
+        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
+        return attachmentRepository.findAllByChatId(chatId, pageable).map { it.toDto() }
+    }
+
+    fun getAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
+        chatService.isChatParticipantOrThrow(chatId, userId)
+        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
+        return attachmentRepository.findAllByChatIdBefore(chatId, before, pageable).map { it.toDto() }
+    }
+
     fun existsByMessageId(id: Long) =
         attachmentRepository.existsByMessageId(id)
 
@@ -89,4 +103,8 @@ class AttachmentService(
     fun getAttachmentsGroupedByMessageId(messageIds: List<Long>) = attachmentRepository
             .findAllByMessageIdIn(messageIds)
             .groupBy{requireNotNull(it.message?.id)}
+
+    companion object {
+        private const val ATT_PAGE_SIZE = 20
+    }
 }
