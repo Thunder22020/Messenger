@@ -2644,6 +2644,41 @@ button {
     outline: none;
 }
 
+.message-video-thumb {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 320px;
+    max-height: 240px;
+}
+.message-video-thumb .message-video {
+    pointer-events: none;
+}
+.message-video-thumb:hover .message-video-play-icon {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.message-video-play-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.38);
+    transition: background 0.15s;
+}
+.message-video-play-icon::after {
+    content: "";
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 0 10px 20px;
+    border-color: transparent transparent transparent rgba(255, 255, 255, 0.92);
+    margin-left: 4px;
+}
+
 .message-audio {
     display: block;
     width: 100%;
@@ -2731,6 +2766,16 @@ button {
 
 .iv-image.dragging {
     transition: none;
+}
+
+.iv-video {
+    max-width: 90vw;
+    max-height: 78vh;
+    object-fit: contain;
+    border-radius: 4px;
+    outline: none;
+    pointer-events: all;
+    background: #000;
 }
 
 /* Arrows */
@@ -2860,6 +2905,34 @@ button {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.iv-thumbnail-video {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.iv-thumbnail-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.iv-thumbnail-play-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+.iv-thumbnail-play-icon::after {
+    content: "";
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 5px 0 5px 10px;
+    border-color: transparent transparent transparent rgba(255, 255, 255, 0.9);
+    margin-left: 2px;
 }
 
 /* Zoom controls — pinned bottom-right */

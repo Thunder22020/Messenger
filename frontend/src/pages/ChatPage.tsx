@@ -13,7 +13,7 @@ import { ChatInfoPanel } from "./chat/ChatInfoPanel";
 import { AttachmentsBar } from "./chat/AttachmentsBar";
 import { MessageContextMenu, type MessageContextMenuState } from "./chat/MessageContextMenu";
 import { MessageList } from "./chat/MessageList";
-import { ImageViewer } from "./chat/ImageViewer";
+import { MediaViewer } from "./chat/MediaViewer";
 import { ReplyBar, EditBar } from "./chat/ReplyEditBars";
 import { ScrollToBottomButton } from "./chat/ScrollToBottomButton";
 import { MessageSearch } from "./chat/MessageSearch";
@@ -56,7 +56,7 @@ export default function ChatPage() {
     const [isDragging, setIsDragging] = useState(false);
     const [showScrollBtn, setShowScrollBtn] = useState(false);
     const [viewerState, setViewerState] = useState<{
-        photos: AttachmentDto[];
+        items: AttachmentDto[];
         index: number;
         sender: string;
         createdAt: string;
@@ -305,8 +305,8 @@ export default function ChatPage() {
                         isReadByAnyOther={isReadByAnyOther}
                         onMessageContextMenu={handleMessageRightClick}
                         onScrollToMessage={scrollToMessage}
-                        onImageClick={(photos, index, meta) =>
-                            setViewerState({ photos, index, sender: meta.sender, createdAt: meta.createdAt })
+                        onMediaClick={(items, index, meta) =>
+                            setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                         }
                     />
                 </div>
@@ -383,8 +383,8 @@ export default function ChatPage() {
         </AppLayout>
 
         {viewerState && (
-            <ImageViewer
-                photos={viewerState.photos}
+            <MediaViewer
+                items={viewerState.items}
                 initialIndex={viewerState.index}
                 sender={viewerState.sender}
                 createdAt={viewerState.createdAt}

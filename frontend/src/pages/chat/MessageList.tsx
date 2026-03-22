@@ -69,18 +69,14 @@ function singleImageSize(nw: number, nh: number): { width: number; height: numbe
   return { width: Math.round(nw * scale), height: Math.round(nh * scale) };
 }
 
-function VideoAttachmentList({ videos }: { videos: AttachmentDto[] }) {
+function VideoAttachmentList({ videos, onVideoClick }: { videos: AttachmentDto[]; onVideoClick: (index: number) => void }) {
   return (
     <div className="video-attachment-list">
-      {videos.map((v) => (
-        <video
-          key={v.id}
-          src={v.url}
-          controls
-          preload="metadata"
-          className="message-video"
-          onClick={(e) => e.stopPropagation()}
-        />
+      {videos.map((v, i) => (
+        <div key={v.id} className="message-video-thumb" onClick={(e) => { e.stopPropagation(); onVideoClick(i); }}>
+          <video src={v.url} preload="metadata" className="message-video" muted />
+          <div className="message-video-play-icon" />
+        </div>
       ))}
     </div>
   );
@@ -196,7 +192,7 @@ export function MessageList(props: {
   isReadByAnyOther: (messageId: number) => boolean;
   onMessageContextMenu: (e: React.MouseEvent, msg: Message, isMine: boolean) => void;
   onScrollToMessage: (messageId: number) => void;
-  onImageClick: (photos: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
+  onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
 }) {
   const {
     dateGroups,
@@ -209,7 +205,7 @@ export function MessageList(props: {
     isReadByAnyOther,
     onMessageContextMenu,
     onScrollToMessage,
-    onImageClick,
+    onMediaClick,
   } = props;
 
   return (
@@ -245,6 +241,7 @@ export function MessageList(props: {
                     const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
                     const photos = msg.attachments?.filter(a => a.type === "PHOTO") ?? [];
                     const videos = msg.attachments?.filter(a => a.type === "VIDEO") ?? [];
+                    const mediaItems = msg.attachments?.filter(a => a.type === "PHOTO" || a.type === "VIDEO") ?? [];
                     const audios = msg.attachments?.filter(a => a.type === "AUDIO") ?? [];
                     const fileDtos = msg.attachments?.filter(a => a.type === "FILE") ?? [];
                     const hasMedia = photos.length > 0;
@@ -311,7 +308,7 @@ export function MessageList(props: {
                               <div className="attachment-grid-wrapper">
                                 <AttachmentGrid
                                   photos={photos}
-                                  onImageClick={(i) => onImageClick(photos, i, { sender: msg.sender, createdAt: msg.createdAt })}
+                                  onImageClick={(i) => onMediaClick(mediaItems, mediaItems.indexOf(photos[i]), { sender: msg.sender, createdAt: msg.createdAt })}
                                   hasTextBelow={!isMediaOnly}
                                 />
                                 {isMediaOnly && (
@@ -326,7 +323,10 @@ export function MessageList(props: {
                             )}
 
                             {hasVideos && (
-                              <VideoAttachmentList videos={videos} />
+                              <VideoAttachmentList
+                                videos={videos}
+                                onVideoClick={(j) => onMediaClick(mediaItems, mediaItems.indexOf(videos[j]), { sender: msg.sender, createdAt: msg.createdAt })}
+                              />
                             )}
 
                             {hasAudios && (
