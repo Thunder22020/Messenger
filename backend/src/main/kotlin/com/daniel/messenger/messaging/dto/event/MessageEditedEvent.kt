@@ -9,4 +9,5 @@ data class MessageEditedEvent(
     val chat: ChatDTO,
     val participants: List<ParticipantSnapshot>,
     val response: MessageResponse,
+    val isLastMessage: Boolean,
 )

@@ -140,14 +140,16 @@ class ChatService(
     @Transactional
     fun handleLastMessageEdited(chatId: Long, messageId: Long, response: MessageResponse) {
         val chat = findByIdOrThrow(chatId)
-        if (chat.lastMessageId != messageId) return
+        val isLastMessage = chat.lastMessageId == messageId
 
-        chat.lastMessageContent = resolveContentPreview(response)
+        if (isLastMessage) {
+            chat.lastMessageContent = resolveContentPreview(response)
+        }
 
         val participants = chatParticipantRepository
             .findAllWithUserByChatId(chatId)
             .map { it.toSnapshot() }
-        eventPublisher.publishEvent(MessageEditedEvent(chat.toDto(), participants, response))
+        eventPublisher.publishEvent(MessageEditedEvent(chat.toDto(), participants, response, isLastMessage))
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -162,7 +164,9 @@ class ChatService(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onMessageEdited(event: MessageEditedEvent) {
         chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
-        broadcastSidebarUpdate(event.participants, event.chat)
+        if (event.isLastMessage) {
+            broadcastSidebarUpdate(event.participants, event.chat)
+        }
     }
 
     @Transactional(readOnly = true)
