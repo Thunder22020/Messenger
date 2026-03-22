@@ -12,6 +12,8 @@ export interface AttachmentDto {
   fileName: string;
   mimeType: string;
   fileSize: number;
+  createdAt?: string;
+  senderUsername?: string | null;
 }
 
 export interface PendingFile {

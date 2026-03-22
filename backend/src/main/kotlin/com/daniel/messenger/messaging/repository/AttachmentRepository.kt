@@ -37,8 +37,10 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("""
         SELECT att
         FROM Attachment att
-        WHERE att.message.chat.id = :chatId
-            AND att.message.deletedAt IS NULL
+        JOIN FETCH att.message m
+        JOIN FETCH m.sender
+        WHERE m.chat.id = :chatId
+            AND m.deletedAt IS NULL
             AND att.attachmentType IN ('PHOTO', 'VIDEO')
         ORDER BY att.id DESC
     """)
@@ -47,19 +49,23 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("""
         SELECT att
         FROM Attachment att
-        WHERE att.message.chat.id = :chatId
-            AND att.message.deletedAt IS NULL
+        JOIN FETCH att.message m
+        JOIN FETCH m.sender
+        WHERE m.chat.id = :chatId
+            AND m.deletedAt IS NULL
             AND att.attachmentType IN ('PHOTO', 'VIDEO')
-            AND att.id < :beforeId
+            AND att.id < :before
         ORDER BY att.id DESC
     """)
-    fun findAllMediaByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
+    fun findAllMediaByChatIdBefore(chatId: Long, @Param("before") before: Long, pageable: Pageable): List<Attachment>
 
     @Query("""
         SELECT att
         FROM Attachment att
-        WHERE att.message.chat.id = :chatId
-            AND att.message.deletedAt IS NULL
+        JOIN FETCH att.message m
+        JOIN FETCH m.sender
+        WHERE m.chat.id = :chatId
+            AND m.deletedAt IS NULL
             AND att.attachmentType IN ('FILE', 'AUDIO')
         ORDER BY att.id DESC
     """)
@@ -68,11 +74,13 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     @Query("""
         SELECT att
         FROM Attachment att
-        WHERE att.message.chat.id = :chatId
-            AND att.message.deletedAt IS NULL
+        JOIN FETCH att.message m
+        JOIN FETCH m.sender
+        WHERE m.chat.id = :chatId
+            AND m.deletedAt IS NULL
             AND att.attachmentType IN ('FILE', 'AUDIO')
-            AND att.id < :beforeId
+            AND att.id < :before
         ORDER BY att.id DESC
     """)
-    fun findAllFilesByChatIdBefore(chatId: Long, before: Long, pageable: Pageable): List<Attachment>
+    fun findAllFilesByChatIdBefore(chatId: Long, @Param("before") before: Long, pageable: Pageable): List<Attachment>
 }

@@ -1,6 +1,7 @@
 package com.daniel.messenger.messaging.dto
 
 import com.daniel.messenger.messaging.enum.AttachmentType
+import java.time.Instant
 
 data class AttachmentDto(
     val id: Long,
@@ -9,4 +10,6 @@ data class AttachmentDto(
     val fileName: String,
     val mimeType: String,
     val fileSize: Long,
+    val createdAt: Instant? = null,
+    val senderUsername: String? = null,
 )

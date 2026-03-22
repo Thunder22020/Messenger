@@ -37,6 +37,17 @@ fun Attachment.toDto(): AttachmentDto = AttachmentDto(
     fileSize = fileSize,
 )
 
+fun Attachment.toDtoWithMeta(): AttachmentDto = AttachmentDto(
+    id = requireNotNull(id),
+    url = filePath,
+    type = attachmentType,
+    fileName = fileName,
+    mimeType = mimeType,
+    fileSize = fileSize,
+    createdAt = createdAt,
+    senderUsername = message?.sender?.username,
+)
+
 fun Chat.toDto(): ChatDTO = ChatDTO(
     id = requireNotNull(id),
     type = type,

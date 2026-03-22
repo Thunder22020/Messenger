@@ -1,22 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
-import { formatMessageTime } from "./chatFormat";
-
-function formatSearchTime(createdAt: string): string {
-  const date = new Date(createdAt);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (msgDay.getTime() === today.getTime()) return formatMessageTime(createdAt);
-  if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
-  const d = String(date.getDate()).padStart(2, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  return `${d}.${m}.${date.getFullYear()}`;
-}
+import { formatShortDate } from "./chatFormat";
 import type { Message } from "./chatTypes";
 
 interface Props {
@@ -126,7 +111,7 @@ export function MessageSearch({ chatId, onNavigate, onClose, isClosing }: Props)
                 <div className="message-search-result-body">
                   <div className="message-search-result-header">
                     <span className="message-search-result-sender">{msg.sender}</span>
-                    <span className="message-search-result-time">{formatSearchTime(msg.createdAt)}</span>
+                    <span className="message-search-result-time">{formatShortDate(msg.createdAt)}</span>
                   </div>
                   <div className="message-search-result-text">
                     {highlight(preview, query.trim())}

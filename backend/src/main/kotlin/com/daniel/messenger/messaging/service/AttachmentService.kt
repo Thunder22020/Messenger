@@ -6,6 +6,7 @@ import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.enum.AttachmentType
 import com.daniel.messenger.messaging.repository.AttachmentRepository
 import com.daniel.messenger.messaging.toDto
+import com.daniel.messenger.messaging.toDtoWithMeta
 import com.daniel.messenger.storage.S3StorageService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -85,25 +86,25 @@ class AttachmentService(
     fun getMediaAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllMediaByChatId(chatId, pageable).map { it.toDto() }
+        return attachmentRepository.findAllMediaByChatId(chatId, pageable).map { it.toDtoWithMeta() }
     }
 
     fun getMediaAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllMediaByChatIdBefore(chatId, before, pageable).map { it.toDto() }
+        return attachmentRepository.findAllMediaByChatIdBefore(chatId, before, pageable).map { it.toDtoWithMeta() }
     }
 
     fun getFilesAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllFilesByChatId(chatId, pageable).map { it.toDto() }
+        return attachmentRepository.findAllFilesByChatId(chatId, pageable).map { it.toDtoWithMeta() }
     }
 
     fun getFilesAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllFilesByChatIdBefore(chatId, before, pageable).map { it.toDto() }
+        return attachmentRepository.findAllFilesByChatIdBefore(chatId, before, pageable).map { it.toDtoWithMeta() }
     }
 
     fun existsByMessageId(id: Long) =

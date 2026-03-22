@@ -249,9 +249,13 @@ export default function ChatPage() {
                     isOpen={isInfoOpen}
                     chatName={chatName}
                     chatType={chatType}
+                    chatId={numericChatId}
                     participants={participants}
                     currentUsername={currentUsername}
                     onUserClick={(id) => navigate(`/user/${id}`)}
+                    onMediaClick={(items, index, meta) =>
+                        setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
+                    }
                 />
             }
         >

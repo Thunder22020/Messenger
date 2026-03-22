@@ -29,3 +29,17 @@ export function fileExtension(fileName: string): string {
   return dot !== -1 ? fileName.slice(dot + 1).toUpperCase() : "FILE";
 }
 
+export function formatShortDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  if (msgDay.getTime() === today.getTime()) return formatMessageTime(createdAt);
+  if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${d}.${m}.${date.getFullYear()}`;
+}
+
