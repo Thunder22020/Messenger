@@ -1,5 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+
+function EscapeToHome() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && location.pathname !== "/") navigate("/");
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [location.pathname, navigate]);
+    return null;
+}
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
@@ -18,6 +31,7 @@ function App() {
         <WebSocketProvider key={accessToken} accessToken={accessToken}>
            <PresenceProvider>
            <BrowserRouter>
+               <EscapeToHome />
                <Routes>
                        <Route
                            path="/"
