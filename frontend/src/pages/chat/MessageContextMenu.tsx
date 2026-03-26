@@ -10,10 +10,11 @@ export type MessageContextMenuState = {
 export function MessageContextMenu(props: {
   menu: MessageContextMenuState;
   onReply: () => void;
+  onCopy: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { menu, onReply, onEdit, onDelete } = props;
+  const { menu, onReply, onCopy, onEdit, onDelete } = props;
 
   return (
     <div
@@ -24,6 +25,11 @@ export function MessageContextMenu(props: {
       <button className="context-menu-item" onClick={onReply}>
         Reply
       </button>
+      {menu.content && (
+        <button className="context-menu-item" onClick={onCopy}>
+          Copy text
+        </button>
+      )}
       {menu.isMine && (
         <>
           <button className="context-menu-item" onClick={onEdit}>

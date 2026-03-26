@@ -230,6 +230,12 @@ export default function ChatPage() {
         setContextMenu(null);
     };
 
+    const handleCopyText = () => {
+        if (!contextMenu) return;
+        navigator.clipboard.writeText(contextMenu.content);
+        setContextMenu(null);
+    };
+
     const handleScroll = () => {
         const el = chatContainerRef.current;
         if (!el) return;
@@ -388,6 +394,7 @@ export default function ChatPage() {
                     <MessageContextMenu
                         menu={contextMenu}
                         onReply={handleStartReply}
+                        onCopy={handleCopyText}
                         onEdit={handleStartEdit}
                         onDelete={handleDeleteMessage}
                     />
