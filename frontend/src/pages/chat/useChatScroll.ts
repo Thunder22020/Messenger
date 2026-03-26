@@ -92,9 +92,14 @@ export function useChatScroll(numericChatId: number | null) {
             const targetId = pendingScrollToMessageIdRef.current;
             pendingScrollToMessageIdRef.current = null;
             requestAnimationFrame(() => {
-                const el = document.querySelector(`[data-message-id="${targetId}"]`);
-                if (el) {
-                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                const container = chatContainerRef.current;
+                const el = document.querySelector(`[data-message-id="${targetId}"]`) as HTMLElement | null;
+                if (el && container) {
+                    const containerRect = container.getBoundingClientRect();
+                    const elRect = el.getBoundingClientRect();
+                    const elRelativeTop = elRect.top - containerRect.top + container.scrollTop;
+                    const targetScrollTop = elRelativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
+                    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: "smooth" });
                     el.classList.add("message-highlight");
                     setTimeout(() => el.classList.remove("message-highlight"), 1200);
                 }

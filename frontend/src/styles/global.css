@@ -137,6 +137,9 @@
 
     /* ===== AVATAR TEXT ===== */
     --avatar-text: #1A1815;
+
+    /* ===== ICON BUTTONS ===== */
+    --icon-btn-filter: brightness(0) invert(1);
 }
 
 * {
@@ -4044,6 +4047,9 @@ body,
 
     /* Avatar text — cream on dark espresso avatars */
     --avatar-text: #EAE0D2;
+
+    /* Icon buttons — dark icons on light bg */
+    --icon-btn-filter: brightness(0);
 }
 
 /* ----- Structural elements with hardcoded colors ----- */
@@ -5044,13 +5050,14 @@ body,
 /* Sidebar fills the full mobile panel */
 .mobile-sidebar-panel .sidebar {
     width: 100% !important;
-    height: 100dvh;
+    max-width: none !important;
+    height: 100%;
     border-right: none;
 }
 
 /* Content fills the full mobile panel */
 .mobile-chat-panel .content {
-    height: 100dvh;
+    height: 100%;
 }
 
 /* ===== MOBILE TOUCH + RESPONSIVE POLISH ===== */
@@ -5107,6 +5114,7 @@ body,
     width: 18px;
     height: 18px;
     object-fit: contain;
+    filter: var(--icon-btn-filter);
 }
 
 /* ===== MOBILE: INFO PANEL FULL-SCREEN OVERLAY ===== */
@@ -5145,4 +5153,5 @@ body,
     width: 18px;
     height: 18px;
     object-fit: contain;
+    filter: var(--icon-btn-filter);
 }
