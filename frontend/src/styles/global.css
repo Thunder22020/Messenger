@@ -1536,6 +1536,10 @@ button {
     text-align: center;
 }
 
+.group-create-card .search-input {
+    width: 100%;
+}
+
 .group-title-input {
     width: 100%;
     margin-top: 20px;
