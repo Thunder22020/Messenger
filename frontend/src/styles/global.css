@@ -1209,6 +1209,12 @@ button {
         0 1px 0 rgba(255,255,255,0.15) inset;
 }
 
+.chat-header-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .chat-header-name {
     font-size: 16px;
     font-weight: 600;
@@ -1216,26 +1222,36 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
-    max-width: 300px;
 }
 
 .chat-header-members {
     font-size: 12px;
     opacity: 0.6;
     margin-top: 4px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-header-online {
     font-size: 12px;
     color: var(--online);
     margin-top: 4px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-header-typing {
     font-size: 12px;
     color: var(--accent-soft);
     margin-top: 4px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-header-avatar,
@@ -2025,6 +2041,9 @@ button {
 .info-chat-avatar {
     width: 90px;
     height: 90px;
+    min-width: 90px;
+    min-height: 90px;
+    flex-shrink: 0;
 
     border-radius: 50%;
 
