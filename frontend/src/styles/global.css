@@ -5174,6 +5174,10 @@ body,
 
 .chat-header-back-btn:hover { opacity: 1; }
 
+.chat-header .chat-header-back-btn {
+    margin-left: -16px;
+}
+
 .chat-header-back-btn img {
     width: 18px;
     height: 18px;
