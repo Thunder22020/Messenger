@@ -68,6 +68,7 @@ export default function ChatPage() {
         isAtBottomRef, hasMoreNewerRef, pendingScrollToMessageIdRef,
         triggerMarkAsRead, prepareForOlderLoad, scrollToBottom,
         requestDividerScroll, applyPendingScroll, syncHasMoreNewer, handleScrollPosition,
+        onMediaLoad,
     } = useChatScroll(numericChatId);
 
     // --- Messages ---
@@ -313,6 +314,7 @@ export default function ChatPage() {
                         onMediaClick={(items, index, meta) =>
                             setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                         }
+                        onImageLoad={onMediaLoad}
                     />
                 </div>
 

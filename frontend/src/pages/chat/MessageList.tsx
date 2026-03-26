@@ -38,22 +38,36 @@ function distributeIntoRows<T>(items: T[], rowSizes: number[]): T[][] {
   return rows;
 }
 
-function AttachmentGrid({ photos, onImageClick, hasTextBelow = false }: { photos: AttachmentDto[]; onImageClick: (index: number) => void; hasTextBelow?: boolean }) {
+function AttachmentGrid({ photos, onImageClick, hasTextBelow = false, onImageLoad }: { photos: AttachmentDto[]; onImageClick: (index: number) => void; hasTextBelow?: boolean; onImageLoad?: () => void }) {
   const rows = distributeIntoRows(photos, buildAttachmentRows(photos.length));
   const totalRows = rows.length;
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.classList.add("img-loaded");
+    img.parentElement?.classList.add("img-loaded");
+    onImageLoad?.();
+  };
+
   return (
     <div className={`attachment-grid${photos.length === 1 ? " single" : ""}`}>
       {rows.map((row, rowIdx) => (
         <div key={rowIdx} className="attachment-row">
           {row.map((att, colIdx) => (
-            <img
+            <div
               key={att.id}
-              src={att.url}
-              alt={att.fileName}
-              className="message-image"
+              className="attachment-img-wrapper"
               style={{ borderRadius: getImageBorderRadius(rowIdx, colIdx, totalRows, row.length, hasTextBelow) }}
-              onClick={() => onImageClick(photos.indexOf(att))}
-            />
+            >
+              <img
+                src={att.url}
+                alt={att.fileName}
+                className="message-image"
+                onLoad={handleLoad}
+                onClick={() => onImageClick(photos.indexOf(att))}
+                draggable={false}
+              />
+            </div>
           ))}
         </div>
       ))}
@@ -193,6 +207,7 @@ export function MessageList(props: {
   onMessageContextMenu: (e: React.MouseEvent, msg: Message, isMine: boolean) => void;
   onScrollToMessage: (messageId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
+  onImageLoad?: () => void;
 }) {
   const {
     dateGroups,
@@ -206,6 +221,7 @@ export function MessageList(props: {
     onMessageContextMenu,
     onScrollToMessage,
     onMediaClick,
+    onImageLoad,
   } = props;
 
   return (
@@ -310,6 +326,7 @@ export function MessageList(props: {
                                   photos={photos}
                                   onImageClick={(i) => onMediaClick(mediaItems, mediaItems.indexOf(photos[i]), { sender: msg.sender, createdAt: msg.createdAt })}
                                   hasTextBelow={!isMediaOnly}
+                                  onImageLoad={onImageLoad}
                                 />
                                 {isMediaOnly && (
                                   <div className="message-meta-overlay">

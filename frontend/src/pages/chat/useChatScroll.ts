@@ -106,6 +106,13 @@ export function useChatScroll(numericChatId: number | null) {
         hasMoreNewerRef.current = value;
     }, []);
 
+    const onMediaLoad = useCallback(() => {
+        if (!isAtBottomRef.current) return;
+        const container = chatContainerRef.current;
+        if (!container) return;
+        container.scrollTop = container.scrollHeight;
+    }, []);
+
     /** Call from onScroll handler. Returns { nearBottom, distFromBottom }. */
     const handleScrollPosition = useCallback((hasMoreNewer: boolean) => {
         const el = chatContainerRef.current;
@@ -133,5 +140,6 @@ export function useChatScroll(numericChatId: number | null) {
         applyPendingScroll,
         syncHasMoreNewer,
         handleScrollPosition,
+        onMediaLoad,
     };
 }

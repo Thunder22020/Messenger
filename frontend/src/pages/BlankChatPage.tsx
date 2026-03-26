@@ -7,7 +7,7 @@ export default function BlankChatPage() {
                 <div className="card placeholder-card">
                     <div className="placeholder-body">
                         <p className="placeholder-title">No chat selected</p>
-                        <p className="placeholder-hint">Choose a chat and start messaging</p>
+                        <p className="placeholder-hint">Pick a chat and start the conversation.</p>
                     </div>
                 </div>
             </div>

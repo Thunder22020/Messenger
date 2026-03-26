@@ -2621,7 +2621,8 @@ button {
 }
 
 .attachment-row .message-image,
-.attachment-row .uploading-image-wrapper {
+.attachment-row .uploading-image-wrapper,
+.attachment-row .attachment-img-wrapper {
     flex: 1 1 0;
     min-width: 0;
     max-width: none;
@@ -2633,6 +2634,22 @@ button {
     max-width: 280px;
     max-height: 320px;
     height: auto;
+}
+
+.attachment-grid.single .attachment-img-wrapper {
+    width: 100%;
+    max-width: 280px;
+    min-height: 200px;
+}
+
+.attachment-grid.single .attachment-img-wrapper.img-loaded {
+    min-height: unset;
+}
+
+.attachment-grid.single .attachment-img-wrapper .message-image {
+    width: 100%;
+    height: auto;
+    max-height: 320px;
 }
 
 /* Multi-image rows: fixed height for visual consistency */
@@ -2651,14 +2668,58 @@ button {
     max-width: none;
 }
 
+.attachment-grid:not(.single) .attachment-img-wrapper {
+    height: 140px;
+}
+
+.attachment-grid:not(.single) .attachment-img-wrapper .message-image {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    max-width: none;
+}
+
+/* Shimmer skeleton for incoming images */
+@keyframes img-shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position:  600px 0; }
+}
+
+.attachment-img-wrapper {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    background: linear-gradient(
+        90deg,
+        var(--bg-elevated) 25%,
+        var(--bg-hover)    50%,
+        var(--bg-elevated) 75%
+    );
+    background-size: 1200px 100%;
+    animation: img-shimmer 1.6s ease-in-out infinite;
+}
+
+.attachment-img-wrapper.img-loaded {
+    background: none;
+    animation: none;
+}
+
+/* Image starts invisible, fades in on load */
+.attachment-img-wrapper .message-image {
+    opacity: 0;
+}
+
+.attachment-img-wrapper .message-image.img-loaded {
+    opacity: 1;
+}
+
 .message-image {
     border-radius: 8px;
     display: block;
     cursor: pointer;
     object-fit: cover;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.2s ease;
 }
-
 
 .message-image:hover {
     opacity: 0.9;
