@@ -4902,3 +4902,53 @@ body,
 [data-theme="light"] .search-highlight {
     background: rgba(200, 140, 0, 0.2);
 }
+
+/* ===== CONTENT PLACEHOLDER (Home / BlankChatPage) ===== */
+
+.content-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 24px;
+}
+
+.placeholder-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 380px;
+    min-height: 260px;
+    width: 100%;
+    padding: 32px 36px;
+}
+
+.placeholder-logo {
+    width: 90px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.placeholder-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.placeholder-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.placeholder-hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
