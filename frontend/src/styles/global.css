@@ -1513,10 +1513,13 @@ button {
     padding: 30px 40px;
     display: flex;
     justify-content: center;
+    height: 100%;
+    align-items: flex-start;
 }
 
 .group-create-card {
     width: 600px;
+    height: 100%;
     padding: 24px;
     border-radius: 20px;
 
@@ -1524,6 +1527,13 @@ button {
     backdrop-filter: blur(25px);
 
     border: 1px solid var(--glass-border-medium);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.group-create-card h2 {
+    text-align: center;
 }
 
 .group-title-input {
@@ -1540,7 +1550,8 @@ button {
 
 .group-users-list {
     margin-top: 15px;
-    max-height: 330px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 
     display: flex;
@@ -1610,6 +1621,7 @@ button {
 
 .group-create-btn {
     margin-top: 30px;
+    flex-shrink: 0;
     width: 100%;
     padding: 14px 0;
 
