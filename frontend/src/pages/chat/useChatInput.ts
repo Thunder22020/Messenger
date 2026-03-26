@@ -16,6 +16,48 @@ interface UseChatInputParams {
     jumpToLatest: () => Promise<void>;
 }
 
+const MAX_IMAGE_DIM = 1280;
+const JPEG_QUALITY  = 0.82;
+
+function compressImage(file: File): Promise<File> {
+    return new Promise((resolve) => {
+        // Skip GIFs — they may be animated
+        if (file.type === "image/gif") { resolve(file); return; }
+
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+
+            let { width, height } = img;
+            if (width > MAX_IMAGE_DIM || height > MAX_IMAGE_DIM) {
+                const scale = Math.min(MAX_IMAGE_DIM / width, MAX_IMAGE_DIM / height);
+                width  = Math.round(width  * scale);
+                height = Math.round(height * scale);
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width  = width;
+            canvas.height = height;
+            canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob || blob.size >= file.size) { resolve(file); return; }
+                    const name = file.name.replace(/\.[^.]+$/, ".jpg");
+                    resolve(new File([blob], name, { type: "image/jpeg" }));
+                },
+                "image/jpeg",
+                JPEG_QUALITY,
+            );
+        };
+
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
+}
+
 function chunkArray<T>(arr: T[], size: number): T[][] {
     const chunks: T[][] = [];
     for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
@@ -187,17 +229,23 @@ export function useChatInput({
         if (incomingHasImages) {
             Promise.all(
                 incoming.map(async f => {
-                    const previewUrl = URL.createObjectURL(f);
+                    const compressed = await compressImage(f);
+                    const previewUrl = URL.createObjectURL(compressed);
                     let naturalWidth = 280, naturalHeight = 200;
                     try {
-                        const bm = await createImageBitmap(f);
+                        const bm = await createImageBitmap(compressed);
                         naturalWidth = bm.width;
                         naturalHeight = bm.height;
                         bm.close();
                     } catch {}
-                    return { localId: crypto.randomUUID(), file: f, previewUrl, naturalWidth, naturalHeight, isImage: true as const };
+                    return {
+                        localId: crypto.randomUUID(),
+                        file: compressed, previewUrl, naturalWidth, naturalHeight,
+                        isImage: true as const
+                    };
                 })
-            ).then(newFiles => setPendingFiles(prev => [...prev, ...newFiles]));
+            ).then(newFiles =>
+                setPendingFiles(prev => [...prev, ...newFiles]));
         } else {
             const newFiles = incoming.map(f => ({
                 localId: crypto.randomUUID(),
