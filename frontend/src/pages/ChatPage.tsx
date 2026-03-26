@@ -21,11 +21,13 @@ import { useChatScroll } from "./chat/useChatScroll";
 import { useChatMessages } from "./chat/useChatMessages";
 import { useChatSubscriptions } from "./chat/useChatSubscriptions";
 import { useChatInput } from "./chat/useChatInput";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function ChatPage() {
     const { chatId } = useParams();
     const numericChatId = chatId ? Number(chatId) : null;
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const client = useWebSocket();
     const { isOnline } = usePresence();
 
@@ -174,11 +176,13 @@ export default function ChatPage() {
                 cancelEditing();
             } else if (replyingTo !== null) {
                 cancelReply();
+            } else if (isMobile) {
+                navigate("/chat");
             }
         };
         document.addEventListener("keydown", onKeyDown);
         return () => document.removeEventListener("keydown", onKeyDown);
-    }, [contextMenu, isSearchOpen, closeSearch, editingMessageId, replyingTo, cancelEditing, cancelReply]);
+    }, [contextMenu, isSearchOpen, closeSearch, editingMessageId, replyingTo, cancelEditing, cancelReply, isMobile, navigate]);
 
     // --- Handlers ---
 
@@ -258,6 +262,7 @@ export default function ChatPage() {
                         setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                     }
                     onClose={() => setIsInfoOpen(false)}
+                    isMobile={isMobile}
                 />
             }
         >
@@ -272,6 +277,7 @@ export default function ChatPage() {
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
                     onToggleSearch={() => isSearchOpen ? closeSearch() : openSearch()}
                     isSearchOpen={isSearchOpen}
+                    onBack={isMobile ? () => navigate("/chat") : undefined}
                 />
 
                 {isSearchOpen && numericChatId && (

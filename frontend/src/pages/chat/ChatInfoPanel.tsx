@@ -128,8 +128,9 @@ export function ChatInfoPanel(props: {
   onUserClick: (userId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onClose: () => void;
+  isMobile?: boolean;
 }) {
-  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose } = props;
+  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, isMobile } = props;
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
 
@@ -213,8 +214,13 @@ export function ChatInfoPanel(props: {
   const tabLabels: Record<Tab, string> = { members: "Members", media: "Media", files: "Files" };
 
   return (
-    <div className={`chat-info-panel ${isOpen ? "open" : ""}`}>
+    <div className={`chat-info-panel ${isOpen ? "open" : ""}${isMobile && isOpen ? " info-panel-mobile" : ""}`}>
       <div className="info-chat-header">
+        {isMobile && (
+          <button className="info-panel-back-btn" onClick={onClose} aria-label="Back">
+            <img src="/icons/left-chevron.png" alt="back" />
+          </button>
+        )}
         <span className="info-close-icon" onClick={onClose} />
         <div className="info-chat-avatar">
           {chatName ? chatName.charAt(0).toUpperCase() : "?"}
