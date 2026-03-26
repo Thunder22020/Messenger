@@ -8,8 +8,9 @@ export function ChatHeader(props: {
   onToggleInfo: () => void;
   onToggleSearch: () => void;
   isSearchOpen: boolean;
+  onBack?: () => void;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen } = props;
+  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack } = props;
 
   const renderSubtitle = () => {
     if (chatType === "PRIVATE") {
@@ -30,6 +31,11 @@ export function ChatHeader(props: {
 
   return (
     <div className="chat-header">
+      {onBack && (
+        <button className="chat-header-back-btn" onClick={onBack} aria-label="Back">
+          <img src="/icons/left-chevron.png" alt="back" />
+        </button>
+      )}
       <div className="chat-header-avatar" onClick={onHeaderClick}>
         {chatName ? chatName.charAt(0).toUpperCase() : "?"}
       </div>
