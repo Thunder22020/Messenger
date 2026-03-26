@@ -3096,6 +3096,7 @@ button {
 /* Inner scrollable row — padding = fade width so first/last items scroll into view */
 .iv-thumbnail-strip {
     display: flex;
+    justify-content: center;
     gap: 6px;
     overflow-x: auto;
     scrollbar-width: none;

@@ -211,18 +211,18 @@ export function useChatInput({
         }
     }, []);
 
-    // Paste handler for images
+    // Paste handler for files (images and non-images)
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
             if (editingMessageId !== null) return;
             if (!e.clipboardData) return;
-            const imageFiles = Array.from(e.clipboardData.items)
-                .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+            const pastedFiles = Array.from(e.clipboardData.items)
+                .filter(item => item.kind === "file")
                 .map(item => item.getAsFile())
                 .filter((f): f is File => f !== null);
-            if (imageFiles.length === 0) return;
+            if (pastedFiles.length === 0) return;
             e.preventDefault();
-            handleFilesSelected(imageFiles);
+            handleFilesSelected(pastedFiles);
         };
         document.addEventListener("paste", handlePaste);
         return () => document.removeEventListener("paste", handlePaste);
