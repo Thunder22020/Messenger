@@ -34,7 +34,7 @@ export default function AppLayout({ children, rightPanel }: {
     children: React.ReactNode; rightPanel?: React.ReactNode;
 }) {
     const navigate = useNavigate();
-    const { chatId } = useParams();
+    const { chatId, userId } = useParams();
     const token = localStorage.getItem("accessToken");
 
     let currentUsername = "";
@@ -545,7 +545,7 @@ export default function AppLayout({ children, rightPanel }: {
 
     if (isMobile) {
         return (
-            <div className={`mobile-layout ${chatId ? "chat-active" : "list-active"}`}>
+            <div className={`mobile-layout ${(chatId || userId) ? "chat-active" : "list-active"}`}>
                 <div className="mobile-sidebar-panel">
                     {sidebarJSX}
                 </div>

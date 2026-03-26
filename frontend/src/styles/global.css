@@ -5064,6 +5064,26 @@ body,
 
 /* ===== MOBILE TOUCH + RESPONSIVE POLISH ===== */
 
+/* ===== USER INFO: MOBILE BACK BUTTON ===== */
+
+.user-info-back-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+}
+
+@media (max-width: 768px) {
+    .user-info-container {
+        position: relative;
+        align-items: center;
+    }
+
+    .user-info-card {
+        width: calc(100% - 32px);
+        max-width: 420px;
+    }
+}
+
 @media (max-width: 768px) {
     /* Prevent iOS font-size zoom on input focus */
     .chat-input-bar textarea {

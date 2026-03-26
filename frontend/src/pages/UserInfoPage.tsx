@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
 import { API_URL } from "../config";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 interface User {
     id: number;
@@ -12,6 +13,7 @@ interface User {
 export default function UserInfoPage() {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
 
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -75,6 +77,15 @@ export default function UserInfoPage() {
     return (
         <AppLayout>
             <div className="user-info-container">
+                {isMobile && (
+                    <button
+                        className="chat-header-back-btn user-info-back-btn"
+                        onClick={() => navigate("/chat")}
+                        aria-label="Back"
+                    >
+                        <img src="/icons/left-chevron.png" alt="back" />
+                    </button>
+                )}
                 <div className="user-info-card">
 
                     <div className="user-info-avatar">
