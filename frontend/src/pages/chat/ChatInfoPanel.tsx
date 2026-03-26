@@ -216,11 +216,6 @@ export function ChatInfoPanel(props: {
   return (
     <div className={`chat-info-panel ${isOpen ? "open" : ""}${isMobile && isOpen ? " info-panel-mobile" : ""}`}>
       <div className="info-chat-header">
-        {isMobile && (
-          <button className="info-panel-back-btn" onClick={onClose} aria-label="Back">
-            <img src="/icons/left-chevron.png" alt="back" />
-          </button>
-        )}
         <span className="info-close-icon" onClick={onClose} />
         <div className="info-chat-avatar">
           {chatName ? chatName.charAt(0).toUpperCase() : "?"}
