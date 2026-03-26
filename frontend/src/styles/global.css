@@ -5082,6 +5082,13 @@ body,
         width: calc(100% - 32px);
         max-width: 420px;
     }
+
+    .group-create-container {
+        position: relative;
+        height: 100%;
+        padding: 60px 16px 30px;
+        overflow-y: auto;
+    }
 }
 
 @media (max-width: 768px) {

@@ -30,8 +30,8 @@ const sortByLastMessage = (a: ChatListItem, b: ChatListItem) => {
     return new Date(b.lastMessageCreatedAt).getTime() - new Date(a.lastMessageCreatedAt).getTime();
 };
 
-export default function AppLayout({ children, rightPanel }: {
-    children: React.ReactNode; rightPanel?: React.ReactNode;
+export default function AppLayout({ children, rightPanel, mobileChatView }: {
+    children: React.ReactNode; rightPanel?: React.ReactNode; mobileChatView?: boolean;
 }) {
     const navigate = useNavigate();
     const { chatId, userId } = useParams();
@@ -545,7 +545,7 @@ export default function AppLayout({ children, rightPanel }: {
 
     if (isMobile) {
         return (
-            <div className={`mobile-layout ${(chatId || userId) ? "chat-active" : "list-active"}`}>
+            <div className={`mobile-layout ${(chatId || userId || mobileChatView) ? "chat-active" : "list-active"}`}>
                 <div className="mobile-sidebar-panel">
                     {sidebarJSX}
                 </div>

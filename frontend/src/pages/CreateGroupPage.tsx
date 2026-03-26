@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "../components/AppLayout";
 import { API_URL } from "../config";
 import { authFetch } from "../utils/authFetch";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 interface User {
     id: number;
@@ -17,6 +18,7 @@ export default function CreateGroupPage() {
     const [query, setQuery] = useState("");
 
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
 
     useEffect(() => {
 
@@ -87,9 +89,18 @@ export default function CreateGroupPage() {
     };
 
     return (
-        <AppLayout>
+        <AppLayout mobileChatView={isMobile}>
 
             <div className="group-create-container">
+                {isMobile && (
+                    <button
+                        className="chat-header-back-btn user-info-back-btn"
+                        onClick={() => navigate("/chat")}
+                        aria-label="Back"
+                    >
+                        <img src="/icons/left-chevron.png" alt="back" />
+                    </button>
+                )}
                 <div className="group-create-card">
                     <h2>Create group</h2>
 
