@@ -5013,3 +5013,136 @@ body,
     color: var(--text-muted);
     line-height: 1.55;
 }
+
+/* ===== MOBILE LAYOUT (< 768px) ===== */
+
+.mobile-layout {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.mobile-sidebar-panel,
+.mobile-chat-panel {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    will-change: transform;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-main);
+}
+
+/* List view: sidebar visible, chat off-screen right */
+.mobile-layout.list-active .mobile-sidebar-panel { transform: translateX(0); }
+.mobile-layout.list-active .mobile-chat-panel     { transform: translateX(100%); }
+
+/* Chat view: sidebar off-screen left, chat visible */
+.mobile-layout.chat-active .mobile-sidebar-panel  { transform: translateX(-100%); }
+.mobile-layout.chat-active .mobile-chat-panel     { transform: translateX(0); }
+
+/* Sidebar fills the full mobile panel */
+.mobile-sidebar-panel .sidebar {
+    width: 100% !important;
+    height: 100dvh;
+    border-right: none;
+}
+
+/* Content fills the full mobile panel */
+.mobile-chat-panel .content {
+    height: 100dvh;
+}
+
+/* ===== MOBILE TOUCH + RESPONSIVE POLISH ===== */
+
+@media (max-width: 768px) {
+    /* Prevent iOS font-size zoom on input focus */
+    .chat-input-bar textarea {
+        font-size: 16px;
+    }
+
+    /* Touch-friendly tap targets */
+    .chat-tile       { min-height: 64px; }
+    .chat-menu-btn   { width: 40px; height: 40px; }
+    .chat-attach-btn { width: 40px; height: 40px; }
+
+    /* Auth / card pages */
+    .card {
+        padding: 28px 20px;
+    }
+
+    .placeholder-card {
+        max-width: 100%;
+        min-height: 200px;
+    }
+
+    /* Slightly smaller image max on small screens */
+    .attachment-grid.single .message-image,
+    .attachment-grid.single .attachment-img-wrapper {
+        max-width: 240px;
+    }
+}
+
+/* ===== MOBILE: CHAT HEADER BACK BUTTON ===== */
+
+.chat-header-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+}
+
+.chat-header-back-btn:hover { opacity: 1; }
+
+.chat-header-back-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+/* ===== MOBILE: INFO PANEL FULL-SCREEN OVERLAY ===== */
+
+/* Only applied when isMobile AND isOpen — see ChatInfoPanel.tsx */
+.chat-info-panel.info-panel-mobile {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 200;
+    border-left: none !important;
+    border-radius: 0 !important;
+}
+
+.info-panel-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+    margin-right: 4px;
+}
+
+.info-panel-back-btn:hover { opacity: 1; }
+
+.info-panel-back-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
