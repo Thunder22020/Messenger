@@ -97,9 +97,14 @@ export function useChatScroll(numericChatId: number | null) {
                 if (el && container) {
                     const containerRect = container.getBoundingClientRect();
                     const elRect = el.getBoundingClientRect();
-                    const elRelativeTop = elRect.top - containerRect.top + container.scrollTop;
-                    const targetScrollTop = elRelativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
-                    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: "smooth" });
+                    const fullyVisible =
+                        elRect.top >= containerRect.top &&
+                        elRect.bottom <= containerRect.bottom;
+                    if (!fullyVisible) {
+                        const elRelativeTop = elRect.top - containerRect.top + container.scrollTop;
+                        const targetScrollTop = elRelativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
+                        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: "smooth" });
+                    }
                     el.classList.add("message-highlight");
                     setTimeout(() => el.classList.remove("message-highlight"), 1200);
                 }

@@ -253,9 +253,21 @@ export function useChatMessages({
     const scrollToMessage = useCallback(async (messageId: number) => {
         const isLoaded = messages.some(m => m.id === messageId);
         if (isLoaded) {
-            const el = document.querySelector(`[data-message-id="${messageId}"]`);
+            const el = document.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement | null;
             if (el) {
-                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                const container = document.querySelector(".chat-messages") as HTMLElement | null;
+                if (container) {
+                    const containerRect = container.getBoundingClientRect();
+                    const elRect = el.getBoundingClientRect();
+                    const fullyVisible =
+                        elRect.top >= containerRect.top &&
+                        elRect.bottom <= containerRect.bottom;
+                    if (!fullyVisible) {
+                        const elRelativeTop = elRect.top - containerRect.top + container.scrollTop;
+                        const targetScrollTop = elRelativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
+                        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: "smooth" });
+                    }
+                }
                 el.classList.add("message-highlight");
                 setTimeout(() => el.classList.remove("message-highlight"), 1200);
             }
