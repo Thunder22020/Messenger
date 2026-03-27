@@ -41,8 +41,5 @@ class Chat(
     var createdAt: Instant = Instant.now(),
 
     @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-    var participants: MutableList<ChatParticipant> = mutableListOf(),
-
-    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-    var messages: MutableList<MessageEntity> = mutableListOf()
+    var participants: MutableList<ChatParticipant> = mutableListOf()
 )

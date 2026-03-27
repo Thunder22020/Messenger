@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.repository
 import com.daniel.messenger.messaging.entity.MessageEntity
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -56,6 +57,10 @@ interface MessageRepository : JpaRepository<MessageEntity, Long> {
 
     @Query("SELECT m FROM MessageEntity m JOIN FETCH m.sender WHERE m.id IN :ids")
     fun findAllByIdInWithSender(@Param("ids") ids: Collection<Long>): List<MessageEntity>
+
+    @Modifying
+    @Query("DELETE FROM MessageEntity m WHERE m.chat.id = :chatId")
+    fun deleteAllByChatId(@Param("chatId") chatId: Long)
 
     @Query(
         value = """

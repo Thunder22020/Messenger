@@ -28,7 +28,18 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
         """,
         nativeQuery = true
     )
-    fun deleteAllByMessageIdReturningFilePaths(@Param("messageId") messageId: Long): List<String>
+    fun deleteByMessageIdReturningFilePaths(@Param("messageId") messageId: Long): List<String>
+
+    @Modifying
+    @Query(
+        """
+        DELETE FROM attachments
+        WHERE message_id IN (SELECT id FROM messages WHERE chat_id = :chatId)
+        RETURNING file_path
+        """,
+        nativeQuery = true
+    )
+    fun deleteByChatIdReturningFilePaths(@Param("chatId") chatId: Long): List<String>
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids")

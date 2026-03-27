@@ -15,6 +15,7 @@ import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.attachmentPreviewText
+import com.daniel.messenger.messaging.dto.event.ChatDeletedEvent
 import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.enum.ChatType
@@ -185,8 +186,17 @@ class ChatService(
         }
     }
 
+    @Transactional
     fun deleteChat(chatId: Long) {
+        val s3Keys = attachmentService.deleteByChatIdReturnKeys(chatId)
+        messageRepository.deleteAllByChatId(chatId)
         chatRepository.deleteById(chatId)
+        eventPublisher.publishEvent(ChatDeletedEvent(s3Keys = s3Keys))
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onChatDeleted(event: ChatDeletedEvent) {
+        attachmentService.deleteFromS3Async(event.s3Keys)
     }
 
     fun findByIdOrThrow(id: Long): Chat =

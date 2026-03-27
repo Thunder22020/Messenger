@@ -8,9 +8,7 @@ import com.daniel.messenger.messaging.repository.AttachmentRepository
 import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.messaging.toDtoWithMeta
 import com.daniel.messenger.storage.S3StorageService
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -22,7 +20,6 @@ class AttachmentService(
     private val attachmentRepository: AttachmentRepository,
     private val chatAccessService: ChatAccessService,
 ) {
-    private val log = LoggerFactory.getLogger(AttachmentService::class.java)
     fun upload(file: MultipartFile): AttachmentDto {
         val contentType = file.contentType ?: "application/octet-stream"
         val originalName = file.originalFilename ?: "file"
@@ -57,28 +54,28 @@ class AttachmentService(
 
     @Transactional
     fun deleteByMessageId(messageId: Long) {
-        val keys = attachmentRepository.deleteAllByMessageIdReturningFilePaths(messageId)
-            .map { it.substringAfterLast("/") }
-        if (keys.isNotEmpty()) {
-            deleteFromS3Async(keys)
-        }
+        val keys = deleteByMessageIdReturnKeys(messageId)
+        deleteFromS3Async(keys)
     }
 
-    @Async
     fun deleteFromS3Async(keys: List<String>) {
-        keys.forEach { deleteFromS3OrLog(it) }
-    }
-
-    private fun deleteFromS3OrLog(key: String) {
-        try {
-            s3StorageService.delete(key)
-        } catch (e: Exception) {
-            log.warn("Failed to delete S3 object: {}", key, e)
+        if (keys.isNotEmpty()) {
+            s3StorageService.deleteFromS3Async(keys)
         }
     }
+
+    @Transactional
+    fun deleteByChatIdReturnKeys(chatId: Long) =
+        normalizeKeys(attachmentRepository.deleteByChatIdReturningFilePaths(chatId))
+
+    @Transactional
+    fun deleteByMessageIdReturnKeys(messageId: Long) =
+        normalizeKeys(attachmentRepository.deleteByMessageIdReturningFilePaths(messageId))
+
+    fun normalizeKeys(filePaths: List<String>) = filePaths.map { it.substringAfterLast("/") }
 
     fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
-        if (attachmentIds.isEmpty()) return emptyList()
+        attachmentIds.ifEmpty { return emptyList() }
         attachmentRepository.bulkLinkToMessage(attachmentIds, message)
         return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
