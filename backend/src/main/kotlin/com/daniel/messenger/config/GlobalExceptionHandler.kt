@@ -13,6 +13,7 @@ import com.daniel.messenger.user.exception.UserAlreadyExistsException
 import com.daniel.messenger.user.exception.UserNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -52,6 +53,11 @@ class GlobalExceptionHandler {
     fun handleUnauthorized(ex: RuntimeException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(ErrorResponse(ex.message ?: "Unauthorized"))
+
+    @ExceptionHandler(BadCredentialsException::class)
+    fun handleBadCredentials(ex: BadCredentialsException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ErrorResponse("Wrong password"))
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {

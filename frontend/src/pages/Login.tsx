@@ -5,6 +5,11 @@ import { IntroAnimation } from "./IntroAnimation";
 
 type IntroState = "animating" | "transitioning" | "done";
 
+interface LoginErrors {
+    username?: string;
+    password?: string;
+}
+
 export default function Login({
   setAccessToken,
 }: {
@@ -12,6 +17,7 @@ export default function Login({
 }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<LoginErrors>({});
   const navigate = useNavigate();
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -26,7 +32,6 @@ export default function Login({
   const handleTransition = useCallback(() => {
     setIntroState("transitioning");
     setLogoGreen(true);
-    // Logo travels ~850ms, then let the green dot sit for another ~600ms before removing
     setTimeout(() => setLogoGreen(false), 1500);
   }, []);
   const handleDone = useCallback(() => {
@@ -36,6 +41,7 @@ export default function Login({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: "POST",
@@ -45,7 +51,15 @@ export default function Login({
     });
 
     if (!res.ok) {
-      alert("Login failed");
+      const data = await res.json().catch(() => null);
+      const message: string = data?.error ?? "";
+      if (message === "User not found") {
+        setErrors({ username: "User not found" });
+      } else if (message === "Wrong password") {
+        setErrors({ password: "Wrong password" });
+      } else {
+        setErrors({ username: "Login failed" });
+      }
       return;
     }
 
@@ -81,16 +95,20 @@ export default function Login({
               <input
                 placeholder="Username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => { setUsername(e.target.value); setErrors({}); }}
+                className={errors.username ? "input-error" : ""}
               />
+              <div className="form-field-error">{errors.username}</div>
             </div>
             <div className="form-group">
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrors({}); }}
+                className={errors.password ? "input-error" : ""}
               />
+              <div className="form-field-error">{errors.password}</div>
             </div>
             <button className="btn-primary" type="submit">
               Login
