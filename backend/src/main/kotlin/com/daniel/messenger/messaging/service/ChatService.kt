@@ -6,31 +6,25 @@ import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageEditedEvent
-import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.dto.response.MyChatResponse
 import com.daniel.messenger.messaging.dto.response.OpenChatResponse
-import com.daniel.messenger.messaging.dto.event.ReadAckEvent
 import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
 import com.daniel.messenger.messaging.entity.MessageEntity
-import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.attachmentPreviewText
 import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.enum.ChatType
-import com.daniel.messenger.messaging.exception.CannotAddParticipantToPrivateChatException
 import com.daniel.messenger.messaging.exception.CannotCreateChatWithYourselfException
 import com.daniel.messenger.messaging.exception.ChatNotFoundException
 import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
-import com.daniel.messenger.messaging.exception.NotChatParticipantException
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.ChatRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toDto
-import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.messaging.toSnapshot
 import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
@@ -98,34 +92,6 @@ class ChatService(
         chatParticipantRepository.saveAll(participants)
 
         return OpenChatResponse(requireNotNull(chat.id))
-    }
-
-    @Transactional
-    fun markAsRead(chatId: Long, userId: Long) {
-        val chat = findByIdOrThrow(chatId)
-        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
-
-        participant.unreadCount = 0
-        participant.lastReadMessageId = chat.lastMessageId
-
-        chatNotificationService.sendSidebarUpdate(
-            participant.user.username,
-            ChatUpdateEvent(
-                chatId = chatId,
-                type = ChatUpdateType.READ_ACK,
-                unreadCount = 0,
-            ),
-        )
-
-        val lastReadId = chat.lastMessageId ?: return
-        chatNotificationService.broadcastReadAck(
-            chatId,
-            ReadAckEvent(
-                chatId = chatId,
-                readerUsername = participant.user.username,
-                lastReadMessageId = lastReadId
-            ),
-        )
     }
 
     @Transactional
@@ -217,57 +183,6 @@ class ChatService(
                 lastReadMessageId = it.lastReadMessageId,
             )
         }
-    }
-
-    @Transactional
-    fun addParticipant(chatId: Long, requesterId: Long, userId: Long) {
-        val chat = findByIdOrThrow(chatId)
-        if (chat.type != ChatType.GROUP) {
-            throw CannotAddParticipantToPrivateChatException("Forbidden in private chat")
-        }
-        chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
-        val user = userService.findByIdOrThrow(userId)
-        chatParticipantRepository.save(
-            ChatParticipant(id = ChatParticipantId(chatId, userId), chat = chat, user = user)
-        )
-    }
-
-    @Transactional
-    fun leaveChat(chatId: Long, userId: Long) {
-        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
-        val username = participant.user.username
-        val chat = findByIdOrThrow(chatId)
-
-        chatParticipantRepository.delete(participant)
-        chatParticipantRepository.flush()
-
-        val systemMessage = messageRepository.save(
-            MessageEntity(
-                sender = null,
-                content = "$username left the group",
-                chat = chat,
-                type = MessageType.SYSTEM,
-            )
-        )
-
-        val remainingParticipants = chatParticipantRepository
-            .findAllWithUserByChatId(chatId)
-            .map { it.toSnapshot() }
-
-        eventPublisher.publishEvent(
-            MessageSentEvent(
-                chatId = chatId,
-                response = systemMessage.toResponse(),
-                participants = remainingParticipants,
-            )
-        )
-    }
-
-    @Transactional
-    fun removeParticipant(chatId: Long, requesterId: Long, userId: Long) {
-        chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
-        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
-        chatParticipantRepository.delete(participant)
     }
 
     fun findByIdOrThrow(id: Long): Chat =

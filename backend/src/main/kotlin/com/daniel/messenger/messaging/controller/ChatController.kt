@@ -5,6 +5,7 @@ import com.daniel.messenger.messaging.dto.response.ChatParticipantResponse
 import com.daniel.messenger.messaging.dto.request.CreateGroupChatRequest
 import com.daniel.messenger.messaging.dto.response.MyChatResponse
 import com.daniel.messenger.messaging.dto.response.OpenChatResponse
+import com.daniel.messenger.messaging.service.ChatParticipantService
 import com.daniel.messenger.messaging.service.ChatService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/chat")
 class ChatController(
     private val chatService: ChatService,
+    private val chatParticipantService: ChatParticipantService,
 ) {
     @PostMapping("/private/{receiverId}")
     fun openPrivateChat(
@@ -36,7 +38,7 @@ class ChatController(
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ) {
         val userId = requireNotNull(userPrincipal.user.id)
-        chatService.markAsRead(chatId, userId)
+        chatParticipantService.markAsRead(chatId, userId)
     }
 
     @GetMapping("/my")
@@ -76,7 +78,7 @@ class ChatController(
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ) {
         val requesterId = requireNotNull(userPrincipal.user.id)
-        chatService.addParticipant(
+        chatParticipantService.addParticipant(
             chatId,
             requesterId,
             request.userId
@@ -89,7 +91,7 @@ class ChatController(
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ) {
         val userId = requireNotNull(userPrincipal.user.id)
-        chatService.leaveChat(chatId, userId)
+        chatParticipantService.leaveChat(chatId, userId)
     }
 
     @DeleteMapping("/{chatId}/participants/{userId}")
@@ -99,7 +101,7 @@ class ChatController(
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ) {
         val requesterId = requireNotNull(userPrincipal.user.id)
-        chatService.removeParticipant(
+        chatParticipantService.removeParticipant(
             chatId,
             requesterId,
             userId
