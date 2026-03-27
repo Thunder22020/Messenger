@@ -10,6 +10,7 @@ interface FieldErrors {
 
 function validateUsername(value: string): string | undefined {
     if (!value) return "Username is required";
+    if (/\s/.test(value)) return "Username must not contain spaces";
     if (/^\d/.test(value)) return "Username must not start with a number";
     if (!/[a-zA-Z]/.test(value)) return "Username must contain at least one letter";
     if (value.length < 3) return "Username must be at least 3 characters";

@@ -1,11 +1,13 @@
 package com.daniel.messenger.user.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
 data class RegisterRequest(
     @field:NotBlank(message = "Username must not be blank")
     @field:Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
+    @field:Pattern(regexp = "^\\S+$", message = "Username must not contain spaces")
     val username: String,
 
     @field:NotBlank(message = "Password must not be blank")
