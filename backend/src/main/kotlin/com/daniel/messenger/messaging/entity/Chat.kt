@@ -1,6 +1,7 @@
 package com.daniel.messenger.messaging.entity
 
 import com.daniel.messenger.messaging.enum.ChatType
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -39,6 +40,9 @@ class Chat(
     @Column(nullable = false)
     var createdAt: Instant = Instant.now(),
 
-    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY)
-    var participants: MutableList<ChatParticipant> = mutableListOf()
+    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    var participants: MutableList<ChatParticipant> = mutableListOf(),
+
+    @OneToMany(mappedBy = "chat", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    var messages: MutableList<MessageEntity> = mutableListOf()
 )

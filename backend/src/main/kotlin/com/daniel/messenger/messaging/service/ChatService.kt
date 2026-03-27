@@ -185,6 +185,10 @@ class ChatService(
         }
     }
 
+    fun deleteChat(chatId: Long) {
+        chatRepository.deleteById(chatId)
+    }
+
     fun findByIdOrThrow(id: Long): Chat =
         chatRepository.findById(id).orElseThrow { ChatNotFoundException(id.toString()) }
 

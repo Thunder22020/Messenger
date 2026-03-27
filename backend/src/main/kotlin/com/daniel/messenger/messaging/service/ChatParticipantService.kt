@@ -45,6 +45,13 @@ class ChatParticipantService(
         chatParticipantRepository.delete(participant)
         chatParticipantRepository.flush()
 
+        val remainingParticipants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+
+        if (remainingParticipants.isEmpty()) {
+            chatService.deleteChat(chatId)
+            return
+        }
+
         val systemMessage = messageRepository.save(
             MessageEntity(
                 sender = null,
@@ -54,15 +61,13 @@ class ChatParticipantService(
             )
         )
 
-        val remainingParticipants = chatParticipantRepository
-            .findAllWithUserByChatId(chatId)
-            .map { it.toSnapshot() }
+        chatService.updateChatLastMessage(chat, systemMessage)
 
         eventPublisher.publishEvent(
             MessageSentEvent(
                 chatId = chatId,
                 response = systemMessage.toResponse(),
-                participants = remainingParticipants,
+                participants = remainingParticipants.map { it.toSnapshot() },
             )
         )
     }

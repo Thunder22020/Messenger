@@ -2,6 +2,7 @@ package com.daniel.messenger.messaging.entity
 
 import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.user.entity.User
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -42,7 +43,7 @@ class MessageEntity(
     @JoinColumn(name = "chat_id", nullable = false)
     var chat: Chat,
 
-    @OneToMany(mappedBy = "message")
+    @OneToMany(mappedBy = "message", cascade = [CascadeType.ALL], orphanRemoval = true)
     var attachments: MutableList<Attachment> = mutableListOf(),
 
     var createdAt: Instant = Instant.now(),
