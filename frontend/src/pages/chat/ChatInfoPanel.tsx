@@ -128,9 +128,10 @@ export function ChatInfoPanel(props: {
   onUserClick: (userId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onClose: () => void;
+  onLeave?: () => void;
   isMobile?: boolean;
 }) {
-  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, isMobile } = props;
+  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, onLeave, isMobile } = props;
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
 
@@ -217,6 +218,9 @@ export function ChatInfoPanel(props: {
     <div className={`chat-info-panel ${isOpen ? "open" : ""}${isMobile && isOpen ? " info-panel-mobile" : ""}`}>
       <div className="info-chat-header">
         <span className="info-close-icon" onClick={onClose} />
+        {chatType === "GROUP" && onLeave && (
+          <span className="info-leave-icon" onClick={onLeave} title="Leave group" />
+        )}
         <div className="info-chat-avatar">
           {chatName ? chatName.charAt(0).toUpperCase() : "?"}
         </div>

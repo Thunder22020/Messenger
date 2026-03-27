@@ -18,8 +18,9 @@ fun MessageEntity.toResponse(
     attachments: List<AttachmentDto> = emptyList(),
 ): MessageResponse = MessageResponse(
     id = requireNotNull(id),
+    type = type.name,
     content = if (deletedAt != null) "" else content,
-    sender = senderUsername ?: sender.username,
+    sender = senderUsername ?: sender?.username ?: "",
     createdAt = createdAt,
     editedAt = editedAt,
     deletedAt = deletedAt,

@@ -209,6 +209,14 @@ export default function ChatPage() {
         setContextMenu({ x, y, messageId: msg.id, content: msg.content, sender: msg.sender, isMine });
     };
 
+    const handleLeaveChat = async () => {
+        if (!numericChatId) return;
+        const res = await authFetch(`${API_URL}/chat/${numericChatId}/leave`, { method: "POST" });
+        if (!res || !res.ok) return;
+        window.dispatchEvent(new CustomEvent("chat-left", { detail: numericChatId }));
+        navigate("/chat");
+    };
+
     const handleDeleteMessage = async () => {
         if (!contextMenu) return;
         const messageId = contextMenu.messageId;
@@ -267,6 +275,7 @@ export default function ChatPage() {
                     onMediaClick={(items, index, meta) =>
                         setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                     }
+                    onLeave={handleLeaveChat}
                     onClose={() => setIsInfoOpen(false)}
                     isMobile={isMobile}
                 />

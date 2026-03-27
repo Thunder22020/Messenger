@@ -59,7 +59,7 @@ class MessageService(
     fun editMessage(messageId: Long, request: EditMessageRequest, userId: Long): MessageResponse {
         val message = findMessageOrThrow(messageId)
 
-        assertMessageOwner(message.sender.id, userId)
+        assertMessageOwner(message.sender?.id, userId)
 
         message.content = request.content
         message.editedAt = Instant.now()
@@ -76,7 +76,7 @@ class MessageService(
     fun deleteMessage(messageId: Long, userId: Long): MessageResponse {
         val message = findMessageOrThrow(messageId)
 
-        assertMessageOwner(message.sender.id, userId)
+        assertMessageOwner(message.sender?.id, userId)
 
         val hasAttachments = attachmentService.existsByMessageId(requireNotNull(message.id))
 
@@ -273,7 +273,7 @@ class MessageService(
         val deleted = message.deletedAt != null
         return ReplyPreviewDto(
             messageId = requireNotNull(message.id),
-            sender = message.sender.username,
+            sender = message.sender?.username ?: "",
             content = if (deleted) "" else message.content?.take(100),
             attachmentType = if (deleted) null else attachmentTypeName,
         )

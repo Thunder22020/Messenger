@@ -252,6 +252,14 @@ export function MessageList(props: {
                   )}
 
                   {group.messages.map((msg, msgIdx) => {
+                    if (msg.type === "SYSTEM") {
+                      return (
+                        <div key={msg.id} className="system-message">
+                          {msg.content}
+                        </div>
+                      );
+                    }
+
                     const isLast = msgIdx === group.messages.length - 1;
                     const formattedTime = formatMessageTime(msg.createdAt);
                     const showUnreadDot = isMine && !isReadByAnyOther(msg.id);

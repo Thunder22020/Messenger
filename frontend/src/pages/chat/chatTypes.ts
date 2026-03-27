@@ -35,6 +35,7 @@ export interface UploadingBubble {
 
 export interface Message {
   id: number;
+  type?: string;
   content: string;
   sender: string;
   createdAt: string;

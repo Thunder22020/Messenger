@@ -2060,6 +2060,31 @@ button {
     opacity: 1;
 }
 
+.info-leave-icon {
+    position: absolute;
+    top: 20px;
+    right: 16px;
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background-color: var(--danger);
+    -webkit-mask-image: url('/icons/log-out.png');
+    mask-image: url('/icons/log-out.png');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.info-leave-icon:hover {
+    opacity: 1;
+}
+
 .info-chat-avatar {
     width: 90px;
     height: 90px;
@@ -2307,6 +2332,16 @@ button {
     border-radius: 999px;
     padding: 3px 14px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+
+/* ===== SYSTEM MESSAGE ===== */
+
+.system-message {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 4px 16px;
+    margin: 2px 0;
 }
 
 /* ===== MESSAGE COLLAPSE ANIMATION ===== */

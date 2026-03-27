@@ -18,7 +18,8 @@ export function groupMessagesByDateAndSender(params: {
 
     const lastSG = dg.senderGroups[dg.senderGroups.length - 1];
     const isUnreadBoundary = msg.id === unreadDividerMessageId;
-    if (lastSG && lastSG.sender === msg.sender && !isUnreadBoundary) {
+    const isSystem = msg.type === "SYSTEM";
+    if (lastSG && lastSG.sender === msg.sender && !isUnreadBoundary && !isSystem) {
       lastSG.messages.push(msg);
     } else {
       dg.senderGroups.push({ sender: msg.sender, messages: [msg] });

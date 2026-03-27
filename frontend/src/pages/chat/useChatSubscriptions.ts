@@ -29,40 +29,36 @@ export function useChatSubscriptions({
         setOtherParticipantsReadMap({});
     }, [numericChatId]);
 
-    // Load participants
-    useEffect(() => {
+    const loadParticipants = useCallback(async () => {
         if (!numericChatId) return;
-        let cancelled = false;
 
-        const loadParticipants = async () => {
-            const res = await authFetch(`${API_URL}/chat/${numericChatId}/participants`);
-            if (cancelled || !res || !res.ok) return;
+        const res = await authFetch(`${API_URL}/chat/${numericChatId}/participants`);
+        if (!res || !res.ok) return;
 
-            const data: ChatParticipant[] = await res.json();
-            if (cancelled) return;
+        const data: ChatParticipant[] = await res.json();
+        setParticipants(data);
 
-            setParticipants(data);
-
-            const fetchedReadMap: Record<string, number> = {};
-            for (const p of data) {
-                if (p.username !== currentUsername && p.lastReadMessageId !== null) {
-                    fetchedReadMap[p.username] = p.lastReadMessageId;
+        const fetchedReadMap: Record<string, number> = {};
+        for (const p of data) {
+            if (p.username !== currentUsername && p.lastReadMessageId !== null) {
+                fetchedReadMap[p.username] = p.lastReadMessageId;
+            }
+        }
+        setOtherParticipantsReadMap(prev => {
+            const merged: Record<string, number> = { ...fetchedReadMap };
+            for (const [username, liveLastRead] of Object.entries(prev)) {
+                if ((merged[username] ?? -1) < liveLastRead) {
+                    merged[username] = liveLastRead;
                 }
             }
-            setOtherParticipantsReadMap(prev => {
-                const merged: Record<string, number> = { ...fetchedReadMap };
-                for (const [username, liveLastRead] of Object.entries(prev)) {
-                    if ((merged[username] ?? -1) < liveLastRead) {
-                        merged[username] = liveLastRead;
-                    }
-                }
-                return merged;
-            });
-        };
+            return merged;
+        });
+    }, [numericChatId, currentUsername]);
 
+    // Load participants on chat open
+    useEffect(() => {
         loadParticipants();
-        return () => { cancelled = true; };
-    }, [numericChatId, chatType, currentUsername]);
+    }, [loadParticipants, chatType]);
 
     // Read ack subscription
     useEffect(() => {
@@ -79,6 +75,20 @@ export function useChatSubscriptions({
 
         return () => { subscription.unsubscribe(); };
     }, [client, numericChatId, currentUsername]);
+
+    // Re-fetch participants on system messages (e.g. user left group)
+    useEffect(() => {
+        if (!client || !numericChatId) return;
+
+        const subscription = client.subscribe(`/topic/chat.${numericChatId}`, (msg: { body: string }) => {
+            const body = JSON.parse(msg.body);
+            if (body.type === "SYSTEM") {
+                loadParticipants();
+            }
+        });
+
+        return () => { subscription.unsubscribe(); };
+    }, [client, numericChatId, loadParticipants]);
 
     // Typing subscription
     useEffect(() => {

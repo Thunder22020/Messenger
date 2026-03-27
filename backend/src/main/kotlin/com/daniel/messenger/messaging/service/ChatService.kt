@@ -6,6 +6,7 @@ import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageEditedEvent
+import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.dto.response.MyChatResponse
 import com.daniel.messenger.messaging.dto.response.OpenChatResponse
 import com.daniel.messenger.messaging.dto.event.ReadAckEvent
@@ -15,6 +16,7 @@ import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
 import com.daniel.messenger.messaging.entity.MessageEntity
+import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.attachmentPreviewText
 import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.Attachment
@@ -28,6 +30,7 @@ import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.ChatRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toDto
+import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.messaging.toSnapshot
 import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
@@ -232,7 +235,32 @@ class ChatService(
     @Transactional
     fun leaveChat(chatId: Long, userId: Long) {
         val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
+        val username = participant.user.username
+        val chat = findByIdOrThrow(chatId)
+
         chatParticipantRepository.delete(participant)
+        chatParticipantRepository.flush()
+
+        val systemMessage = messageRepository.save(
+            MessageEntity(
+                sender = null,
+                content = "$username left the group",
+                chat = chat,
+                type = MessageType.SYSTEM,
+            )
+        )
+
+        val remainingParticipants = chatParticipantRepository
+            .findAllWithUserByChatId(chatId)
+            .map { it.toSnapshot() }
+
+        eventPublisher.publishEvent(
+            MessageSentEvent(
+                chatId = chatId,
+                response = systemMessage.toResponse(),
+                participants = remainingParticipants,
+            )
+        )
     }
 
     @Transactional

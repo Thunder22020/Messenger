@@ -1,8 +1,11 @@
 package com.daniel.messenger.messaging.entity
 
+import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.user.entity.User
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -25,8 +28,12 @@ class MessageEntity(
     var id: Long? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
-    var sender: User,
+    @JoinColumn(name = "sender_id", nullable = true)
+    var sender: User?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var type: MessageType = MessageType.REGULAR,
 
     @Column(columnDefinition = "TEXT")
     var content: String?,

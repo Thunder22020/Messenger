@@ -99,6 +99,15 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
     }, []);
 
     useEffect(() => {
+        const handler = (e: Event) => {
+            const chatId = (e as CustomEvent<number>).detail;
+            setChats(prev => prev.filter(c => c.chatId !== chatId));
+        };
+        window.addEventListener("chat-left", handler);
+        return () => window.removeEventListener("chat-left", handler);
+    }, []);
+
+    useEffect(() => {
         if (!client) return;
 
         const subscription = client.subscribe(
