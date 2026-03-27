@@ -1,5 +1,6 @@
 package com.daniel.messenger.user.service
 
+import com.daniel.messenger.user.dto.RegisterRequest
 import com.daniel.messenger.user.dto.UserRequest
 import com.daniel.messenger.user.dto.UserSearchResponse
 import com.daniel.messenger.user.entity.User
@@ -14,7 +15,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val encoder: PasswordEncoder
 ) {
-    fun save(dto: UserRequest): User {
+    fun save(dto: RegisterRequest): User {
         if (userRepository.findByUsername(dto.username) != null) {
             throw UserAlreadyExistsException("User already exists")
         }

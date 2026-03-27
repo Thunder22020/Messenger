@@ -4,9 +4,11 @@ import com.daniel.messenger.security.dto.AccessTokenResponse
 import com.daniel.messenger.security.service.AuthService
 import com.daniel.messenger.security.service.RefreshTokenService
 import com.daniel.messenger.security.web.CookieFactory
+import com.daniel.messenger.user.dto.RegisterRequest
 import com.daniel.messenger.user.dto.UserRequest
 import com.daniel.messenger.user.service.UserService
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -23,7 +25,7 @@ class AuthController(
     private val cookieFactory: CookieFactory
 ) {
     @PostMapping("/register")
-    fun register(@RequestBody user: UserRequest) = userService.save(user)
+    fun register(@Valid @RequestBody user: RegisterRequest) = userService.save(user)
 
     @PostMapping("/login")
     fun login(

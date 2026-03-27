@@ -13,6 +13,7 @@ import com.daniel.messenger.user.exception.UserAlreadyExistsException
 import com.daniel.messenger.user.exception.UserNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -51,4 +52,11 @@ class GlobalExceptionHandler {
     fun handleUnauthorized(ex: RuntimeException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(ErrorResponse(ex.message ?: "Unauthorized"))
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        val message = ex.bindingResult.fieldErrors
+            .firstOrNull()?.defaultMessage ?: "Invalid request"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message))
+    }
 }

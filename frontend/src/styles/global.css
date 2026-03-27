@@ -211,6 +211,8 @@ body {
 
     border-radius: 16px;
     padding: 40px;
+    width: 360px;
+    box-sizing: border-box;
 }
 
 .card h2 {
@@ -237,6 +239,26 @@ input {
 input:focus {
     outline: none;
     border-color: var(--input-border);
+}
+
+input.input-error {
+    border-color: var(--danger);
+}
+
+input.input-error:focus {
+    border-color: var(--danger);
+}
+
+.form-field-error {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1;
+    min-height: 12px;
+    color: var(--danger);
+}
+
+.form-server-error {
+    margin-bottom: 10px;
 }
 
 button {
@@ -5139,6 +5161,7 @@ body,
 
     /* Auth / card pages */
     .card {
+        width: calc(100vw - 64px);
         padding: 28px 20px;
     }
 
