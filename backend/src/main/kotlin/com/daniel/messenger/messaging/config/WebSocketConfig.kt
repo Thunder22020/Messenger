@@ -8,6 +8,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -22,9 +23,16 @@ class WebSocketConfig(
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         registry.enableSimpleBroker("/topic", "/queue")
-            .setHeartbeatValue(longArrayOf(10000, 10000))
+            .setHeartbeatValue(longArrayOf(HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS))
             .setTaskScheduler(getScheduler())
         registry.setApplicationDestinationPrefixes("/app")
+    }
+
+    override fun configureWebSocketTransport(registry: WebSocketTransportRegistration) {
+        registry
+            .setSendBufferSizeLimit(SEND_BUFFER_SIZE_LIMIT)
+            .setSendTimeLimit(SEND_TIME_LIMIT)
+            .setMessageSizeLimit(MESSAGE_SIZE_LIMIT)
     }
 
     private fun getScheduler() = ThreadPoolTaskScheduler().apply {
@@ -35,5 +43,12 @@ class WebSocketConfig(
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
         registration.interceptors(jwtChannelInterceptor)
+    }
+
+    companion object {
+        private const val HEARTBEAT_INTERVAL_MS = 10000L
+        private const val SEND_BUFFER_SIZE_LIMIT = 512 * 1024
+        private const val SEND_TIME_LIMIT = 20_000
+        private const val MESSAGE_SIZE_LIMIT = 128 * 1024
     }
 }
