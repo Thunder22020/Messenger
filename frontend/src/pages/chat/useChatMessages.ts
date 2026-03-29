@@ -209,7 +209,12 @@ export function useChatMessages({
             const visible = data.messages.filter((m: Message) => !m.deletedAt);
             if (visible.length === 0) return;
 
-            setMessages(prev => [...prev, ...visible]);
+            setMessages(prev => {
+                const existingIds = new Set(prev.map(m => m.id));
+                const newMessages = visible.filter((m: Message) => !existingIds.has(m.id));
+                if (newMessages.length === 0) return prev;
+                return [...prev, ...newMessages];
+            });
             setHasMoreNewer(data.hasMoreNewer);
             newestIdRef.current = visible[visible.length - 1].id;
             if (isAtBottomRef.current) {
