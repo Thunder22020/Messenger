@@ -109,6 +109,7 @@ export default function CreateGroupPage() {
                         placeholder="Group name..."
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
+                        maxLength={50}
                     />
 
                     <div className="group-search-label">

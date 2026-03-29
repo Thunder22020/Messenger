@@ -8,6 +8,7 @@ import com.daniel.messenger.messaging.dto.response.OpenChatResponse
 import com.daniel.messenger.messaging.service.ChatParticipantService
 import com.daniel.messenger.messaging.service.ChatService
 import com.daniel.messenger.security.userdetails.UserPrincipal
+import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -51,7 +52,7 @@ class ChatController(
 
     @PostMapping("/group")
     fun createGroupChat(
-        @RequestBody request: CreateGroupChatRequest,
+        @Valid @RequestBody request: CreateGroupChatRequest,
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ): OpenChatResponse {
         val creatorId = requireNotNull(userPrincipal.user.id)
