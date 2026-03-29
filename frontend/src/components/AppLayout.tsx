@@ -63,6 +63,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
 
     const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     const recentNotificationsRef = useRef<Set<number>>(new Set());
+    const lastMessageTimestampRef = useRef<Map<number, string>>(new Map());
     useEffect(() => {
         notificationSoundRef.current = new Audio("/sounds/notification_sound.mp3");
         notificationSoundRef.current.volume = 0.5;
@@ -94,6 +95,11 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
             ...c,
             unreadCount: c.unreadCount ?? 0,
         }));
+        normalized.forEach(c => {
+            if (c.lastMessageCreatedAt) {
+                lastMessageTimestampRef.current.set(c.chatId, c.lastMessageCreatedAt);
+            }
+        });
         setChats([...normalized].sort(sortByLastMessage));
     };
 
@@ -135,17 +141,22 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
             async (msg) => {
                 const body = JSON.parse(msg.body);
 
-                if (
-                    body.type === "CONTENT"
-                    && body.unreadCount > 0
-                    && !recentNotificationsRef.current.has(body.chatId)
-                ) {
-                    recentNotificationsRef.current.add(body.chatId);
-                    setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
-                    notificationSoundRef.current?.play().catch(() => {});
-                    if (document.visibilityState !== "visible") {
-                        document.title = "You have new messages - Synk.";
+                if (body.type === "CONTENT" && body.unreadCount > 0) {
+                    const prevTs = lastMessageTimestampRef.current.get(body.chatId);
+                    const newTs = body.lastMessageCreatedAt;
+                    const isNewMessage = newTs && newTs !== prevTs && (!prevTs || newTs > prevTs);
+
+                    if (isNewMessage && !recentNotificationsRef.current.has(body.chatId)) {
+                        recentNotificationsRef.current.add(body.chatId);
+                        setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
+                        notificationSoundRef.current?.play().catch(() => {});
+                        if (document.visibilityState !== "visible") {
+                            document.title = "You have new messages - Synk.";
+                        }
                     }
+                }
+                if (body.lastMessageCreatedAt) {
+                    lastMessageTimestampRef.current.set(body.chatId, body.lastMessageCreatedAt);
                 }
 
                 setChats(prev => {
