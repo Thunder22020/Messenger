@@ -8,13 +8,140 @@ type Tab = "members" | "media" | "files";
 
 const PAGE_SIZE = 20;
 
+type SearchUser = { id: number; username: string };
+
 // ---- MembersTab ----
 
-function MembersTab({ participants, currentUsername, onUserClick }: {
+function MembersTab({ participants, currentUsername, onUserClick, chatId, addMode, onEnterAddMode }: {
   participants: ChatParticipant[];
   currentUsername: string | null;
   onUserClick: (id: number) => void;
+  chatId: number | null;
+  addMode: boolean;
+  onEnterAddMode: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [selected, setSelected] = useState<SearchUser[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const existingIds = new Set(participants.map(p => p.id));
+
+  useEffect(() => {
+    if (!addMode) {
+      setQuery("");
+      setSearchResults([]);
+      setSelected([]);
+    }
+  }, [addMode]);
+
+  useEffect(() => {
+    if (!addMode) return;
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const res = await authFetch(`${API_URL}/users/search?query=${query}`);
+      if (!res || !res.ok) return;
+      const data: SearchUser[] = await res.json();
+      setSearchResults(data);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, addMode]);
+
+  const toggleSelect = (user: SearchUser) => {
+    setSelected(prev =>
+      prev.some(u => u.id === user.id)
+        ? prev.filter(u => u.id !== user.id)
+        : [...prev, user]
+    );
+  };
+
+  const handleConfirm = async () => {
+    if (!chatId || selected.length === 0 || submitting) return;
+    setSubmitting(true);
+    await authFetch(`${API_URL}/chat/${chatId}/participants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: selected.map(u => u.id) }),
+    });
+    setSubmitting(false);
+    onEnterAddMode(); // toggles addMode off in parent
+  };
+
+  if (addMode) {
+    const selectedIds = new Set(selected.map(u => u.id));
+    const filteredResults = searchResults.filter(
+      u => !selectedIds.has(u.id) && !existingIds.has(u.id)
+    );
+
+    return (
+      <div className="info-members-list">
+        <div className="info-add-search-row">
+          <input
+            className="info-add-search-input"
+            placeholder="Search users..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+          />
+          {selected.length > 0 ? (
+            <button className="info-add-action-btn" onClick={handleConfirm} disabled={submitting}>
+              <img src="/icons/check.png" alt="confirm" className="info-add-action-icon confirm" />
+            </button>
+          ) : (
+            <button className="info-add-action-btn" onClick={onEnterAddMode}>
+              <img src="/icons/close.png" alt="cancel" className="info-add-action-icon cancel" />
+            </button>
+          )}
+        </div>
+
+        {selected.map(user => (
+          <div key={user.id} className="info-member-row info-add-user-row" onClick={() => toggleSelect(user)}>
+            <div className="info-add-checkbox checked">
+              <div className="info-add-checkbox-dot" />
+            </div>
+            <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
+            <span className="info-member-name">{user.username}</span>
+          </div>
+        ))}
+
+        {filteredResults.map(user => {
+          const isMember = existingIds.has(user.id);
+          return (
+            <div
+              key={user.id}
+              className={`info-member-row info-add-user-row${isMember ? " disabled" : ""}`}
+              onClick={() => !isMember && toggleSelect(user)}
+            >
+              <div className={`info-add-checkbox${isMember ? " checked disabled" : ""}`}>
+                {isMember && <div className="info-add-checkbox-dot" />}
+              </div>
+              <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
+              <span className="info-member-name">{user.username}</span>
+            </div>
+          );
+        })}
+
+        {searchResults.filter(u => existingIds.has(u.id)).map(user => (
+          <div key={user.id} className="info-member-row info-add-user-row disabled">
+            <div className="info-add-checkbox checked disabled">
+              <div className="info-add-checkbox-dot" />
+            </div>
+            <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
+            <span className="info-member-name">{user.username}</span>
+            <span className="info-you-label">Member</span>
+          </div>
+        ))}
+
+        {query.trim() && searchResults.length === 0 && (
+          <div className="info-panel-empty">No users found</div>
+        )}
+      </div>
+    );
+  }
+
   const sorted = [...participants].sort((a, b) => {
     if (a.username === currentUsername) return -1;
     if (b.username === currentUsername) return 1;
@@ -134,6 +261,7 @@ export function ChatInfoPanel(props: {
   const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, onLeave, isMobile } = props;
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
+  const [membersAddMode, setMembersAddMode] = useState(false);
 
   const [media, setMedia] = useState<AttachmentDto[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
@@ -150,6 +278,7 @@ export function ChatInfoPanel(props: {
   // Reset all data when chat changes
   useEffect(() => {
     setActiveTab(chatType === "GROUP" ? "members" : "media");
+    setMembersAddMode(false);
     setMedia([]);
     setMediaHasMore(true);
     mediaLoadingRef.current = false;
@@ -245,6 +374,9 @@ export function ChatInfoPanel(props: {
             participants={participants}
             currentUsername={currentUsername}
             onUserClick={onUserClick}
+            chatId={chatId}
+            addMode={membersAddMode}
+            onEnterAddMode={() => setMembersAddMode(prev => !prev)}
           />
         )}
         {activeTab === "media" && (
@@ -277,6 +409,15 @@ export function ChatInfoPanel(props: {
           />
         )}
       </div>
+
+      {activeTab === "members" && !membersAddMode && (
+        <div className="info-bottom-bar">
+          <button className="info-add-user-btn" onClick={() => setMembersAddMode(true)}>
+            <img src="/icons/add-user.png" alt="" className="info-add-user-icon" />
+            Add user
+          </button>
+        </div>
+      )}
     </div>
   );
 }

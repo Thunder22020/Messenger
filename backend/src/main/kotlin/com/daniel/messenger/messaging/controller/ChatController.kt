@@ -73,16 +73,16 @@ class ChatController(
     }
 
     @PostMapping("/{chatId}/participants")
-    fun addParticipant(
+    fun addParticipants(
         @PathVariable chatId: Long,
         @RequestBody request: AddParticipantRequest,
         @AuthenticationPrincipal userPrincipal: UserPrincipal
     ) {
         val requesterId = requireNotNull(userPrincipal.user.id)
-        chatParticipantService.addParticipant(
+        chatParticipantService.addParticipants(
             chatId,
             requesterId,
-            request.userId
+            request.userIds
         )
     }
 

@@ -80,16 +80,60 @@ class ChatParticipantService(
     }
 
     @Transactional
-    fun addParticipant(chatId: Long, requesterId: Long, userId: Long) {
+    fun addParticipants(chatId: Long, requesterId: Long, userIds: List<Long>) {
         val chat = chatService.findByIdOrThrow(chatId)
         if (chat.type != ChatType.GROUP) {
             throw CannotAddParticipantToPrivateChatException("Forbidden in private chat")
         }
         chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
-        val user = userService.findByIdOrThrow(userId)
-        chatParticipantRepository.save(
-            ChatParticipant(id = ChatParticipantId(chatId, userId), chat = chat, user = user)
-        )
+
+        val requester = userService.findByIdOrThrow(requesterId)
+        val usersToAdd = userService.findAllByIds(userIds)
+
+        for (user in usersToAdd) {
+            val uid = requireNotNull(user.id)
+            chatParticipantRepository.save(
+                ChatParticipant(id = ChatParticipantId(chatId, uid), chat = chat, user = user)
+            )
+        }
+
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+        var lastSystemMessage: MessageEntity? = null
+
+        for (user in usersToAdd) {
+            val systemMessage = messageRepository.save(
+                MessageEntity(
+                    sender = null,
+                    content = "${requester.username} added ${user.username} to group",
+                    chat = chat,
+                    type = MessageType.SYSTEM,
+                )
+            )
+            lastSystemMessage = systemMessage
+
+            val viewingUserIds = chatNotificationService.getViewingUserIds(chatId, participants)
+            chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, requesterId, viewingUserIds)
+
+            val participantSnapshots = participants.map {
+                val isRequester = it.user.id == requesterId
+                val isViewing = it.user.id in viewingUserIds
+                ParticipantSnapshot(
+                    username = it.user.username,
+                    unreadCount = it.unreadCount + if (isRequester || isViewing) 0 else 1,
+                )
+            }
+            eventPublisher.publishEvent(
+                MessageSentEvent(
+                    chatId = chatId,
+                    response = systemMessage.toResponse(),
+                    participants = participantSnapshots,
+                )
+            )
+        }
+
+        if (lastSystemMessage != null) {
+            chatService.updateChatLastMessage(chat, lastSystemMessage)
+        }
     }
 
     @Transactional

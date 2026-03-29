@@ -12,8 +12,8 @@ interface User {
 
 export default function CreateGroupPage() {
 
-    const [users, setUsers] = useState<User[]>([]);
-    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
     const [title, setTitle] = useState("");
     const [query, setQuery] = useState("");
 
@@ -21,34 +21,27 @@ export default function CreateGroupPage() {
     const isMobile = useIsMobile();
 
     useEffect(() => {
-
-        const loadUsers = async () => {
-
+        const timer = setTimeout(async () => {
             const url = query.trim()
                 ? `${API_URL}/users/search?query=${query}`
                 : `${API_URL}/users/search`;
 
             const res = await authFetch(url);
-
             if (!res || !res.ok) return;
 
             const data = await res.json();
-            setUsers(data);
-        };
+            setSearchResults(data);
+        }, 300);
 
-        loadUsers();
-
+        return () => clearTimeout(timer);
     }, [query]);
 
-    const toggleUser = (userId: number) => {
-
+    const toggleUser = (user: User) => {
         setSelectedUsers(prev => {
-
-            if (prev.includes(userId)) {
-                return prev.filter(id => id !== userId);
+            if (prev.some(u => u.id === user.id)) {
+                return prev.filter(u => u.id !== user.id);
             }
-
-            return [...prev, userId];
+            return [...prev, user];
         });
     };
 
@@ -73,7 +66,7 @@ export default function CreateGroupPage() {
                 },
                 body: JSON.stringify({
                     title,
-                    participantIds: selectedUsers
+                    participantIds: selectedUsers.map(u => u.id)
                 })
             }
         );
@@ -87,6 +80,9 @@ export default function CreateGroupPage() {
 
         navigate(`/chat/${data.chatId}`);
     };
+
+    const selectedIds = new Set(selectedUsers.map(u => u.id));
+    const filteredResults = searchResults.filter(u => !selectedIds.has(u.id));
 
     return (
         <AppLayout mobileChatView={isMobile}>
@@ -124,31 +120,45 @@ export default function CreateGroupPage() {
                     />
 
                     <div className="group-users-list">
-                        {users.map(user => {
-                            const checked = selectedUsers.includes(user.id);
-
-                            return (
-                                <div
-                                    key={user.id}
-                                    onClick={() => toggleUser(user.id)}
-                                    className={`group-user-item ${checked ? "selected" : ""}`}
-                                >
-                                    <div className="group-user-checkbox">
-                                        {checked && <div className="group-user-dot" />}
-                                    </div>
-
-                                    <div className="group-user-avatar">
-                                        {user.username.charAt(0).toUpperCase()}
-                                    </div>
-
-                                    <div className="group-user-name">
-                                        {user.username}
-                                    </div>
+                        {selectedUsers.map(user => (
+                            <div
+                                key={user.id}
+                                onClick={() => toggleUser(user)}
+                                className="group-user-item selected"
+                            >
+                                <div className="group-user-checkbox">
+                                    <div className="group-user-dot" />
                                 </div>
-                            );
-                        })}
 
-                        {users.length === 0 && (
+                                <div className="group-user-avatar">
+                                    {user.username.charAt(0).toUpperCase()}
+                                </div>
+
+                                <div className="group-user-name">
+                                    {user.username}
+                                </div>
+                            </div>
+                        ))}
+
+                        {filteredResults.map(user => (
+                            <div
+                                key={user.id}
+                                onClick={() => toggleUser(user)}
+                                className="group-user-item"
+                            >
+                                <div className="group-user-checkbox" />
+
+                                <div className="group-user-avatar">
+                                    {user.username.charAt(0).toUpperCase()}
+                                </div>
+
+                                <div className="group-user-name">
+                                    {user.username}
+                                </div>
+                            </div>
+                        ))}
+
+                        {searchResults.length === 0 && selectedUsers.length === 0 && (
                             <div className="group-empty">
                                 No users found
                             </div>
