@@ -26,11 +26,7 @@ class AttachmentController(private val attachmentService: AttachmentService) {
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): List<AttachmentDto> {
         val userId = requireNotNull(userPrincipal.user.id)
-        return if (before == null) {
-            attachmentService.getMediaAttachments(chatId, userId)
-        } else {
-            attachmentService.getMediaAttachmentsBefore(chatId, before, userId)
-        }
+        return attachmentService.getMediaAttachments(chatId, userId, before)
     }
 
     @GetMapping("/files")
@@ -40,10 +36,6 @@ class AttachmentController(private val attachmentService: AttachmentService) {
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): List<AttachmentDto> {
         val userId = requireNotNull(userPrincipal.user.id)
-        return if (before == null) {
-            attachmentService.getFilesAttachments(chatId, userId)
-        } else {
-            attachmentService.getFilesAttachmentsBefore(chatId, before, userId)
-        }
+        return attachmentService.getFilesAttachments(chatId, userId, before)
     }
 }

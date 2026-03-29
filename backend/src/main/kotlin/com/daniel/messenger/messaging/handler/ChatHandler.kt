@@ -5,6 +5,7 @@ import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.dto.request.TypingRequest
 import com.daniel.messenger.messaging.service.ChatHandlerService
 import com.daniel.messenger.security.util.toUserPrincipal
+import jakarta.validation.Valid
 import org.springframework.messaging.handler.annotation.MessageMapping
 import java.security.Principal
 
@@ -14,7 +15,7 @@ class ChatHandler(
 ) {
     @MessageMapping("/chat.send")
     fun sendMessage(
-        message: SendMessageRequest,
+        @Valid message: SendMessageRequest,
         principal: Principal
     ) {
         val sender = principal.toUserPrincipal().user

@@ -80,28 +80,26 @@ class AttachmentService(
         return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
 
-    fun getMediaAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
+    fun getMediaAttachments(chatId: Long, userId: Long, before: Long? = null): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllMediaByChatId(chatId, pageable).map { it.toDtoWithMeta() }
+        val attachments = if (before != null) {
+            attachmentRepository.findAllMediaByChatIdBefore(chatId, before, pageable)
+        } else {
+            attachmentRepository.findAllMediaByChatId(chatId, pageable)
+        }
+        return attachments.map { it.toDtoWithMeta() }
     }
 
-    fun getMediaAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
+    fun getFilesAttachments(chatId: Long, userId: Long, before: Long? = null): List<AttachmentDto> {
         checkAccess(chatId, userId)
         val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllMediaByChatIdBefore(chatId, before, pageable).map { it.toDtoWithMeta() }
-    }
-
-    fun getFilesAttachments(chatId: Long, userId: Long): List<AttachmentDto> {
-        checkAccess(chatId, userId)
-        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllFilesByChatId(chatId, pageable).map { it.toDtoWithMeta() }
-    }
-
-    fun getFilesAttachmentsBefore(chatId: Long, before: Long, userId: Long): List<AttachmentDto> {
-        checkAccess(chatId, userId)
-        val pageable = PageRequest.of(0, ATT_PAGE_SIZE)
-        return attachmentRepository.findAllFilesByChatIdBefore(chatId, before, pageable).map { it.toDtoWithMeta() }
+        val attachments = if (before != null) {
+            attachmentRepository.findAllFilesByChatIdBefore(chatId, before, pageable)
+        } else {
+            attachmentRepository.findAllFilesByChatId(chatId, pageable)
+        }
+        return attachments.map { it.toDtoWithMeta() }
     }
 
     fun existsByMessageId(id: Long) =

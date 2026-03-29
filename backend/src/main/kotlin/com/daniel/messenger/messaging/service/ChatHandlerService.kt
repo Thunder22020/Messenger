@@ -1,22 +1,16 @@
 package com.daniel.messenger.messaging.service
 
-import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.dto.event.TypingEvent
 import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.request.TypingRequest
-import com.daniel.messenger.messaging.dto.response.MessageResponse
-import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.user.entity.User
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.event.TransactionPhase
-import org.springframework.transaction.event.TransactionalEventListener
 
 @Service
 class ChatHandlerService(
@@ -50,28 +44,6 @@ class ChatHandlerService(
                 unreadCount = p.unreadCount + if (incremented) 1 else 0,
             )
         }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onMessageSent(event: MessageSentEvent) {
-        chatNotificationService.broadcastChatMessage(event.chatId, event.response)
-        event.participants.forEach {
-            sendSidebarChatsUpdateEvent(event.chatId, it, event.response)
-        }
-    }
-
-    private fun sendSidebarChatsUpdateEvent(chatId: Long, participant: ParticipantSnapshot, response: MessageResponse) {
-        chatNotificationService.sendSidebarUpdate(
-            participant.username,
-            ChatUpdateEvent(
-                chatId = chatId,
-                type = ChatUpdateType.CONTENT,
-                lastMessageContent = resolveContentPreview(response),
-                lastMessageSender = response.sender,
-                lastMessageCreatedAt = response.createdAt,
-                unreadCount = participant.unreadCount,
-            ),
-        )
-    }
 
     fun broadcastTyping(request: TypingRequest, username: String) {
         chatNotificationService.broadcastTyping(

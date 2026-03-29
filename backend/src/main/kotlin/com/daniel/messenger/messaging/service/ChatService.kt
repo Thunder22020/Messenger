@@ -1,9 +1,6 @@
 package com.daniel.messenger.messaging.service
 
-import com.daniel.messenger.messaging.dto.ChatDTO
 import com.daniel.messenger.messaging.dto.response.ChatParticipantResponse
-import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
-import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageEditedEvent
 import com.daniel.messenger.messaging.dto.response.MyChatResponse
@@ -35,8 +32,6 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.event.TransactionPhase
-import org.springframework.transaction.event.TransactionalEventListener
 
 @Service
 class ChatService(
@@ -154,23 +149,6 @@ class ChatService(
         eventPublisher.publishEvent(MessageEditedEvent(chat.toDto(), participants, response, isLastMessage))
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onMessageDeleted(event: MessageDeletedEvent) {
-        chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
-        broadcastSidebarUpdate(event.participants, event.chat)
-        if (event.hasAttachments) {
-            attachmentService.deleteByMessageId(event.response.id)
-        }
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onMessageEdited(event: MessageEditedEvent) {
-        chatNotificationService.broadcastChatMessage(event.chat.id, event.response)
-        if (event.isLastMessage) {
-            broadcastSidebarUpdate(event.participants, event.chat)
-        }
-    }
-
     @Transactional(readOnly = true)
     fun getUserChats(userId: Long): List<MyChatResponse> {
         val chats = chatRepository.findMyChats(userId)
@@ -226,11 +204,6 @@ class ChatService(
         eventPublisher.publishEvent(ChatDeletedEvent(s3Keys = s3Keys))
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onChatDeleted(event: ChatDeletedEvent) {
-        attachmentService.deleteFromS3Async(event.s3Keys)
-    }
-
     fun findByIdOrThrow(id: Long): Chat =
         chatRepository.findById(id).orElseThrow { ChatNotFoundException(id.toString()) }
 
@@ -252,24 +225,6 @@ class ChatService(
         if (!message.content.isNullOrBlank()) return message.content
         if (attachments.isEmpty()) return message.content
         return attachmentPreviewText(attachments.first().attachmentType, attachments.size)
-    }
-
-    private fun broadcastSidebarUpdate(participants: List<ParticipantSnapshot>, chat: ChatDTO) {
-        participants.forEach { sendSidebarUpdate(it, chat) }
-    }
-
-    private fun sendSidebarUpdate(participant: ParticipantSnapshot, chat: ChatDTO) {
-        chatNotificationService.sendSidebarUpdate(
-            participant.username,
-            ChatUpdateEvent(
-                chatId = requireNotNull(chat.id),
-                type = ChatUpdateType.CONTENT,
-                lastMessageContent = chat.lastMessageContent,
-                lastMessageSender = chat.lastMessageSender,
-                lastMessageCreatedAt = chat.lastMessageCreatedAt,
-                unreadCount = participant.unreadCount,
-            ),
-        )
     }
 
 }

@@ -6,6 +6,7 @@ import com.daniel.messenger.messaging.dto.response.PagedMessageResponse
 import com.daniel.messenger.messaging.service.MessageService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -62,7 +63,7 @@ class MessageController(
     @PatchMapping("/{messageId}")
     fun editMessage(
         @PathVariable messageId: Long,
-        @RequestBody request: EditMessageRequest,
+        @Valid @RequestBody request: EditMessageRequest,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): MessageResponse {
         val userId = requireNotNull(userPrincipal.user.id)
