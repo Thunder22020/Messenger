@@ -1,45 +1,80 @@
 import { useEffect, useState } from "react";
 import { Client } from "@stomp/stompjs";
-import { WS_URL } from "../config";
+import { WS_URL, API_URL } from "../config";
 import { WebSocketContext } from "./WebSocketContext";
 
+/**
+ * Attempts to ensure localStorage has a valid (non-expired) access token.
+ * Returns the token string or null if refresh failed (user must re-login).
+ */
+async function getFreshToken(): Promise<string | null> {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    // Decode JWT payload to check expiration (no library needed)
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const expiresAt = payload.exp * 1000; // seconds → ms
+        // If token has >30s remaining, it's fine
+        if (Date.now() < expiresAt - 30_000) return token;
+    } catch {
+        // Malformed token — try refresh anyway
+    }
+
+    // Token expired or about to — refresh it
+    try {
+        const res = await fetch(`${API_URL}/api/auth/refresh`, {
+            method: "POST",
+            credentials: "include",
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        localStorage.setItem("accessToken", data.accessToken);
+        return data.accessToken;
+    } catch {
+        return null;
+    }
+}
+
 export function WebSocketProvider({
-                                      children,
-                                      accessToken
-                                  }: {
-    children: React.ReactNode
-    accessToken: string | null
+    children,
+    accessToken,
+}: {
+    children: React.ReactNode;
+    accessToken: string | null;
 }) {
     const [client, setClient] = useState<Client | null>(null);
 
     useEffect(() => {
         if (!accessToken) return;
 
-        // Guards against the cleanup callback's onWebSocketClose firing after
-        // a new effect has already started (e.g. accessToken change).
         let deactivated = false;
 
         const stompClient = new Client({
             brokerURL: `${WS_URL}/ws`,
             reconnectDelay: 5000,
-            connectHeaders: {
-                Authorization: `Bearer ${accessToken}`,
+
+            // Runs before EVERY connect attempt (initial + reconnects).
+            // Always injects a fresh token so reconnects after long
+            // inactivity use a valid JWT, not the stale original one.
+            beforeConnect: async () => {
+                const token = await getFreshToken();
+                if (!token) {
+                    // Refresh failed — force re-login
+                    localStorage.removeItem("accessToken");
+                    window.location.href = "/login";
+                    return;
+                }
+                stompClient.connectHeaders = {
+                    Authorization: `Bearer ${token}`,
+                };
             },
         });
 
-        // Called on every successful connect AND every automatic reconnect.
-        // Setting state here (null → object) is what triggers all subscriber
-        // useEffect([client]) hooks to re-run and restore their subscriptions.
         stompClient.onConnect = () => {
-            console.log("STOMP connected");
-            setClient(stompClient);
+            if (!deactivated) setClient(stompClient);
         };
 
-        // Called whenever the underlying WebSocket closes unexpectedly
-        // (tab inactivity, network drop, server restart, etc.).
-        // Setting client to null makes every subscriber effect clean up
-        // immediately, so when the library reconnects and onConnect fires,
-        // the null → object transition causes a full re-subscription.
         stompClient.onWebSocketClose = () => {
             if (!deactivated) setClient(null);
         };

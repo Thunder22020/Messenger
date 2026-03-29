@@ -105,6 +105,19 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
         reloadChats();
     }, []);
 
+    // Re-fetch sidebar when user returns to the tab.
+    // Catches any messages/events that arrived while WS was disconnected.
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.visibilityState === "visible") {
+                document.title = "Synk.";
+                reloadChats();
+            }
+        };
+        document.addEventListener("visibilitychange", onVisible);
+        return () => document.removeEventListener("visibilitychange", onVisible);
+    }, []);
+
     useEffect(() => {
         const handler = (e: Event) => {
             const chatId = (e as CustomEvent<number>).detail;
@@ -122,10 +135,17 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
             async (msg) => {
                 const body = JSON.parse(msg.body);
 
-                if (body.type === "CONTENT" && body.unreadCount > 0 && !recentNotificationsRef.current.has(body.chatId)) {
+                if (
+                    body.type === "CONTENT"
+                    && body.unreadCount > 0
+                    && !recentNotificationsRef.current.has(body.chatId)
+                ) {
                     recentNotificationsRef.current.add(body.chatId);
                     setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
                     notificationSoundRef.current?.play().catch(() => {});
+                    if (document.visibilityState !== "visible") {
+                        document.title = "You have new messages - Synk.";
+                    }
                 }
 
                 setChats(prev => {

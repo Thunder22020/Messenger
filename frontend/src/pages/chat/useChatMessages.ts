@@ -196,6 +196,30 @@ export function useChatMessages({
         return () => { subscription.unsubscribe(); };
     }, [client, numericChatId]);
 
+    // Fetch messages missed during inactivity when the tab becomes visible again
+    useEffect(() => {
+        const onVisible = async () => {
+            if (document.visibilityState !== "visible") return;
+            if (!numericChatId || !newestIdRef.current) return;
+            if (hasMoreNewerRef.current) return; // not at the bottom — user can load manually
+
+            const res = await authFetch(`${API_URL}/messages/${numericChatId}?after=${newestIdRef.current}`);
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            const visible = data.messages.filter((m: Message) => !m.deletedAt);
+            if (visible.length === 0) return;
+
+            setMessages(prev => [...prev, ...visible]);
+            setHasMoreNewer(data.hasMoreNewer);
+            newestIdRef.current = visible[visible.length - 1].id;
+            if (isAtBottomRef.current) {
+                shouldScrollToBottom.current = true;
+            }
+        };
+        document.addEventListener("visibilitychange", onVisible);
+        return () => document.removeEventListener("visibilitychange", onVisible);
+    }, [numericChatId]);
+
     const startCollapseAnimation = useCallback((messageId: number) => {
         if (animatingDeleteIdsRef.current.has(messageId)) return;
         animatingDeleteIdsRef.current.add(messageId);
