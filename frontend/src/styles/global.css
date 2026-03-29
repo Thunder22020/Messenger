@@ -3627,8 +3627,8 @@ button {
 
 /* Group user selected state */
 .group-user-item.selected {
-    border: 1px solid rgba(234,224,210,0.35);
-    background: rgba(234,224,210,0.05);
+    border: 1px solid var(--accent-border);
+    background: var(--accent-border-soft);
 }
 
 /* User info card — elevated */

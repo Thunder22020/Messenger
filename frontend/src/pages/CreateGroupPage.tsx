@@ -21,12 +21,13 @@ export default function CreateGroupPage() {
     const isMobile = useIsMobile();
 
     useEffect(() => {
-        const timer = setTimeout(async () => {
-            const url = query.trim()
-                ? `${API_URL}/users/search?query=${query}`
-                : `${API_URL}/users/search`;
+        if (!query.trim()) {
+            setSearchResults([]);
+            return;
+        }
 
-            const res = await authFetch(url);
+        const timer = setTimeout(async () => {
+            const res = await authFetch(`${API_URL}/users/search?query=${query}`);
             if (!res || !res.ok) return;
 
             const data = await res.json();
