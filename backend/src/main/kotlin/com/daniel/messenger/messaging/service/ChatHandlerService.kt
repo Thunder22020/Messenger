@@ -13,7 +13,6 @@ import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.user.entity.User
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.messaging.simp.user.SimpUserRegistry
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.event.TransactionPhase
@@ -24,7 +23,6 @@ class ChatHandlerService(
     private val messageService: MessageService,
     private val chatNotificationService: ChatNotificationService,
     private val chatParticipantRepository: ChatParticipantRepository,
-    private val simpUserRegistry: SimpUserRegistry,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
@@ -33,23 +31,12 @@ class ChatHandlerService(
         val participants = chatParticipantRepository.findAllWithUserByChatId(message.chatId)
 
         val senderId = requireNotNull(sender.id)
-        val viewingUserIds = getViewingUserIds(participants, message.chatId)
+        val viewingUserIds = chatNotificationService.getViewingUserIds(message.chatId, participants)
         chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(message.chatId, senderId, viewingUserIds)
 
         val snapshots = convertToParticipantSnapshots(participants, senderId, viewingUserIds)
         eventPublisher.publishEvent(MessageSentEvent(message.chatId, response, snapshots))
     }
-
-    private fun getViewingUserIds(participants: List<ChatParticipant>, chatId: Long) =
-        participants
-            .filter { isUserViewingChat(it.user.username, chatId) }
-            .mapNotNull { it.user.id }
-
-    private fun isUserViewingChat(username: String, chatId: Long): Boolean =
-        simpUserRegistry.getUser(username)
-            ?.sessions
-            ?.any { session -> session.subscriptions.any { it.destination == "/topic/chat.$chatId" } }
-            ?: false
 
     private fun convertToParticipantSnapshots(
         participants: List<ChatParticipant>,

@@ -16,9 +16,11 @@ import com.daniel.messenger.messaging.entity.ChatParticipantId
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.attachmentPreviewText
 import com.daniel.messenger.messaging.dto.event.ChatDeletedEvent
+import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.resolveContentPreview
 import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.enum.ChatType
+import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.exception.CannotCreateChatWithYourselfException
 import com.daniel.messenger.messaging.exception.ChatNotFoundException
 import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
@@ -26,6 +28,7 @@ import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.ChatRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toDto
+import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.messaging.toSnapshot
 import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
@@ -91,6 +94,35 @@ class ChatService(
             ChatParticipant(id = ChatParticipantId(chat.id, user.id), chat = chat, user = user)
         }
         chatParticipantRepository.saveAll(participants)
+
+        val creator = users.first { it.id == creatorId }
+        val systemMessage = messageRepository.save(
+            MessageEntity(
+                sender = null,
+                content = "${creator.username} created a group chat \"$title\"",
+                chat = chat,
+                type = MessageType.SYSTEM,
+            )
+        )
+
+        updateChatLastMessage(chat, systemMessage)
+
+        val chatId = requireNotNull(chat.id)
+        val viewingUserIds = chatNotificationService.getViewingUserIds(chatId, participants)
+        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, creatorId, viewingUserIds)
+
+        val participantSnapshots = participants.map {
+            val isCreator = it.user.id == creatorId
+            val isViewing = it.user.id in viewingUserIds
+            ParticipantSnapshot(username = it.user.username, unreadCount = if (isCreator || isViewing) 0 else 1)
+        }
+        eventPublisher.publishEvent(
+            MessageSentEvent(
+                chatId = chatId,
+                response = systemMessage.toResponse(),
+                participants = participantSnapshots,
+            )
+        )
 
         return OpenChatResponse(requireNotNull(chat.id))
     }

@@ -4,13 +4,27 @@ import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.dto.event.ReadAckEvent
 import com.daniel.messenger.messaging.dto.event.TypingEvent
+import com.daniel.messenger.messaging.entity.ChatParticipant
 import org.springframework.messaging.simp.SimpMessagingTemplate
+import org.springframework.messaging.simp.user.SimpUserRegistry
 import org.springframework.stereotype.Service
 
 @Service
 class ChatNotificationService(
     private val messagingTemplate: SimpMessagingTemplate,
+    private val simpUserRegistry: SimpUserRegistry,
 ) {
+    fun getViewingUserIds(chatId: Long, participants: List<ChatParticipant>): List<Long> =
+        participants
+            .filter { isUserViewingChat(it.user.username, chatId) }
+            .mapNotNull { it.user.id }
+
+    private fun isUserViewingChat(username: String, chatId: Long): Boolean =
+        simpUserRegistry.getUser(username)
+            ?.sessions
+            ?.any { session -> session.subscriptions.any { it.destination == "/topic/chat.$chatId" } }
+            ?: false
+
     fun broadcastChatMessage(chatId: Long, message: MessageResponse) {
         messagingTemplate.convertAndSend("/topic/chat.$chatId", message)
     }

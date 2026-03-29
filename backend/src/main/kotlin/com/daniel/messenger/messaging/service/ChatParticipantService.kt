@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.service
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.event.ChatUpdateType
 import com.daniel.messenger.messaging.dto.event.MessageSentEvent
+import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.dto.event.ReadAckEvent
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
@@ -13,7 +14,6 @@ import com.daniel.messenger.messaging.exception.CannotAddParticipantToPrivateCha
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toResponse
-import com.daniel.messenger.messaging.toSnapshot
 import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -63,11 +63,18 @@ class ChatParticipantService(
 
         chatService.updateChatLastMessage(chat, systemMessage)
 
+        val viewingUserIds = chatNotificationService.getViewingUserIds(chatId, remainingParticipants)
+        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, -1L, viewingUserIds)
+
+        val participantSnapshots = remainingParticipants.map {
+            val isViewing = it.user.id in viewingUserIds
+            ParticipantSnapshot(username = it.user.username, unreadCount = it.unreadCount + if (isViewing) 0 else 1)
+        }
         eventPublisher.publishEvent(
             MessageSentEvent(
                 chatId = chatId,
                 response = systemMessage.toResponse(),
-                participants = remainingParticipants.map { it.toSnapshot() },
+                participants = participantSnapshots,
             )
         )
     }

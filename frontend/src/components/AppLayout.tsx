@@ -61,6 +61,13 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
 
     const [activeTab, setActiveTab] = useState<"chats" | "settings">("chats");
 
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+    const recentNotificationsRef = useRef<Set<number>>(new Set());
+    useEffect(() => {
+        notificationSoundRef.current = new Audio("/sounds/notification_sound.mp3");
+        notificationSoundRef.current.volume = 0.5;
+    }, []);
+
     const [sidebarWidth, setSidebarWidth] = useState(() => {
         const saved = localStorage.getItem("sidebarWidth");
         return saved ? Number(saved) : 300;
@@ -114,6 +121,12 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
             "/user/queue/chat-updates",
             async (msg) => {
                 const body = JSON.parse(msg.body);
+
+                if (body.type === "CONTENT" && body.unreadCount > 0 && !recentNotificationsRef.current.has(body.chatId)) {
+                    recentNotificationsRef.current.add(body.chatId);
+                    setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
+                    notificationSoundRef.current?.play().catch(() => {});
+                }
 
                 setChats(prev => {
                     const exists = prev.some(chat => chat.chatId === body.chatId);
