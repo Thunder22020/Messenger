@@ -59,6 +59,16 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
         setTheme(next);
     };
 
+    const [muteSound, setMuteSound] = useState(() => localStorage.getItem("muteSound") === "true");
+
+    const toggleMuteSound = () => {
+        setMuteSound(prev => {
+            const next = !prev;
+            localStorage.setItem("muteSound", String(next));
+            return next;
+        });
+    };
+
     const [activeTab, setActiveTab] = useState<"chats" | "settings">("chats");
 
     const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -149,7 +159,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                     if (isNewMessage && !recentNotificationsRef.current.has(body.chatId)) {
                         recentNotificationsRef.current.add(body.chatId);
                         setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
-                        notificationSoundRef.current?.play().catch(() => {});
+                        if (!muteSound) notificationSoundRef.current?.play().catch(() => {});
                         if (document.visibilityState !== "visible") {
                             document.title = "You have new messages - Synk.";
                         }
@@ -519,6 +529,15 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                 <button
                                     className={`settings-theme-toggle ${theme === "light" ? "on" : "off"}`}
                                     onClick={(e) => { e.stopPropagation(); toggleTheme(); }}
+                                >
+                                    <span className="settings-toggle-knob" />
+                                </button>
+                            </div>
+                            <div className="settings-row" onClick={toggleMuteSound}>
+                                <span className="settings-row-label">Turn off notification sound</span>
+                                <button
+                                    className={`settings-theme-toggle ${muteSound ? "on" : "off"}`}
+                                    onClick={(e) => { e.stopPropagation(); toggleMuteSound(); }}
                                 >
                                     <span className="settings-toggle-knob" />
                                 </button>
