@@ -5532,7 +5532,7 @@ body,
     font-size: 22px;
     font-weight: 600;
     color: #E8DDD0;
-    margin: 0 0 8px;
+    margin: 0 0 20px;
     text-align: center;
 }
 
@@ -5560,13 +5560,26 @@ body,
     border-radius: 50%;
     border: none;
     cursor: pointer;
-    font-size: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: opacity 0.15s, transform 0.12s;
-    color: #fff;
     flex-shrink: 0;
+}
+
+.call-accept-btn img,
+.call-decline-btn img,
+.call-hangup-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.call-decline-btn img,
+.call-hangup-btn img {
+    width: 13px;
+    height: 13px;
 }
 
 .call-accept-btn {

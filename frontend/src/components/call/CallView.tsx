@@ -79,7 +79,7 @@ export function CallView({ layout }: CallViewProps) {
       <p className="call-status-text">{statusText}</p>
       <div className="call-actions">
         <button className="call-hangup-btn" onClick={endCall} title="Hang up">
-          ✕
+          <img src="/icons/close.png" alt="Hang up" />
         </button>
       </div>
     </div>

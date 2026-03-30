@@ -30,10 +30,10 @@ export function IncomingCallModal() {
         <p className="call-peer-name">{incomingCall.callerUsername}</p>
         <div className="call-actions">
           <button className="call-decline-btn" onClick={rejectCall} title="Decline">
-            ✕
+            <img src="/icons/close.png" alt="Decline" />
           </button>
           <button className="call-accept-btn" onClick={acceptCall} title="Accept">
-            ✓
+            <img src="/icons/check.png" alt="Accept" />
           </button>
         </div>
       </div>
