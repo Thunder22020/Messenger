@@ -23,7 +23,7 @@ class CallController(private val callService: CallService) {
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): InitiateCallResponse {
         val userId = requireNotNull(userPrincipal.user.id)
-        return callService.initiateCall(userId, request.chatId)
+        return callService.initiateCall(userId, request.chatId, request.video)
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)

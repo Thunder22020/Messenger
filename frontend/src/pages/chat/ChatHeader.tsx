@@ -10,9 +10,10 @@ export function ChatHeader(props: {
   isSearchOpen: boolean;
   onBack?: () => void;
   onCall?: () => void;
+  onVideoCall?: () => void;
   isInCall?: boolean;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, isInCall } = props;
+  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
 
   const renderSubtitle = () => {
     if (chatType === "PRIVATE") {
@@ -54,10 +55,20 @@ export function ChatHeader(props: {
           <button
             className={`chat-menu-btn${isInCall ? " disabled" : ""}`}
             onClick={!isInCall ? onCall : undefined}
-            title="Start call"
+            title="Voice call"
             style={isInCall ? { opacity: 0.4, pointerEvents: "none" } : undefined}
           >
             <img src="/icons/phone.png" alt="call" />
+          </button>
+        )}
+        {chatType === "PRIVATE" && onVideoCall && (
+          <button
+            className={`chat-menu-btn${isInCall ? " disabled" : ""}`}
+            onClick={!isInCall ? onVideoCall : undefined}
+            title="Video call"
+            style={isInCall ? { opacity: 0.4, pointerEvents: "none" } : undefined}
+          >
+            <img style={{width: 30, height: 30}} src="/icons/cam-recorder.png" alt="video call" />
           </button>
         )}
 

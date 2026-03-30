@@ -13,4 +13,5 @@ data class ActiveCall(
     val status: CallStatus,
     val startedAt: Instant?,
     val initiatedAt: Instant,
+    val video: Boolean = false,
 )

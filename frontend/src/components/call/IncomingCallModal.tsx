@@ -25,7 +25,7 @@ export function IncomingCallModal() {
     <div className="call-overlay-backdrop">
       <audio ref={audioRef} src="/sounds/incoming-ring.mp3" loop />
       <div className="incoming-call-modal">
-        <p className="call-label">Incoming call</p>
+        <p className="call-label">{incomingCall.video ? "Incoming video call" : "Incoming call"}</p>
         <div className="call-avatar">{initial}</div>
         <p className="call-peer-name">{incomingCall.callerUsername}</p>
         <div className="call-actions">

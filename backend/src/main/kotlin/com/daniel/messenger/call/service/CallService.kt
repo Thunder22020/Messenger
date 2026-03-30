@@ -71,7 +71,7 @@ class CallService(
         return InitiateCallResponse(callId = "")
     }
 
-    fun initiateCall(callerId: Long, chatId: Long): InitiateCallResponse {
+    fun initiateCall(callerId: Long, chatId: Long, video: Boolean = false): InitiateCallResponse {
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
 
         val callerParticipant = participants.first { it.user.id == callerId }
@@ -103,6 +103,7 @@ class CallService(
             status = CallStatus.RINGING,
             startedAt = null,
             initiatedAt = Instant.now(),
+            video = video,
         )
         activeCallStore.save(call)
 
@@ -114,6 +115,7 @@ class CallService(
                 chatId = chatId,
                 callerUsername = callerUsername,
                 receiverUsername = receiverUsername,
+                video = video,
             )
         )
 

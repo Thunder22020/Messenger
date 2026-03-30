@@ -5,6 +5,7 @@ export interface CallEvent {
   callerUsername: string;
   receiverUsername: string;
   durationSeconds?: number;
+  video?: boolean;
 }
 
 export type CallEventType = "RINGING" | "ACCEPTED" | "REJECTED" | "ENDED" | "BUSY" | "CANCELLED";
@@ -21,6 +22,7 @@ export interface ActiveCallState {
   peerUsername: string;
   direction: "outgoing" | "incoming";
   startedAt: Date | null;
+  video: boolean;
 }
 
 export type CallStatus = "idle" | "ringing" | "connecting" | "active" | "ended";

@@ -7,8 +7,8 @@ const RTC_CONFIG: RTCConfiguration = {
 
 interface UseWebRTCOptions {
   onSignal: (msg: CallSignalMessage) => void;
-  callIdRef: React.MutableRefObject<string | null>; // Fix 1: use ref instead of plain prop
-  constraints?: MediaStreamConstraints;
+  callIdRef: React.MutableRefObject<string | null>;
+  videoRef: React.MutableRefObject<boolean>;
 }
 
 interface UseWebRTCReturn {
@@ -19,13 +19,15 @@ interface UseWebRTCReturn {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   connectionState: RTCIceConnectionState;
+  videoEnabled: boolean;
+  toggleVideo: () => void;
   cleanup: () => void;
 }
 
 export function useWebRTC({
   onSignal,
-  callIdRef, // Fix 1
-  constraints = { audio: true, video: false },
+  callIdRef,
+  videoRef,
 }: UseWebRTCOptions): UseWebRTCReturn {
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -37,6 +39,7 @@ export function useWebRTC({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [connectionState, setConnectionState] = useState<RTCIceConnectionState>("new");
+  const [videoEnabled, setVideoEnabled] = useState(false);
 
   const createPeerConnection = useCallback((): RTCPeerConnection => {
     const pc = new RTCPeerConnection(RTC_CONFIG);
@@ -68,9 +71,10 @@ export function useWebRTC({
   }, [callIdRef, onSignal]);
 
   const startAsOffer = useCallback(async (): Promise<void> => {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
     localStreamRef.current = stream;
     setLocalStream(stream);
+    setVideoEnabled(videoRef.current);
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
@@ -80,7 +84,6 @@ export function useWebRTC({
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // Fix 1: read callIdRef.current at signal-send time
     const currentCallId = callIdRef.current;
     if (currentCallId) {
       onSignal({
@@ -89,12 +92,13 @@ export function useWebRTC({
         payload: offer.sdp ?? "",
       });
     }
-  }, [callIdRef, constraints, createPeerConnection, onSignal]);
+  }, [callIdRef, videoRef, createPeerConnection, onSignal]);
 
   const handleOffer = useCallback(async (sdp: string): Promise<void> => {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
     localStreamRef.current = stream;
     setLocalStream(stream);
+    setVideoEnabled(videoRef.current);
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
@@ -122,7 +126,7 @@ export function useWebRTC({
         payload: answer.sdp ?? "",
       });
     }
-  }, [callIdRef, constraints, createPeerConnection, onSignal]);
+  }, [callIdRef, videoRef, createPeerConnection, onSignal]);
 
   const handleAnswer = useCallback(async (sdp: string): Promise<void> => {
     const pc = peerConnectionRef.current;
@@ -147,6 +151,13 @@ export function useWebRTC({
     await pc.addIceCandidate(new RTCIceCandidate(candidate));
   }, []);
 
+  const toggleVideo = useCallback((): void => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    stream.getVideoTracks().forEach((track) => { track.enabled = !track.enabled; });
+    setVideoEnabled((prev) => !prev);
+  }, []);
+
   const cleanup = useCallback((): void => {
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
     localStreamRef.current = null;
@@ -154,13 +165,13 @@ export function useWebRTC({
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
 
-    // Fix 5: reset buffer refs on cleanup
     iceCandidateBufferRef.current = [];
     remoteDescSetRef.current = false;
 
     setLocalStream(null);
     setRemoteStream(null);
     setConnectionState("new");
+    setVideoEnabled(false);
   }, []);
 
   return {
@@ -171,6 +182,8 @@ export function useWebRTC({
     localStream,
     remoteStream,
     connectionState,
+    videoEnabled,
+    toggleVideo,
     cleanup,
   };
 }

@@ -297,7 +297,11 @@ export default function ChatPage() {
                     onBack={isMobile ? () => navigate("/chat") : undefined}
                     onCall={numericChatId ? () => {
                         const peerUsername = participants.find(p => p.username !== currentUsername)?.username ?? chatName;
-                        initiateCall(numericChatId, peerUsername);
+                        initiateCall(numericChatId, peerUsername, false);
+                    } : undefined}
+                    onVideoCall={numericChatId ? () => {
+                        const peerUsername = participants.find(p => p.username !== currentUsername)?.username ?? chatName;
+                        initiateCall(numericChatId, peerUsername, true);
                     } : undefined}
                     isInCall={currentActiveCall !== null}
                 />

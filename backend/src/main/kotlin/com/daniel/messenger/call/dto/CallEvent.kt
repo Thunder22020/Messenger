@@ -9,4 +9,5 @@ data class CallEvent(
     val callerUsername: String,
     val receiverUsername: String,
     val durationSeconds: Long? = null,
+    val video: Boolean = false,
 )

@@ -15,7 +15,10 @@ interface CallContextValue {
   activeCall: ActiveCallState | null;
   callStatus: CallStatus;
   remoteStream: MediaStream | null;
-  initiateCall: (chatId: number, peerUsername: string) => Promise<void>;
+  localStream: MediaStream | null;
+  videoEnabled: boolean;
+  toggleVideo: () => void;
+  initiateCall: (chatId: number, peerUsername: string, video?: boolean) => Promise<void>;
   acceptCall: () => Promise<void>;
   rejectCall: () => void;
   endCall: () => void;
@@ -26,6 +29,9 @@ const CallContext = createContext<CallContextValue>({
   activeCall: null,
   callStatus: "idle",
   remoteStream: null,
+  localStream: null,
+  videoEnabled: false,
+  toggleVideo: () => {},
   initiateCall: async () => {},
   acceptCall: async () => {},
   rejectCall: () => {},
@@ -46,6 +52,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Fix 1: callIdRef kept in sync with activeCall.callId, passed to useWebRTC
   const callIdRef = useRef<string | null>(null);
+  const videoRef = useRef<boolean>(false);
 
   // Fix 6: wrap syncActiveCall in useCallback
   const syncActiveCall = useCallback((call: ActiveCallState | null) => {
@@ -71,13 +78,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     client.publish({ destination: "/app/call.signal", body: JSON.stringify(msg) });
   }, [client]);
 
-  // Fix 1: pass callIdRef instead of a plain callId value
   const webRTC = useWebRTC({
     onSignal,
     callIdRef,
+    videoRef,
   });
 
-  // Fix 4: stable refs for webRTC functions to avoid STOMP resubscribe on connectionState change
+  // Stable refs for webRTC functions to avoid STOMP resubscribe on connectionState change
   const startAsOfferRef = useRef(webRTC.startAsOffer);
   const handleOfferRef = useRef(webRTC.handleOffer);
   const handleAnswerRef = useRef(webRTC.handleAnswer);
@@ -174,10 +181,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     };
   }, [client, handleCallEvent, handleSignalMessage]);
 
-  const initiateCall = useCallback(async (chatId: number, peerUsername: string): Promise<void> => {
+  const initiateCall = useCallback(async (chatId: number, peerUsername: string, video = false): Promise<void> => {
+    videoRef.current = video;
     const res = await authFetch(`${API_URL}/call/initiate`, {
       method: "POST",
-      body: JSON.stringify({ chatId }),
+      body: JSON.stringify({ chatId, video }),
       headers: { "Content-Type": "application/json" },
     });
     if (!res) return;
@@ -188,15 +196,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       peerUsername,
       direction: "outgoing",
       startedAt: null,
+      video,
     };
     syncActiveCall(call);
     syncCallStatus("ringing");
-  }, [syncActiveCall, syncCallStatus]);
+  }, [syncActiveCall, syncCallStatus, videoRef]);
 
   const acceptCall = useCallback(async (): Promise<void> => {
     const call = incomingCall;
     if (!call) return;
 
+    videoRef.current = call.video ?? false;
     await authFetch(`${API_URL}/call/${call.callId}/accept`, { method: "POST" });
 
     syncActiveCall({
@@ -205,11 +215,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       peerUsername: call.callerUsername,
       direction: "incoming",
       startedAt: null,
+      video: call.video ?? false,
     });
     syncIncomingCall(null);
     syncCallStatus("connecting");
-    // OFFER signal from caller arrives via STOMP and triggers webRTC.handleOffer
-  }, [incomingCall, syncActiveCall, syncCallStatus, syncIncomingCall]);
+  }, [incomingCall, syncActiveCall, syncCallStatus, syncIncomingCall, videoRef]);
 
   // Fix 8: add .catch(console.error) to authFetch calls
   const rejectCall = useCallback((): void => {
@@ -260,6 +270,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         activeCall,
         callStatus,
         remoteStream: webRTC.remoteStream,
+        localStream: webRTC.localStream,
+        videoEnabled: webRTC.videoEnabled,
+        toggleVideo: webRTC.toggleVideo,
         initiateCall,
         acceptCall,
         rejectCall,
