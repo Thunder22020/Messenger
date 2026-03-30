@@ -1,5 +1,6 @@
 package com.daniel.messenger.presence
 
+import com.daniel.messenger.call.service.CallService
 import com.daniel.messenger.security.util.toUserPrincipal
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -11,6 +12,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent
 @Component
 class PresenceEventListener(
     private val presenceService: PresenceService,
+    private val callService: CallService,
 ) {
     private val log: Logger = LoggerFactory.getLogger(PresenceEventListener::class.java)
 
@@ -23,6 +25,8 @@ class PresenceEventListener(
     @EventListener
     fun onDisconnect(event: SessionDisconnectEvent) {
         val user = event.user?.toUserPrincipal()?.user ?: return
-        presenceService.userDisconnected(user.id ?: return, user.username)
+        val userId = user.id ?: return
+        presenceService.userDisconnected(userId, user.username)
+        callService.handleDisconnect(userId)
     }
 }

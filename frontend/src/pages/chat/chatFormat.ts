@@ -29,6 +29,31 @@ export function fileExtension(fileName: string): string {
   return dot !== -1 ? fileName.slice(dot + 1).toUpperCase() : "FILE";
 }
 
+export function formatSystemContent(content: string | null | undefined): string {
+  if (!content) return "";
+  if (content.startsWith("call_ended:")) {
+    const seconds = parseInt(content.split(":")[1], 10);
+    if (!isNaN(seconds) && seconds > 0) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `📞 Call ended · ${m}:${s.toString().padStart(2, "0")}`;
+    }
+    return "📞 Call ended";
+  }
+  if (content.startsWith("call_missed:")) {
+    const caller = content.split(":")[1];
+    return caller ? `📵 Missed call from ${caller}` : "📵 Missed call";
+  }
+  if (content === "call_missed") {
+    return "📵 Missed call";
+  }
+  if (content.startsWith("call_rejected:")) {
+    const caller = content.split(":")[1];
+    return caller ? `📵 Cancelled call from ${caller}` : "📵 Cancelled call";
+  }
+  return content;
+}
+
 export function formatShortDate(createdAt: string): string {
   const date = new Date(createdAt);
   const now = new Date();

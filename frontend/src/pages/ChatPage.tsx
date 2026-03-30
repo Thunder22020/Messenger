@@ -22,6 +22,7 @@ import { useChatMessages } from "./chat/useChatMessages";
 import { useChatSubscriptions } from "./chat/useChatSubscriptions";
 import { useChatInput } from "./chat/useChatInput";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useCall } from "../context/CallContext";
 
 export default function ChatPage() {
     const { chatId } = useParams();
@@ -29,6 +30,7 @@ export default function ChatPage() {
     const navigate = useNavigate();
     const isMobile = useIsMobile();
     const client = useWebSocket();
+    const { initiateCall, activeCall: currentActiveCall } = useCall();
     const { isOnline } = usePresence();
 
     const token = localStorage.getItem("accessToken");
@@ -293,6 +295,11 @@ export default function ChatPage() {
                     onToggleSearch={() => isSearchOpen ? closeSearch() : openSearch()}
                     isSearchOpen={isSearchOpen}
                     onBack={isMobile ? () => navigate("/chat") : undefined}
+                    onCall={numericChatId ? () => {
+                        const peerUsername = participants.find(p => p.username !== currentUsername)?.username ?? chatName;
+                        initiateCall(numericChatId, peerUsername);
+                    } : undefined}
+                    isInCall={currentActiveCall !== null}
                 />
 
                 {isSearchOpen && numericChatId && (

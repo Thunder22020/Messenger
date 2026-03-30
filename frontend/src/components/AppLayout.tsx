@@ -6,6 +6,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import { usePresence } from "../context/PresenceContext";
 import { jwtDecode } from "jwt-decode";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { formatSystemContent } from "../pages/chat/chatFormat";
 
 type JwtPayload = { sub: string };
 
@@ -260,11 +261,12 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
 
     const getLastMessagePreview = (chat: ChatListItem): string => {
         if (!chat.lastMessageContent && chat.lastMessageContent !== "") return "No messages yet";
+        const content = formatSystemContent(chat.lastMessageContent);
         const sender = chat.lastMessageSender;
         if (chat.type === "GROUP" && sender && sender !== currentUsername) {
-            return `${sender}: ${chat.lastMessageContent}`;
+            return `${sender}: ${content}`;
         }
-        return chat.lastMessageContent ?? "No messages yet";
+        return content ?? "No messages yet";
     };
 
     const filteredChats = searchQuery.trim()
@@ -484,7 +486,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                                                 <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
                                                             ) : (
                                                                 <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                                    {chat.lastMessageContent ?? "No messages yet"}
+                                                                    {formatSystemContent(chat.lastMessageContent) ?? "No messages yet"}
                                                                 </div>
                                                             )}
                                                         </div>

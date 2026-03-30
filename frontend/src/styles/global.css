@@ -5466,3 +5466,144 @@ body,
     object-fit: contain;
     filter: var(--icon-btn-filter);
 }
+
+/* ===== CALL UI ===== */
+
+.call-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--overlay-main, rgba(0, 0, 0, 0.7));
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.incoming-call-modal,
+.call-modal-card {
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
+    border: 1px solid rgba(232, 221, 208, 0.1);
+    border-radius: 20px;
+    padding: 36px 40px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    box-shadow: var(--shadow-strong, 0 8px 40px rgba(0, 0, 0, 0.6));
+}
+
+.call-label {
+    font-size: 13px;
+    color: rgba(232, 221, 208, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.call-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--accent-soft, rgba(232, 221, 208, 0.12));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 600;
+    color: #E8DDD0;
+    flex-shrink: 0;
+    margin: 4px 0;
+}
+
+.call-peer-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #E8DDD0;
+    margin: 0;
+}
+
+.call-status-text {
+    font-size: 14px;
+    color: rgba(232, 221, 208, 0.55);
+    margin: 0;
+    min-height: 20px;
+}
+
+.call-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    margin-top: 8px;
+}
+
+.call-accept-btn,
+.call-decline-btn,
+.call-hangup-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s, transform 0.1s;
+    color: #fff;
+}
+
+.call-accept-btn {
+    background: #27AE60;
+}
+
+.call-decline-btn,
+.call-hangup-btn {
+    background: #C0392B;
+}
+
+.call-accept-btn:hover,
+.call-decline-btn:hover,
+.call-hangup-btn:hover {
+    opacity: 0.85;
+    transform: scale(1.06);
+}
+
+/* Mobile full-screen call */
+.call-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: linear-gradient(180deg, #0D0C0A 0%, #0A0908 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+/* Light theme overrides */
+[data-theme="light"] .incoming-call-modal,
+[data-theme="light"] .call-modal-card {
+    background: #f5f0eb;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .call-avatar {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1a1a1a;
+}
+
+[data-theme="light"] .call-peer-name {
+    color: #1a1a1a;
+}
+
+[data-theme="light"] .call-status-text,
+[data-theme="light"] .call-label {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .call-screen {
+    background: #f5f0eb;
+}

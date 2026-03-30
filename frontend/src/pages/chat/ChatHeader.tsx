@@ -9,8 +9,10 @@ export function ChatHeader(props: {
   onToggleSearch: () => void;
   isSearchOpen: boolean;
   onBack?: () => void;
+  onCall?: () => void;
+  isInCall?: boolean;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack } = props;
+  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, isInCall } = props;
 
   const renderSubtitle = () => {
     if (chatType === "PRIVATE") {
@@ -48,6 +50,17 @@ export function ChatHeader(props: {
       </div>
 
       <div className="chat-header-actions">
+        {chatType === "PRIVATE" && onCall && (
+          <button
+            className={`chat-menu-btn${isInCall ? " disabled" : ""}`}
+            onClick={!isInCall ? onCall : undefined}
+            title="Start call"
+            style={isInCall ? { opacity: 0.4, pointerEvents: "none" } : undefined}
+          >
+            <img src="/icons/phone.png" alt="call" />
+          </button>
+        )}
+
         <button
           className={`chat-menu-btn${isSearchOpen ? " active" : ""}`}
           onClick={onToggleSearch}

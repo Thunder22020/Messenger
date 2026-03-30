@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
-import { formatMessageTime, formatFileSize, fileExtension } from "./chatFormat";
+import { formatMessageTime, formatFileSize, fileExtension, formatSystemContent } from "./chatFormat";
 
 const IMAGE_CORNER_R = 13; // bubble outer radius (16) minus bubble padding (3)
 
@@ -255,7 +255,7 @@ export function MessageList(props: {
                     if (msg.type === "SYSTEM") {
                       return (
                         <div key={msg.id} className="system-message">
-                          {msg.content}
+                          {formatSystemContent(msg.content)}
                         </div>
                       );
                     }

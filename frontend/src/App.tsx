@@ -7,6 +7,10 @@ import ChatPage from "./pages/ChatPage";
 import BlankChatPage from "./pages/BlankChatPage";
 import {WebSocketProvider} from "./context/WebSocketContext.tsx";
 import { PresenceProvider } from "./context/PresenceContext.tsx";
+import { CallProvider } from "./context/CallContext";
+import { IncomingCallModal } from "./components/call/IncomingCallModal";
+import { CallModal } from "./components/call/CallModal";
+import { CallScreen } from "./components/call/CallScreen";
 import CreateGroupPage from "./pages/CreateGroupPage.tsx";
 import UserInfoPage from "./pages/UserInfoPage.tsx";
 
@@ -37,8 +41,12 @@ function App() {
     return (
         <WebSocketProvider key={accessToken} accessToken={accessToken}>
            <PresenceProvider>
+           <CallProvider>
            <BrowserRouter>
                <EscapeToHome />
+               <IncomingCallModal />
+               <CallModal />
+               <CallScreen />
                <Routes>
                        <Route
                            path="/"
@@ -76,6 +84,7 @@ function App() {
                        <Route path="/user/:userId" element={<UserInfoPage />} />
                    </Routes>
            </BrowserRouter>
+           </CallProvider>
            </PresenceProvider>
        </WebSocketProvider>
     );
