@@ -1,5 +1,6 @@
 package com.daniel.messenger.call.dto
 
+import com.daniel.messenger.call.enum.CallStatus
 import java.time.Instant
 
 data class ActiveCall(
@@ -13,5 +14,3 @@ data class ActiveCall(
     val startedAt: Instant?,
     val initiatedAt: Instant,
 )
-
-enum class CallStatus { RINGING, ACTIVE }

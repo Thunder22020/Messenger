@@ -1,7 +1,6 @@
 package com.daniel.messenger.call.store
 
 import com.daniel.messenger.call.dto.ActiveCall
-import com.daniel.messenger.call.dto.CallStatus
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory

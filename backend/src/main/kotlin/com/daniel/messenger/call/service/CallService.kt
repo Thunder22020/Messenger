@@ -2,8 +2,8 @@ package com.daniel.messenger.call.service
 
 import com.daniel.messenger.call.dto.ActiveCall
 import com.daniel.messenger.call.dto.CallEvent
-import com.daniel.messenger.call.dto.CallEventType
-import com.daniel.messenger.call.dto.CallStatus
+import com.daniel.messenger.call.enum.CallEventType
+import com.daniel.messenger.call.enum.CallStatus
 import com.daniel.messenger.call.dto.InitiateCallResponse
 import com.daniel.messenger.call.store.ActiveCallStore
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository

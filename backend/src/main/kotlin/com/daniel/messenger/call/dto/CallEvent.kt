@@ -1,5 +1,7 @@
 package com.daniel.messenger.call.dto
 
+import com.daniel.messenger.call.enum.CallEventType
+
 data class CallEvent(
     val callId: String,
     val type: CallEventType,
@@ -8,5 +10,3 @@ data class CallEvent(
     val receiverUsername: String,
     val durationSeconds: Long? = null,
 )
-
-enum class CallEventType { RINGING, ACCEPTED, REJECTED, ENDED, BUSY, CANCELLED }
