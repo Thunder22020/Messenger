@@ -17,6 +17,7 @@ interface CallContextValue {
   remoteStream: MediaStream | null;
   localStream: MediaStream | null;
   videoEnabled: boolean;
+  remoteVideoEnabled: boolean;
   toggleVideo: () => void;
   initiateCall: (chatId: number, peerUsername: string, video?: boolean) => Promise<void>;
   acceptCall: () => Promise<void>;
@@ -31,6 +32,7 @@ const CallContext = createContext<CallContextValue>({
   remoteStream: null,
   localStream: null,
   videoEnabled: false,
+  remoteVideoEnabled: true,
   toggleVideo: () => {},
   initiateCall: async () => {},
   acceptCall: async () => {},
@@ -44,6 +46,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<CallEvent | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
+  const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(true);
 
   // Ref mirrors so STOMP handlers always read latest values without stale closures
   const activeCallRef = useRef<ActiveCallState | null>(null);
@@ -129,6 +132,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         syncIncomingCall(null);
         syncActiveCall(null);
         syncCallStatus("idle");
+        setRemoteVideoEnabled(true);
         cleanupRef.current();
         break;
 
@@ -136,11 +140,12 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         syncIncomingCall(null);
         syncActiveCall(null);
         syncCallStatus("idle");
+        setRemoteVideoEnabled(true);
         cleanupRef.current();
         break;
 
       case "BUSY":
-        syncIncomingCall(null); // Fix 7: clear incomingCall in BUSY case
+        syncIncomingCall(null);
         syncActiveCall(null);
         syncCallStatus("idle");
         break;
@@ -158,6 +163,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         break;
       case "ICE_CANDIDATE":
         handleIceCandidateRef.current(msg.payload);
+        break;
+      case "CAMERA_STATE":
+        setRemoteVideoEnabled(msg.payload === "on");
         break;
     }
   }, []);
@@ -272,6 +280,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         remoteStream: webRTC.remoteStream,
         localStream: webRTC.localStream,
         videoEnabled: webRTC.videoEnabled,
+        remoteVideoEnabled,
         toggleVideo: webRTC.toggleVideo,
         initiateCall,
         acceptCall,

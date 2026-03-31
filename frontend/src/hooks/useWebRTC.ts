@@ -154,9 +154,14 @@ export function useWebRTC({
   const toggleVideo = useCallback((): void => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    stream.getVideoTracks().forEach((track) => { track.enabled = !track.enabled; });
-    setVideoEnabled((prev) => !prev);
-  }, []);
+    const newEnabled = !(stream.getVideoTracks()[0]?.enabled ?? false);
+    stream.getVideoTracks().forEach((track) => { track.enabled = newEnabled; });
+    setVideoEnabled(newEnabled);
+    const currentCallId = callIdRef.current;
+    if (currentCallId) {
+      onSignal({ callId: currentCallId, type: "CAMERA_STATE", payload: newEnabled ? "on" : "off" });
+    }
+  }, [callIdRef, onSignal]);
 
   const cleanup = useCallback((): void => {
     localStreamRef.current?.getTracks().forEach((track) => track.stop());

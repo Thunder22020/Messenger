@@ -12,12 +12,13 @@ interface CallViewProps {
 }
 
 export function CallView({ layout }: CallViewProps) {
-  const { activeCall, callStatus, endCall, remoteStream, localStream, videoEnabled, toggleVideo } = useCall();
+  const { activeCall, callStatus, endCall, remoteStream, localStream, videoEnabled, remoteVideoEnabled, toggleVideo } = useCall();
   const audioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Always set srcObject immediately when streams change — refs are always attached
   useEffect(() => {
@@ -61,9 +62,19 @@ export function CallView({ layout }: CallViewProps) {
 
   if (!activeCall) return null;
 
-  const isVideoActive = activeCall.video && callStatus === "active";
-  const initial = activeCall.peerUsername.charAt(0).toUpperCase();
+  const isVideoCall = activeCall.video && callStatus === "active";
 
+  // Case 1: both cameras on → remote main, local PiP
+  // Case 2: one camera on → that one as main, no PiP of the other
+  // Case 3: both off → audio fallback layout
+  const showVideoLayout = isVideoCall && (videoEnabled || remoteVideoEnabled);
+
+  // Which video goes in the main slot vs PiP
+  // If remote is on: remote = main, local = PiP (only if our cam also on)
+  // If remote is off but ours is on: local = main
+  const remoteIsMain = remoteVideoEnabled;
+
+  const initial = activeCall.peerUsername.charAt(0).toUpperCase();
   const statusText =
     callStatus === "ringing" ? "Ringing..."
     : callStatus === "connecting" ? "Connecting..."
@@ -71,31 +82,42 @@ export function CallView({ layout }: CallViewProps) {
     : "";
 
   const content = (
-    <div className={`call-card${isVideoActive ? " call-card--video" : ""}`}>
+    <div className={`call-card${showVideoLayout ? " call-card--video" : ""}`}>
       <audio ref={audioRef} src="/sounds/outgoing-ring.mp3" loop />
       <audio ref={remoteAudioRef} autoPlay />
 
-      {/* Always in DOM so refs are attached when streams arrive */}
+      {/* Always in DOM so refs stay bound to the same DOM nodes — only CSS class swaps */}
+      {/* Remote video: main slot when remote cam on, PiP slot when remote cam off */}
       <video
         ref={remoteVideoRef}
-        className="call-video-remote"
+        className={remoteIsMain ? "call-video-remote" : "call-video-local"}
         autoPlay
         playsInline
-        style={{ display: isVideoActive ? "block" : "none" }}
+        style={{ display: showVideoLayout && remoteVideoEnabled ? "block" : "none" }}
       />
+      {/* Local video: PiP when remote is main, main slot when remote cam off */}
       <video
         ref={localVideoRef}
-        className="call-video-local"
+        className={remoteIsMain ? "call-video-local" : "call-video-remote"}
         autoPlay
         playsInline
         muted
-        style={{ display: isVideoActive ? "block" : "none" }}
+        style={{ display: showVideoLayout && videoEnabled ? "block" : "none" }}
       />
 
-      {isVideoActive ? (
+      {showVideoLayout ? (
         <div className="call-video-overlay">
-          <p className="call-peer-name">{activeCall.peerUsername}</p>
-          <p className="call-status-text">{statusText}</p>
+          {layout === "modal" && (
+            <button
+              className="call-expand-btn"
+              onClick={() => setIsExpanded((v) => !v)}
+              title={isExpanded ? "Restore" : "Full screen"}
+            >
+              <img src="/icons/resize.png" alt="fullscreen" />
+            </button>
+          )}
+          <p className="call-video-peer-name">{activeCall.peerUsername}</p>
+          <p className="call-video-status-text">{statusText}</p>
           <div className="call-actions">
             <button
               className={`call-toggle-video-btn${videoEnabled ? "" : " off"}`}
@@ -115,6 +137,15 @@ export function CallView({ layout }: CallViewProps) {
           <p className="call-peer-name">{activeCall.peerUsername}</p>
           <p className="call-status-text">{statusText}</p>
           <div className="call-actions">
+            {isVideoCall && (
+              <button
+                className="call-toggle-video-btn off"
+                onClick={toggleVideo}
+                title="Turn on camera"
+              >
+                <img src="/icons/cam-recorder.png" alt="camera" />
+              </button>
+            )}
             <button className="call-hangup-btn" onClick={endCall} title="Hang up">
               <img src="/icons/close.png" alt="Hang up" />
             </button>
@@ -127,7 +158,9 @@ export function CallView({ layout }: CallViewProps) {
   if (layout === "modal") {
     return (
       <div className="call-overlay-backdrop">
-        <div className={`call-modal-card${isVideoActive ? " call-modal-card--video" : ""}`}>{content}</div>
+        <div className={`call-modal-card${showVideoLayout ? " call-modal-card--video" : ""}${isExpanded ? " call-modal-card--expanded" : ""}`}>
+          {content}
+        </div>
       </div>
     );
   }

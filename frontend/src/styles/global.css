@@ -5659,18 +5659,62 @@ body,
     z-index: 3;
 }
 
-.call-video-overlay .call-peer-name {
+/* Always white — overlay sits on dark video, never inherits theme color */
+.call-video-peer-name {
     margin: 0 0 4px;
     font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
 }
 
-.call-video-overlay .call-status-text {
+.call-video-status-text {
     margin: 0 0 16px;
     font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    min-height: 18px;
 }
 
 .call-video-overlay .call-actions {
     gap: 20px;
+}
+
+/* Expand/restore button — top-right corner of the video card */
+.call-expand-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    transition: background 0.15s, transform 0.12s;
+}
+
+.call-expand-btn img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.call-expand-btn:hover {
+    background: rgba(0, 0, 0, 0.6);
+    transform: scale(1.08);
+}
+
+/* Expanded (full-screen) video modal */
+.call-modal-card--expanded {
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    max-width: none !important;
 }
 
 .call-toggle-video-btn {
@@ -5682,9 +5726,9 @@ body,
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    transition: opacity 0.15s, transform 0.12s;
+    /* Dark enough to contrast on both light card and video overlay */
+    background: rgba(0, 0, 0, 0.35);
+    transition: background 0.15s, transform 0.12s;
 }
 
 .call-toggle-video-btn img {
@@ -5695,15 +5739,15 @@ body,
 }
 
 .call-toggle-video-btn.off {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.18);
 }
 
 .call-toggle-video-btn.off img {
-    opacity: 0.45;
+    opacity: 0.5;
 }
 
 .call-toggle-video-btn:hover {
-    opacity: 0.85;
+    background: rgba(0, 0, 0, 0.55);
     transform: scale(1.07);
 }
 
