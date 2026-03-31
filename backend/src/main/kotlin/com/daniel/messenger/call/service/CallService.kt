@@ -82,7 +82,10 @@ class CallService(
             video = video,
         )
         activeCallStore.save(call)
-        callNotificationService.sendCallEvent(receiverUsername, call.toEvent(CallEventType.RINGING, video = video))
+        callNotificationService.sendCallEvent(
+            receiverUsername,
+            call.toEvent(CallEventType.RINGING, video = video)
+        )
         scheduleTimeout(call)
 
         return InitiateCallResponse(callId = call.callId)
@@ -101,7 +104,12 @@ class CallService(
 
     fun rejectCall(callId: String, userId: Long) {
         val call = findCallForParticipant(callId, expectedRole = Role.RECEIVER, userId) ?: return
-        terminateCall(call, call.callerUsername, CallEventType.REJECTED, "$CALL_REJECTED_PREFIX:${call.callerUsername}")
+        terminateCall(
+            call,
+            call.callerUsername,
+            CallEventType.REJECTED,
+            "$CALL_REJECTED_PREFIX:${call.callerUsername}"
+        )
     }
 
     fun endCall(callId: String, userId: Long) {
@@ -111,12 +119,23 @@ class CallService(
         val peerUsername = call.peerOf(userId)
         val duration = call.elapsedSeconds()
         val logContent = endedLogContent(call.callerUsername, duration)
-        terminateCall(call, peerUsername, CallEventType.ENDED, logContent, duration)
+        terminateCall(
+            call,
+            peerUsername,
+            CallEventType.ENDED,
+            logContent,
+            duration
+        )
     }
 
     fun cancelCall(callId: String, userId: Long) {
         val call = findCallForParticipant(callId, expectedRole = Role.CALLER, userId) ?: return
-        terminateCall(call, call.receiverUsername, CallEventType.CANCELLED, "$CALL_MISSED_PREFIX:${call.callerUsername}")
+        terminateCall(
+            call,
+            call.receiverUsername,
+            CallEventType.CANCELLED,
+            "$CALL_MISSED_PREFIX:${call.callerUsername}"
+        )
     }
 
     fun handleDisconnect(userId: Long) {
@@ -126,10 +145,21 @@ class CallService(
         when (call.status) {
             CallStatus.ACTIVE -> {
                 val duration = call.elapsedSeconds()
-                terminateCall(call, peerUsername, CallEventType.ENDED, endedLogContent(call.callerUsername, duration), duration)
+                terminateCall(
+                    call,
+                    peerUsername,
+                    CallEventType.ENDED,
+                    endedLogContent(call.callerUsername, duration),
+                    duration
+                )
             }
             CallStatus.RINGING -> {
-                terminateCall(call, peerUsername, CallEventType.CANCELLED, "$CALL_MISSED_PREFIX:${call.callerUsername}")
+                terminateCall(
+                    call,
+                    peerUsername,
+                    CallEventType.CANCELLED,
+                    "$CALL_MISSED_PREFIX:${call.callerUsername}"
+                )
             }
         }
     }
