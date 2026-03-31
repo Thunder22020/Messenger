@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from "react";
 import type { RefObject } from "react";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
 import { formatMessageTime, formatFileSize, fileExtension, formatSystemContent } from "./chatFormat";
@@ -96,19 +97,107 @@ function VideoAttachmentList({ videos, onVideoClick }: { videos: AttachmentDto[]
   );
 }
 
+function fmtTime(s: number): string {
+  if (!isFinite(s) || s < 0) return "0:00";
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function AudioPlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const draggingRef = useRef(false);
+  const currentRef = useRef(0);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onMeta = () => setDuration(isFinite(audio.duration) ? audio.duration : 0);
+    const onTime = () => { if (!draggingRef.current) setCurrent(audio.currentTime); };
+    const onEnded = () => {
+      setPlaying(false);
+      setCurrent(0);
+      if (audioRef.current) audioRef.current.currentTime = 0;
+    };
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("ended", onEnded);
+    return () => {
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, []);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) { audio.pause(); setPlaying(false); }
+    else { audio.play(); setPlaying(true); }
+  };
+
+  const onSeekStart = () => { draggingRef.current = true; };
+
+  const onSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    currentRef.current = val;
+    setCurrent(val);
+  };
+
+  const commitSeek = () => {
+    draggingRef.current = false;
+    if (audioRef.current) audioRef.current.currentTime = currentRef.current;
+  };
+
+  const progress = duration > 0 ? (current / duration) * 100 : 0;
+
+  return (
+    <div className="audio-player" onClick={(e) => e.stopPropagation()}>
+      <audio ref={audioRef} src={src} preload="metadata" />
+      <button className="audio-play-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+        {playing ? (
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+            <rect x="4" y="3" width="4" height="14" rx="1.5" />
+            <rect x="12" y="3" width="4" height="14" rx="1.5" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+            <path d="M5 3.5l12 6.5-12 6.5V3.5z" />
+          </svg>
+        )}
+      </button>
+      <div className="audio-controls">
+        <input
+          type="range"
+          className="audio-seek"
+          min={0}
+          max={duration || 100}
+          step={0.05}
+          value={current}
+          onMouseDown={onSeekStart}
+          onTouchStart={onSeekStart}
+          onChange={onSeekChange}
+          onMouseUp={commitSeek}
+          onTouchEnd={commitSeek}
+          style={{ "--progress": `${progress}%` } as React.CSSProperties}
+        />
+        <div className="audio-time">
+          <span>{fmtTime(current)}</span>
+          <span>{fmtTime(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AudioAttachmentList({ audios }: { audios: AttachmentDto[] }) {
   return (
     <div className="audio-attachment-list">
-      {audios.map((a) => (
-        <audio
-          key={a.id}
-          src={a.url}
-          controls
-          preload="metadata"
-          className="message-audio"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ))}
+      {audios.map((a) => <AudioPlayer key={a.id} src={a.url} />)}
     </div>
   );
 }

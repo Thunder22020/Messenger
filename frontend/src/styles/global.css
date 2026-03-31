@@ -3190,11 +3190,143 @@ button {
     margin-left: 4px;
 }
 
-.message-audio {
-    display: block;
+/* ===== CUSTOM AUDIO PLAYER ===== */
+
+/* Context-aware tokens: dark theme — other bubble (dark bg) */
+.audio-player {
+    --ap-btn-bg:       rgba(234, 224, 210, 0.14);
+    --ap-btn-color:    rgba(234, 224, 210, 0.90);
+    --ap-btn-hover-bg: rgba(234, 224, 210, 0.22);
+    --ap-fill:         rgba(234, 224, 210, 0.72);
+    --ap-track:        rgba(255, 255, 255, 0.10);
+    --ap-thumb:        rgba(234, 224, 210, 0.90);
+    --ap-time:         rgba(255, 255, 255, 0.34);
+}
+
+/* dark theme — mine bubble (cream bg) */
+.message-row.mine .audio-player {
+    --ap-btn-bg:       rgba(0, 0, 0, 0.13);
+    --ap-btn-color:    rgba(25, 22, 15, 0.80);
+    --ap-btn-hover-bg: rgba(0, 0, 0, 0.20);
+    --ap-fill:         rgba(25, 22, 15, 0.52);
+    --ap-track:        rgba(0, 0, 0, 0.11);
+    --ap-thumb:        rgba(25, 22, 15, 0.75);
+    --ap-time:         rgba(0, 0, 0, 0.34);
+}
+
+/* light theme — other bubble (near-white bg) */
+[data-theme="light"] .message-row.other .audio-player {
+    --ap-btn-bg:       rgba(0, 0, 0, 0.08);
+    --ap-btn-color:    rgba(30, 24, 18, 0.78);
+    --ap-btn-hover-bg: rgba(0, 0, 0, 0.14);
+    --ap-fill:         rgba(30, 24, 18, 0.55);
+    --ap-track:        rgba(0, 0, 0, 0.10);
+    --ap-thumb:        rgba(30, 24, 18, 0.75);
+    --ap-time:         rgba(0, 0, 0, 0.32);
+}
+
+/* light theme — mine bubble (dark espresso bg) */
+[data-theme="light"] .message-row.mine .audio-player {
+    --ap-btn-bg:       rgba(255, 255, 255, 0.13);
+    --ap-btn-color:    rgba(234, 224, 210, 0.90);
+    --ap-btn-hover-bg: rgba(255, 255, 255, 0.20);
+    --ap-fill:         rgba(234, 224, 210, 0.72);
+    --ap-track:        rgba(255, 255, 255, 0.12);
+    --ap-thumb:        rgba(234, 224, 210, 0.90);
+    --ap-time:         rgba(255, 255, 255, 0.38);
+}
+
+.audio-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     width: 100%;
-    max-width: 300px;
+    max-width: 240px;
+    min-width: 0;
+    padding: 2px 0 4px;
+    box-sizing: border-box;
+}
+
+.audio-play-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--ap-btn-bg);
+    color: var(--ap-btn-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.audio-play-btn:hover  { background: var(--ap-btn-hover-bg); }
+.audio-play-btn:active { transform: scale(0.92); }
+.audio-play-btn svg    { display: block; flex-shrink: 0; }
+
+.audio-controls {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.audio-seek {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
     outline: none;
+    cursor: pointer;
+    background: linear-gradient(
+        to right,
+        var(--ap-fill)  var(--progress, 0%),
+        var(--ap-track) var(--progress, 0%)
+    );
+}
+
+.audio-seek::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--ap-thumb);
+    cursor: pointer;
+    border: none;
+    transition: transform 0.1s;
+}
+
+.audio-seek:hover::-webkit-slider-thumb { transform: scale(1.25); }
+
+.audio-seek::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--ap-thumb);
+    cursor: pointer;
+    border: none;
+}
+
+.audio-seek::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--ap-track);
+}
+
+.audio-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.01em;
+    color: var(--ap-time);
+    line-height: 1;
 }
 
 /* Pending file item in attachments bar */
