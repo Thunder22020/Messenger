@@ -1,25 +1,72 @@
+#file: noinspection SpringBootApplicationYaml
+# ──────────────────────────────────────────────────────────────────────────────
+# application.yaml.example
+# Copy to application.yaml and fill in all required values.
+#
+# Required environment variables:
+#   JWT_SECRET     – HS256 signing key, min 32 chars (generate: openssl rand -base64 48)
+#   DB_USERNAME    – PostgreSQL user
+#   DB_PASSWORD    – PostgreSQL password
+#   S3_ACCESS_KEY  – S3-compatible storage access key
+#   S3_SECRET_KEY  – S3-compatible storage secret key
+#   S3_REGION      – Storage region (e.g. ru-7)
+#   S3_ENDPOINT    – Full endpoint URL
+#   S3_BUCKET      – Bucket name
+#   S3_FETCH_URL   – Public base URL for serving files to clients
+# ──────────────────────────────────────────────────────────────────────────────
+
 spring:
+  application:
+    name: Messenger
+
+  # ── File uploads ─────────────────────────────────────────────────────────────
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  # ── JWT ──────────────────────────────────────────────────────────────────────
   security:
     jwt:
       secretKey: ${JWT_SECRET}
-      access-expiration: 300000
-      refresh-expiration: 7
-  application:
-    name: Messenger
+      access-expiration: 300000   # milliseconds
+      refresh-expiration: 30       # days
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   datasource:
     url: jdbc:postgresql://localhost:5432/messenger_db
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format-sql: true
+        format-sql: false
         transaction:
           jta:
             platform: org.hibernate.service.jta.JtaService
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: ${REDIS_PASSWORD}   # uncomment if Redis requires authentication
+
+  cache:
+    type: redis
+
+# ── S3-compatible object storage ─────────────────────────────────────────────
+s3:
+  access-key: ${S3_ACCESS_KEY}
+  secret-key: ${S3_SECRET_KEY}
+  region: ${S3_REGION}
+  endpoint: ${S3_ENDPOINT}
+  bucket: ${S3_BUCKET}
+  fetch-url: ${S3_FETCH_URL}      # public base URL used to build client-facing download links
