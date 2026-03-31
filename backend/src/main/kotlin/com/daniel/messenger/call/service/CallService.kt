@@ -7,7 +7,6 @@ import com.daniel.messenger.call.enum.CallStatus
 import com.daniel.messenger.call.dto.InitiateCallResponse
 import com.daniel.messenger.call.store.ActiveCallStore
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
-import com.daniel.messenger.messaging.service.ChatService
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.simp.user.SimpUserRegistry
@@ -23,7 +22,6 @@ import java.util.concurrent.ScheduledFuture
 class CallService(
     private val activeCallStore: ActiveCallStore,
     private val callNotificationService: CallNotificationService,
-    private val chatService: ChatService,
     private val chatParticipantRepository: ChatParticipantRepository,
     private val callMessageLogger: CallMessageLogger,
     private val simpUserRegistry: SimpUserRegistry,
@@ -38,37 +36,9 @@ class CallService(
 
     private val timeoutTasks = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
-    companion object {
-        private const val CALL_MISSED_PREFIX = "call_missed"
-        private const val CALL_REJECTED_PREFIX = "call_rejected"
-        private const val CALL_ENDED_PREFIX = "call_ended"
-        private const val CALL_TIMEOUT_SECONDS = 45L
-    }
-
     @PreDestroy
     fun destroy() {
         scheduler.destroy()
-    }
-
-    private fun ActiveCall.elapsedSeconds(): Long =
-        startedAt?.let { Duration.between(it, Instant.now()).seconds } ?: 0L
-
-    private fun sendBusyToCallerAndReturn(
-        callerUsername: String,
-        receiverUsername: String,
-        chatId: Long,
-    ): InitiateCallResponse {
-        callNotificationService.sendCallEvent(
-            callerUsername,
-            CallEvent(
-                callId = "",
-                type = CallEventType.BUSY,
-                chatId = chatId,
-                callerUsername = callerUsername,
-                receiverUsername = receiverUsername,
-            )
-        )
-        return InitiateCallResponse(callId = "")
     }
 
     fun initiateCall(callerId: Long, chatId: Long, video: Boolean = false): InitiateCallResponse {
@@ -81,10 +51,17 @@ class CallService(
         val receiverId = requireNotNull(receiverParticipant.user.id)
         val receiverUsername = receiverParticipant.user.username
 
-        if (simpUserRegistry.getUser(receiverUsername) == null ||
-            activeCallStore.findByUserId(receiverId) != null
-        ) {
-            return sendBusyToCallerAndReturn(callerUsername, receiverUsername, chatId)
+        val receiverOfflineOrBusy = simpUserRegistry.getUser(receiverUsername) == null
+                || activeCallStore.findByUserId(receiverId) != null
+        if (receiverOfflineOrBusy) {
+            notifyCaller(callerUsername, CallEvent(
+                callId = "",
+                type = CallEventType.BUSY,
+                chatId = chatId,
+                callerUsername = callerUsername,
+                receiverUsername = receiverUsername,
+            ))
+            return InitiateCallResponse(callId = "")
         }
 
         if (activeCallStore.findByUserId(callerId) != null) {
@@ -92,9 +69,8 @@ class CallService(
             return InitiateCallResponse(callId = "")
         }
 
-        val callId = UUID.randomUUID().toString()
         val call = ActiveCall(
-            callId = callId,
+            callId = UUID.randomUUID().toString(),
             chatId = chatId,
             callerId = callerId,
             callerUsername = callerUsername,
@@ -106,203 +82,139 @@ class CallService(
             video = video,
         )
         activeCallStore.save(call)
-
-        callNotificationService.sendCallEvent(
-            receiverUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.RINGING,
-                chatId = chatId,
-                callerUsername = callerUsername,
-                receiverUsername = receiverUsername,
-                video = video,
-            )
-        )
-
+        callNotificationService.sendCallEvent(receiverUsername, call.toEvent(CallEventType.RINGING, video = video))
         scheduleTimeout(call)
 
-        return InitiateCallResponse(callId = callId)
+        return InitiateCallResponse(callId = call.callId)
     }
 
     fun acceptCall(callId: String, userId: Long) {
-        val call = activeCallStore.find(callId) ?: return
-        if (call.receiverId != userId) return
+        val call = findCallForParticipant(callId, expectedRole = Role.RECEIVER, userId) ?: return
 
-        timeoutTasks.remove(callId)?.cancel(true)
+        cancelTimeout(callId)
         activeCallStore.update(call.copy(status = CallStatus.ACTIVE, startedAt = Instant.now()))
 
-        callNotificationService.sendCallEvent(
-            call.callerUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.ACCEPTED,
-                chatId = call.chatId,
-                callerUsername = call.callerUsername,
-                receiverUsername = call.receiverUsername,
-            )
-        )
-        // Notify other tabs of the receiver so they dismiss the IncomingCallModal
-        callNotificationService.sendCallEvent(
-            call.receiverUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.ACCEPTED,
-                chatId = call.chatId,
-                callerUsername = call.callerUsername,
-                receiverUsername = call.receiverUsername,
-            )
-        )
+        val acceptedEvent = call.toEvent(CallEventType.ACCEPTED)
+        callNotificationService.sendCallEvent(call.callerUsername, acceptedEvent)
+        callNotificationService.sendCallEvent(call.receiverUsername, acceptedEvent)
     }
 
     fun rejectCall(callId: String, userId: Long) {
-        val call = activeCallStore.find(callId) ?: return
-        if (call.receiverId != userId) return
-
-        timeoutTasks.remove(callId)?.cancel(true)
-        activeCallStore.remove(call)
-
-        callNotificationService.sendCallEvent(
-            call.callerUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.REJECTED,
-                chatId = call.chatId,
-                callerUsername = call.callerUsername,
-                receiverUsername = call.receiverUsername,
-            )
-        )
-
-        callMessageLogger.log(call.chatId, "$CALL_REJECTED_PREFIX:${call.callerUsername}")
+        val call = findCallForParticipant(callId, expectedRole = Role.RECEIVER, userId) ?: return
+        terminateCall(call, call.callerUsername, CallEventType.REJECTED, "$CALL_REJECTED_PREFIX:${call.callerUsername}")
     }
 
     fun endCall(callId: String, userId: Long) {
         val call = activeCallStore.find(callId) ?: return
         if (call.callerId != userId && call.receiverId != userId) return
 
-        timeoutTasks.remove(callId)?.cancel(true)
-
+        val peerUsername = call.peerOf(userId)
         val duration = call.elapsedSeconds()
-
-        activeCallStore.remove(call)
-
-        val peerUsername = if (userId == call.callerId) call.receiverUsername else call.callerUsername
-        callNotificationService.sendCallEvent(
-            peerUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.ENDED,
-                chatId = call.chatId,
-                callerUsername = call.callerUsername,
-                receiverUsername = call.receiverUsername,
-                durationSeconds = duration,
-            )
-        )
-
-        val content = if (duration > 0) "$CALL_ENDED_PREFIX:$duration" else "$CALL_MISSED_PREFIX:${call.callerUsername}"
-        callMessageLogger.log(call.chatId, content)
+        val logContent = endedLogContent(call.callerUsername, duration)
+        terminateCall(call, peerUsername, CallEventType.ENDED, logContent, duration)
     }
 
     fun cancelCall(callId: String, userId: Long) {
-        val call = activeCallStore.find(callId) ?: return
-        if (call.callerId != userId) return
-
-        timeoutTasks.remove(callId)?.cancel(true)
-        activeCallStore.remove(call)
-
-        callNotificationService.sendCallEvent(
-            call.receiverUsername,
-            CallEvent(
-                callId = callId,
-                type = CallEventType.CANCELLED,
-                chatId = call.chatId,
-                callerUsername = call.callerUsername,
-                receiverUsername = call.receiverUsername,
-            )
-        )
-
-        callMessageLogger.log(call.chatId, "$CALL_MISSED_PREFIX:${call.callerUsername}")
+        val call = findCallForParticipant(callId, expectedRole = Role.CALLER, userId) ?: return
+        terminateCall(call, call.receiverUsername, CallEventType.CANCELLED, "$CALL_MISSED_PREFIX:${call.callerUsername}")
     }
 
     fun handleDisconnect(userId: Long) {
         val call = activeCallStore.findByUserId(userId) ?: return
-
-        val peerUsername = if (userId == call.callerId) call.receiverUsername else call.callerUsername
-
-        activeCallStore.remove(call)
-        timeoutTasks.remove(call.callId)?.cancel(true)
+        val peerUsername = call.peerOf(userId)
 
         when (call.status) {
             CallStatus.ACTIVE -> {
                 val duration = call.elapsedSeconds()
-                callNotificationService.sendCallEvent(
-                    peerUsername,
-                    CallEvent(
-                        callId = call.callId,
-                        type = CallEventType.ENDED,
-                        chatId = call.chatId,
-                        callerUsername = call.callerUsername,
-                        receiverUsername = call.receiverUsername,
-                        durationSeconds = duration,
-                    )
-                )
-                val content = if (duration > 0) "$CALL_ENDED_PREFIX:$duration" else "$CALL_MISSED_PREFIX:${call.callerUsername}"
-                callMessageLogger.log(call.chatId, content)
+                terminateCall(call, peerUsername, CallEventType.ENDED, endedLogContent(call.callerUsername, duration), duration)
             }
-
-            CallStatus.RINGING -> when (userId) {
-                call.callerId -> {
-                    callNotificationService.sendCallEvent(
-                        call.receiverUsername,
-                        CallEvent(
-                            callId = call.callId,
-                            type = CallEventType.CANCELLED,
-                            chatId = call.chatId,
-                            callerUsername = call.callerUsername,
-                            receiverUsername = call.receiverUsername,
-                        )
-                    )
-                    callMessageLogger.log(call.chatId, "$CALL_MISSED_PREFIX:${call.callerUsername}")
-                }
-                call.receiverId -> {
-                    callNotificationService.sendCallEvent(
-                        call.callerUsername,
-                        CallEvent(
-                            callId = call.callId,
-                            type = CallEventType.CANCELLED,
-                            chatId = call.chatId,
-                            callerUsername = call.callerUsername,
-                            receiverUsername = call.receiverUsername,
-                        )
-                    )
-                    callMessageLogger.log(call.chatId, "$CALL_MISSED_PREFIX:${call.callerUsername}")
-                }
+            CallStatus.RINGING -> {
+                terminateCall(call, peerUsername, CallEventType.CANCELLED, "$CALL_MISSED_PREFIX:${call.callerUsername}")
             }
         }
     }
 
+    private fun terminateCall(
+        call: ActiveCall,
+        notifyUsername: String,
+        eventType: CallEventType,
+        logContent: String,
+        durationSeconds: Long? = null,
+    ) {
+        cancelTimeout(call.callId)
+        activeCallStore.remove(call)
+        callNotificationService.sendCallEvent(notifyUsername, call.toEvent(eventType, durationSeconds))
+        callMessageLogger.log(call.chatId, logContent)
+    }
+
+    private fun cancelTimeout(callId: String) {
+        timeoutTasks.remove(callId)?.cancel(true)
+    }
+
+    private fun notifyCaller(callerUsername: String, event: CallEvent) {
+        callNotificationService.sendCallEvent(callerUsername, event)
+    }
+
     private fun scheduleTimeout(call: ActiveCall) {
         val future = scheduler.schedule(
-            {
-                val current = activeCallStore.find(call.callId)
-                if (current == null || current.status != CallStatus.RINGING) return@schedule
-
-                activeCallStore.remove(current)
-                timeoutTasks.remove(call.callId)
-
-                val timeoutEvent = CallEvent(
-                    callId = call.callId,
-                    type = CallEventType.CANCELLED,
-                    chatId = call.chatId,
-                    callerUsername = call.callerUsername,
-                    receiverUsername = call.receiverUsername,
-                )
-                callNotificationService.sendCallEvent(call.callerUsername, timeoutEvent)
-                callNotificationService.sendCallEvent(call.receiverUsername, timeoutEvent)
-
-                callMessageLogger.log(call.chatId, "$CALL_MISSED_PREFIX:${call.callerUsername}")
-            },
+            { onTimeout(call.callId) },
             Instant.now().plusSeconds(CALL_TIMEOUT_SECONDS),
         )
         timeoutTasks[call.callId] = future
+    }
+
+    private fun onTimeout(callId: String) {
+        val call = activeCallStore.find(callId) ?: return
+        if (call.status != CallStatus.RINGING) return
+
+        activeCallStore.remove(call)
+        timeoutTasks.remove(callId)
+
+        val timeoutEvent = call.toEvent(CallEventType.CANCELLED)
+        callNotificationService.sendCallEvent(call.callerUsername, timeoutEvent)
+        callNotificationService.sendCallEvent(call.receiverUsername, timeoutEvent)
+
+        callMessageLogger.log(call.chatId, "$CALL_MISSED_PREFIX:${call.callerUsername}")
+    }
+
+    private fun findCallForParticipant(callId: String, expectedRole: Role, userId: Long): ActiveCall? {
+        val call = activeCallStore.find(callId) ?: return null
+        val matches = when (expectedRole) {
+            Role.CALLER -> call.callerId == userId
+            Role.RECEIVER -> call.receiverId == userId
+        }
+        return if (matches) call else null
+    }
+
+    private enum class Role { CALLER, RECEIVER }
+
+    private fun ActiveCall.elapsedSeconds(): Long =
+        startedAt?.let { Duration.between(it, Instant.now()).seconds } ?: 0L
+
+    private fun ActiveCall.peerOf(userId: Long): String =
+        if (userId == callerId) receiverUsername else callerUsername
+
+    private fun ActiveCall.toEvent(
+        type: CallEventType,
+        durationSeconds: Long? = null,
+        video: Boolean = false,
+    ): CallEvent = CallEvent(
+        callId = callId,
+        type = type,
+        chatId = chatId,
+        callerUsername = callerUsername,
+        receiverUsername = receiverUsername,
+        durationSeconds = durationSeconds,
+        video = video,
+    )
+
+    private fun endedLogContent(callerUsername: String, duration: Long): String =
+        if (duration > 0) "$CALL_ENDED_PREFIX:$duration" else "$CALL_MISSED_PREFIX:$callerUsername"
+
+    companion object {
+        private const val CALL_MISSED_PREFIX = "call_missed"
+        private const val CALL_REJECTED_PREFIX = "call_rejected"
+        private const val CALL_ENDED_PREFIX = "call_ended"
+        private const val CALL_TIMEOUT_SECONDS = 45L
     }
 }
