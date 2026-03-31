@@ -76,10 +76,15 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     setIncomingCall(call);
   }, []);
 
+  // Sync ref updated every render — avoids stale closure when STOMP reconnects
+  // between setClient(stompClient) being scheduled and effects flushing
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
   const onSignal = useCallback((msg: CallSignalMessage) => {
-    if (!client) return;
-    client.publish({ destination: "/app/call.signal", body: JSON.stringify(msg) });
-  }, [client]);
+    if (!clientRef.current?.connected) return;
+    clientRef.current.publish({ destination: "/app/call.signal", body: JSON.stringify(msg) });
+  }, []);
 
   const webRTC = useWebRTC({
     onSignal,
@@ -252,6 +257,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     endCallRef.current = endCall;
   }, [endCall]);
+
+  // Timeout: if still "connecting" after 30s, end the call
+  useEffect(() => {
+    if (callStatus !== "connecting") return;
+    const id = setTimeout(() => endCallRef.current(), 30_000);
+    return () => clearTimeout(id);
+  }, [callStatus]);
 
   // Set callStatus to "active" when WebRTC connection is established.
   // Reads callStatusRef to avoid stale closure; calls endCallRef to avoid circular dep.
