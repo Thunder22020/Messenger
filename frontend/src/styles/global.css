@@ -1085,6 +1085,19 @@ button {
     gap: 6px;
 }
 
+.chat-pin-icon {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    opacity: 0.45;
+    filter: invert(1);
+}
+
+[data-theme="light"] .chat-pin-icon {
+    filter: none;
+    opacity: 0.4;
+}
+
 .chat-last-message {
     font-size: 13px;
     opacity: 0.6;

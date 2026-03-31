@@ -16,6 +16,7 @@ interface MyChatProjection {
     fun getLastMessageCreatedAt(): Instant?
     fun getUnreadCount(): Long
     fun getLastReadMessageId(): Long?
+    fun getPinnedAt(): Instant?
 }
 
 interface PrivateChatDisplayName {
@@ -36,10 +37,13 @@ interface ChatRepository : JpaRepository<Chat, Long> {
                 c.last_message_sender AS lastMessageSender,
                 c.last_message_created_at AS lastMessageCreatedAt,
                 cp.unread_count AS unreadCount,
-                cp.last_read_message_id AS lastReadMessageId
+                cp.last_read_message_id AS lastReadMessageId,
+                cp.pinned_at AS pinnedAt
             FROM chats c
             JOIN chat_participants cp ON cp.chat_id = c.id AND cp.user_id = :userId
-            ORDER BY c.last_message_created_at DESC NULLS LAST
+            ORDER BY
+                cp.pinned_at ASC NULLS LAST,
+                c.last_message_created_at DESC NULLS LAST
         """,
         nativeQuery = true
     )

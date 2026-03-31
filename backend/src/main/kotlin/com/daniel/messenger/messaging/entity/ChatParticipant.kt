@@ -38,7 +38,9 @@ class ChatParticipant(
     var lastReadMessageId: Long? = null,
 
     @Column(nullable = false)
-    var unreadCount: Long = 0
+    var unreadCount: Long = 0,
+
+    var pinnedAt: Instant? = null,
 )
 
 @Embeddable

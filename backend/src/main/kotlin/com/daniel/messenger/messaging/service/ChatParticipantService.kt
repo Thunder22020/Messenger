@@ -18,6 +18,7 @@ import com.daniel.messenger.user.service.UserService
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class ChatParticipantService(
@@ -151,6 +152,18 @@ class ChatParticipantService(
         if (lastSystemMessage != null) {
             chatService.updateChatLastMessage(chat, lastSystemMessage)
         }
+    }
+
+    @Transactional
+    fun pinChat(chatId: Long, userId: Long) {
+        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
+        participant.pinnedAt = Instant.now()
+    }
+
+    @Transactional
+    fun unpinChat(chatId: Long, userId: Long) {
+        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
+        participant.pinnedAt = null
     }
 
     @Transactional

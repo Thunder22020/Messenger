@@ -95,6 +95,24 @@ class ChatController(
         chatParticipantService.leaveChat(chatId, userId)
     }
 
+    @PostMapping("/{chatId}/pin")
+    fun pinChat(
+        @PathVariable chatId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal
+    ) {
+        val userId = requireNotNull(userPrincipal.user.id)
+        chatParticipantService.pinChat(chatId, userId)
+    }
+
+    @DeleteMapping("/{chatId}/pin")
+    fun unpinChat(
+        @PathVariable chatId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal
+    ) {
+        val userId = requireNotNull(userPrincipal.user.id)
+        chatParticipantService.unpinChat(chatId, userId)
+    }
+
     @DeleteMapping("/{chatId}")
     fun deleteChat(
         @PathVariable chatId: Long,

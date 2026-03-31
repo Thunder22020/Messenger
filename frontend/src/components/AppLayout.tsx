@@ -18,6 +18,7 @@ type ChatListItem = {
     lastMessageSender?: string | null;
     lastMessageCreatedAt?: string | null;
     unreadCount: number;
+    pinnedAt?: string | null;
 };
 
 type UserSearchResult = {
@@ -25,7 +26,14 @@ type UserSearchResult = {
     username: string;
 };
 
-const sortByLastMessage = (a: ChatListItem, b: ChatListItem) => {
+const sortChats = (a: ChatListItem, b: ChatListItem) => {
+    const aPinned = a.pinnedAt != null;
+    const bPinned = b.pinnedAt != null;
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+    if (aPinned && bPinned) {
+        return new Date(a.pinnedAt!).getTime() - new Date(b.pinnedAt!).getTime();
+    }
     if (!a.lastMessageCreatedAt) return 1;
     if (!b.lastMessageCreatedAt) return -1;
     return new Date(b.lastMessageCreatedAt).getTime() - new Date(a.lastMessageCreatedAt).getTime();
@@ -89,7 +97,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-    const [chatContextMenu, setChatContextMenu] = useState<{ chatId: number; x: number; y: number } | null>(null);
+    const [chatContextMenu, setChatContextMenu] = useState<{ chatId: number; isPinned: boolean; x: number; y: number } | null>(null);
     const [deleteChatConfirm, setDeleteChatConfirm] = useState<number | null>(null);
     const [typingByChatId, setTypingByChatId] = useState<{ [chatId: string]: string[] }>({});
     const sidebarTypingTimersRef = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
@@ -115,7 +123,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                 lastMessageTimestampRef.current.set(c.chatId, c.lastMessageCreatedAt);
             }
         });
-        setChats([...normalized].sort(sortByLastMessage));
+        setChats([...normalized].sort(sortChats));
     };
 
     useEffect(() => {
@@ -204,7 +212,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                         };
                     });
 
-                    return [...updated].sort(sortByLastMessage);
+                    return [...updated].sort(sortChats);
                 });
             }
         );
@@ -311,6 +319,17 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
         document.addEventListener("mousedown", close);
         return () => document.removeEventListener("mousedown", close);
     }, [chatContextMenu]);
+
+    const handlePinChat = async (chatIdToPin: number, isCurrentlyPinned: boolean) => {
+        const method = isCurrentlyPinned ? "DELETE" : "POST";
+        const res = await authFetch(`${API_URL}/chat/${chatIdToPin}/pin`, { method });
+        if (!res || !res.ok) return;
+        const pinnedAt = isCurrentlyPinned ? null : new Date().toISOString();
+        setChats(prev =>
+            prev.map(c => c.chatId === chatIdToPin ? { ...c, pinnedAt } : c).sort(sortChats)
+        );
+        setChatContextMenu(null);
+    };
 
     const handleDeleteChat = async (chatIdToDelete: number) => {
         const res = await authFetch(`${API_URL}/chat/${chatIdToDelete}`, { method: "DELETE" });
@@ -426,7 +445,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                             onClick={() => navigate(`/chat/${chat.chatId}`)}
                                             onContextMenu={(e) => {
                                                 e.preventDefault();
-                                                setChatContextMenu({ chatId: chat.chatId, x: e.clientX, y: e.clientY });
+                                                setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
                                             }}
                                         >
                                             <div className="chat-avatar-wrap">
@@ -445,6 +464,9 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                                     </div>
 
                                                     <div className="chat-tile-meta">
+                                                        {chat.pinnedAt && (
+                                                            <img src="/icons/pin.png" className="chat-pin-icon" alt="" />
+                                                        )}
                                                         <div className="chat-time">{formattedTime}</div>
 
                                                         {chat.unreadCount > 0 && (
@@ -651,6 +673,12 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                     style={{ left: chatContextMenu.x, top: chatContextMenu.y }}
                     onMouseDown={(e) => e.stopPropagation()}
                 >
+                    <button
+                        className="context-menu-item"
+                        onClick={() => handlePinChat(chatContextMenu.chatId, chatContextMenu.isPinned)}
+                    >
+                        {chatContextMenu.isPinned ? "Unpin" : "Pin"}
+                    </button>
                     <button
                         className="context-menu-item danger"
                         onClick={() => {

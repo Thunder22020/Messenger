@@ -12,4 +12,5 @@ data class MyChatResponse(
     val lastMessageCreatedAt: Instant?,
     val unreadCount: Long,
     val lastReadMessageId: Long?,
+    val pinnedAt: Instant?,
 )

@@ -180,6 +180,7 @@ class ChatService(
                 lastMessageCreatedAt = chat.getLastMessageCreatedAt(),
                 unreadCount = chat.getUnreadCount(),
                 lastReadMessageId = chat.getLastReadMessageId(),
+                pinnedAt = chat.getPinnedAt(),
             )
         }
     }
