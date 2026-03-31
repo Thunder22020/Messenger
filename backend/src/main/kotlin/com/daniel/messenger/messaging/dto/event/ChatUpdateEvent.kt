@@ -14,4 +14,5 @@ data class ChatUpdateEvent(
 enum class ChatUpdateType {
     CONTENT,
     READ_ACK,
+    DELETED,
 }

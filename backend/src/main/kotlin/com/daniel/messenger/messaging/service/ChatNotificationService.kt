@@ -76,4 +76,8 @@ class ChatNotificationService(
     fun sendSidebarUpdate(username: String, event: ChatUpdateEvent) {
         messagingTemplate.convertAndSendToUser(username, "/queue/chat-updates", event)
     }
+
+    fun sendChatDeleted(username: String, chatId: Long) {
+        sendSidebarUpdate(username, ChatUpdateEvent(chatId = chatId, type = ChatUpdateType.DELETED, unreadCount = 0))
+    }
 }

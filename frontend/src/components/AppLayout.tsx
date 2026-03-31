@@ -89,8 +89,12 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+    const [chatContextMenu, setChatContextMenu] = useState<{ chatId: number; x: number; y: number } | null>(null);
+    const [deleteChatConfirm, setDeleteChatConfirm] = useState<number | null>(null);
     const [typingByChatId, setTypingByChatId] = useState<{ [chatId: string]: string[] }>({});
     const sidebarTypingTimersRef = useRef<{ [key: string]: ReturnType<typeof setTimeout> }>({});
+    const activeChatIdRef = useRef(chatId);
+    useEffect(() => { activeChatIdRef.current = chatId; }, [chatId]);
     const client = useWebSocket();
     const { isOnline } = usePresence();
     const isMobile = useIsMobile();
@@ -151,6 +155,14 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
             "/user/queue/chat-updates",
             async (msg) => {
                 const body = JSON.parse(msg.body);
+
+                if (body.type === "DELETED") {
+                    setChats(prev => prev.filter(c => c.chatId !== body.chatId));
+                    if (String(body.chatId) === activeChatIdRef.current) {
+                        navigate("/chat");
+                    }
+                    return;
+                }
 
                 if (body.type === "CONTENT" && body.unreadCount > 0) {
                     const prevTs = lastMessageTimestampRef.current.get(body.chatId);
@@ -293,6 +305,23 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
+    useEffect(() => {
+        if (!chatContextMenu) return;
+        const close = () => setChatContextMenu(null);
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, [chatContextMenu]);
+
+    const handleDeleteChat = async (chatIdToDelete: number) => {
+        const res = await authFetch(`${API_URL}/chat/${chatIdToDelete}`, { method: "DELETE" });
+        if (!res || !res.ok) return;
+        setChats(prev => prev.filter(c => c.chatId !== chatIdToDelete));
+        setDeleteChatConfirm(null);
+        if (String(chatIdToDelete) === activeChatIdRef.current) {
+            navigate("/chat");
+        }
+    };
+
     const handleLogout = async () => {
         const token = localStorage.getItem("accessToken");
 
@@ -395,6 +424,10 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                                 String(chat.chatId) === chatId ? "active" : ""
                                             }`}
                                             onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                setChatContextMenu({ chatId: chat.chatId, x: e.clientX, y: e.clientY });
+                                            }}
                                         >
                                             <div className="chat-avatar-wrap">
                                                 <div className="chat-avatar">
@@ -455,6 +488,10 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                                             String(chat.chatId) === chatId ? "active" : ""
                                                         }`}
                                                         onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                                        onContextMenu={(e) => {
+                                                            e.preventDefault();
+                                                            setChatContextMenu({ chatId: chat.chatId, x: e.clientX, y: e.clientY });
+                                                        }}
                                                     >
                                                         <div className="chat-avatar-wrap">
                                                             <div className="chat-avatar">
@@ -601,6 +638,48 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                 onClick={handleLogout}
                             >
                                 Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Chat context menu ── */}
+            {chatContextMenu && (
+                <div
+                    className="message-context-menu"
+                    style={{ left: chatContextMenu.x, top: chatContextMenu.y }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <button
+                        className="context-menu-item danger"
+                        onClick={() => {
+                            setDeleteChatConfirm(chatContextMenu.chatId);
+                            setChatContextMenu(null);
+                        }}
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
+
+            {/* ── Delete chat confirmation popup ── */}
+            {deleteChatConfirm !== null && (
+                <div className="logout-popup-overlay" onClick={() => setDeleteChatConfirm(null)}>
+                    <div className="logout-popup" onClick={(e) => e.stopPropagation()}>
+                        <div className="logout-title">Delete chat?</div>
+                        <div className="logout-subtitle">
+                            Are you sure you want to delete this chat? This cannot be undone.
+                        </div>
+                        <div className="logout-actions">
+                            <button className="btn-secondary" onClick={() => setDeleteChatConfirm(null)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="logout-confirm-btn"
+                                onClick={() => handleDeleteChat(deleteChatConfirm)}
+                            >
+                                Delete
                             </button>
                         </div>
                     </div>

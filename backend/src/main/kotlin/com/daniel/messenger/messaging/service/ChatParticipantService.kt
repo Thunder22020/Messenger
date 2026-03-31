@@ -80,6 +80,23 @@ class ChatParticipantService(
     }
 
     @Transactional
+    fun deleteChat(chatId: Long, userId: Long) {
+        val chat = chatService.findByIdOrThrow(chatId)
+        when (chat.type) {
+            ChatType.GROUP -> leaveChat(chatId, userId)
+            ChatType.PRIVATE -> deletePrivateChat(chatId, userId)
+        }
+    }
+
+    private fun deletePrivateChat(chatId: Long, userId: Long) {
+        chatAccessService.isChatParticipantOrThrow(chatId, userId)
+        chatParticipantRepository.findAllWithUserByChatId(chatId)
+            .filter { it.user.id != userId }
+            .forEach { chatNotificationService.sendChatDeleted(it.user.username, chatId) }
+        chatService.deleteChat(chatId)
+    }
+
+    @Transactional
     fun addParticipants(chatId: Long, requesterId: Long, userIds: List<Long>) {
         val chat = chatService.findByIdOrThrow(chatId)
         if (chat.type != ChatType.GROUP) {
