@@ -21,7 +21,6 @@ export default function Login({
   const navigate = useNavigate();
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const isFirstTime   = !localStorage.getItem("synk_intro_seen");
 
   const [introState, setIntroState] = useState<IntroState>(
     () => (reducedMotion ? "done" : "animating")
@@ -80,7 +79,6 @@ export default function Login({
     <div className="page-center">
       {introState !== "done" && (
         <IntroAnimation
-          isFirstTime={isFirstTime}
           onTransition={handleTransition}
           onDone={handleDone}
         />
