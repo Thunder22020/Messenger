@@ -3565,6 +3565,7 @@ button {
     background: #201E1B;
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    color: rgba(255,255,255,0.85);
 }
 
 /* Info panel & user avatars — gradient treatment */
