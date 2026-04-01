@@ -112,6 +112,25 @@ export default function AppLayout() {
     const { isOnline } = usePresence();
     const isMobile = useIsMobile();
 
+    // Keep --mobile-vvh in sync with the visual viewport (accounts for keyboard height on iOS/Android)
+    useEffect(() => {
+        if (!isMobile) return;
+        const update = () => {
+            const h = window.visualViewport?.height ?? window.innerHeight;
+            document.documentElement.style.setProperty('--mobile-vvh', `${h}px`);
+        };
+        // Prevent iOS Safari from scrolling the layout viewport when keyboard appears
+        const preventScroll = () => window.scrollTo(0, 0);
+        update();
+        window.visualViewport?.addEventListener('resize', update);
+        window.visualViewport?.addEventListener('scroll', preventScroll);
+        return () => {
+            window.visualViewport?.removeEventListener('resize', update);
+            window.visualViewport?.removeEventListener('scroll', preventScroll);
+            document.documentElement.style.removeProperty('--mobile-vvh');
+        };
+    }, [isMobile]);
+
     const reloadChats = async () => {
         const res = await authFetch(`${API_URL}/chat/my`);
 
