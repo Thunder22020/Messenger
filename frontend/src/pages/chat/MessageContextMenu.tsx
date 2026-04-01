@@ -21,6 +21,7 @@ export function MessageContextMenu(props: {
       className="message-context-menu"
       style={{ left: menu.x, top: menu.y }}
       onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <button className="context-menu-item" onClick={onReply}>
         Reply

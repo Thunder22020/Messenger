@@ -28,6 +28,7 @@ export function useLongPress(onLongPress: (x: number, y: number) => void) {
         timerRef.current = setTimeout(() => {
             fired.current = true;
             timerRef.current = null;
+            navigator.vibrate?.(10);
             onLongPress(touch.clientX, touch.clientY);
         }, LONG_PRESS_DELAY);
     }, [onLongPress]);

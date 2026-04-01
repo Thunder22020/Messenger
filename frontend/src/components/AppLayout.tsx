@@ -228,6 +228,7 @@ export default function AppLayout() {
                         recentNotificationsRef.current.add(body.chatId);
                         setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
                         if (!muteSound) notificationSoundRef.current?.play().catch(() => {});
+                        navigator.vibrate?.(50);
                         if (document.visibilityState !== "visible") {
                             document.title = "You have new messages - Synk.";
                         }
@@ -748,6 +749,7 @@ export default function AppLayout() {
                     className="message-context-menu"
                     style={{ left: chatContextMenu.x, top: chatContextMenu.y }}
                     onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                 >
                     <button
                         className="context-menu-item"
