@@ -12,7 +12,7 @@ class CookieFactory(
     fun createRefreshTokenCookie(token: String) =
         Cookie(REFRESH_TOKEN_COOKIE, token).apply {
             isHttpOnly = true
-            secure = false
+            secure = true
             path = "/"
             maxAge = expirationDays * 24 * 60 * 60
         }
@@ -20,7 +20,7 @@ class CookieFactory(
     fun getEmptyRefreshCookie() =
         Cookie(REFRESH_TOKEN_COOKIE, "").apply {
             isHttpOnly = true
-            secure = false
+            secure = true
             path = "/"
             maxAge = 0
         }
