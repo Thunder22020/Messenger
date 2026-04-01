@@ -512,7 +512,7 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
                                                         onClick={() => navigate(`/chat/${chat.chatId}`)}
                                                         onContextMenu={(e) => {
                                                             e.preventDefault();
-                                                            setChatContextMenu({ chatId: chat.chatId, x: e.clientX, y: e.clientY });
+                                                            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
                                                         }}
                                                     >
                                                         <div className="chat-avatar-wrap">
