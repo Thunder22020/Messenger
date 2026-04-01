@@ -3409,6 +3409,7 @@ button {
     align-items: center;
     justify-content: center;
     user-select: none;
+    touch-action: none; /* prevent iOS Safari native pinch-zoom on the viewer */
 }
 
 .iv-image {
@@ -3535,6 +3536,7 @@ button {
     width: 80%;
     z-index: 2;
     overflow: hidden;
+    touch-action: pan-x; /* override parent touch-action: none to allow horizontal scroll */
 
     /* Fade exactly 56px on each edge */
     mask-image: linear-gradient(
@@ -3562,6 +3564,7 @@ button {
     scrollbar-width: none;
     padding: 2px 56px;
     align-items: center;
+    touch-action: pan-x;
 }
 .iv-thumbnail-strip::-webkit-scrollbar { display: none; }
 
