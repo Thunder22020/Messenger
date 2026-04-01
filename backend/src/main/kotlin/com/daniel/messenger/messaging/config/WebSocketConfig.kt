@@ -1,6 +1,8 @@
 package com.daniel.messenger.messaging.config
 
 import com.daniel.messenger.messaging.interceptor.JwtChannelInterceptor
+import com.daniel.messenger.messaging.interceptor.SubscriptionAuthInterceptor
+import com.daniel.messenger.security.ratelimit.WsRateLimitInterceptor
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
@@ -15,6 +17,8 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     private val jwtChannelInterceptor: JwtChannelInterceptor,
+    private val subscriptionAuthInterceptor: SubscriptionAuthInterceptor,
+    private val wsRateLimitInterceptor: WsRateLimitInterceptor,
     @Value("\${app.cors.allowed-origins}")
     private val allowedOrigin: String,
 ) : WebSocketMessageBrokerConfigurer {
@@ -45,7 +49,11 @@ class WebSocketConfig(
     }
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
-        registration.interceptors(jwtChannelInterceptor)
+        registration.interceptors(
+            jwtChannelInterceptor,
+            wsRateLimitInterceptor,
+            subscriptionAuthInterceptor,
+        )
     }
 
     companion object {

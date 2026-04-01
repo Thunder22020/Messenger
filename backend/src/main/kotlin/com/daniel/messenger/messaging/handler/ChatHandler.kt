@@ -27,7 +27,7 @@ class ChatHandler(
         request: TypingRequest,
         principal: Principal
     ) {
-        val userPrincipal = principal.toUserPrincipal()
-        chatHandlerService.broadcastTyping(request, userPrincipal.user.username)
+        val user = principal.toUserPrincipal().user
+        chatHandlerService.broadcastTyping(request, user)
     }
 }

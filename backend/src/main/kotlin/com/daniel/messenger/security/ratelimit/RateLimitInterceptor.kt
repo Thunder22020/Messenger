@@ -7,7 +7,6 @@ import org.springframework.data.redis.core.script.RedisScript
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
-import java.time.Duration
 
 @Component
 class RateLimitInterceptor(
@@ -29,7 +28,7 @@ class RateLimitInterceptor(
             limitWindowAsString,
         )
         if (count > limit.max) {
-            setResponseAsNotFound(res, limitWindowAsString)
+            setResponseAsTooManyRequests(res, limitWindowAsString)
             return false
         }
         return true
@@ -43,7 +42,7 @@ class RateLimitInterceptor(
             ?: req.remoteAddr
     }
 
-    private fun setResponseAsNotFound(res: HttpServletResponse, retryAfter: String) {
+    private fun setResponseAsTooManyRequests(res: HttpServletResponse, retryAfter: String) {
         res.status = HttpStatus.TOO_MANY_REQUESTS.value()
         res.setHeader("Retry-After", retryAfter)
         res.contentType = "application/json"
@@ -65,6 +64,4 @@ class RateLimitInterceptor(
             return count
             """.trimIndent(), Long::class.java)
     }
-
-    private data class Limit(val max: Int, val windowSeconds: Long)
 }

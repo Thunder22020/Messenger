@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 class ChatHandlerService(
     private val messageService: MessageService,
     private val chatNotificationService: ChatNotificationService,
+    private val chatAccessService: ChatAccessService,
     private val chatParticipantRepository: ChatParticipantRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
@@ -45,13 +46,14 @@ class ChatHandlerService(
             )
         }
 
-    fun broadcastTyping(request: TypingRequest, username: String) {
+    fun broadcastTyping(request: TypingRequest, user: User) {
+        chatAccessService.isChatParticipantOrThrow(request.chatId, requireNotNull(user.id))
         chatNotificationService.broadcastTyping(
             request.chatId,
             TypingEvent(
                 chatId = request.chatId,
-                username = username,
-                isTyping = request.isTyping
+                username = user.username,
+                isTyping = request.isTyping,
             ),
         )
     }

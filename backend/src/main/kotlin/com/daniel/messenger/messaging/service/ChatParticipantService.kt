@@ -15,6 +15,7 @@ import com.daniel.messenger.messaging.repository.ChatParticipantRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.user.service.UserService
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,6 +32,7 @@ class ChatParticipantService(
     private val chatNotificationService: ChatNotificationService
 ) {
     @Transactional
+    @CacheEvict(cacheNames = ["chat-membership"], key = "#chatId + ':' + #userId", beforeInvocation = true)
     fun removeParticipant(chatId: Long, requesterId: Long, userId: Long) {
         chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
         val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
@@ -38,6 +40,7 @@ class ChatParticipantService(
     }
 
     @Transactional
+    @CacheEvict(cacheNames = ["chat-membership"], key = "#chatId + ':' + #userId", beforeInvocation = true)
     fun leaveChat(chatId: Long, userId: Long) {
         val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
         val username = participant.user.username

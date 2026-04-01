@@ -27,15 +27,17 @@ class JwtChannelInterceptor(
             StompHeaderAccessor::class.java
         ) ?: return message
 
-        if (accessor.command != StompCommand.CONNECT) {
-            return message
+        return when (accessor.command) {
+            StompCommand.CONNECT -> {
+                val authentication = authenticate(accessor) ?: return null
+                accessor.user = authentication
+                message
+            }
+            StompCommand.SEND, StompCommand.SUBSCRIBE, StompCommand.UNSUBSCRIBE -> {
+                if (accessor.user == null) null else message
+            }
+            else -> message
         }
-
-        val authentication = authenticate(accessor)
-            ?: return null
-
-        accessor.user = authentication
-        return message
     }
 
     private fun authenticate(accessor: StompHeaderAccessor): UsernamePasswordAuthenticationToken? {

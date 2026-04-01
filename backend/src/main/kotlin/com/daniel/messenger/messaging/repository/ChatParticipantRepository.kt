@@ -2,6 +2,7 @@ package com.daniel.messenger.messaging.repository
 
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.ChatParticipantId
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -10,6 +11,11 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ChatParticipantRepository : JpaRepository<ChatParticipant, ChatParticipantId> {
+    @Cacheable(
+        cacheNames = ["chat-membership"],
+        key = "#chatId + ':' + #userId",
+        unless = "#result == false",
+    )
     fun existsByChat_IdAndUser_Id(chatId: Long, userId: Long): Boolean
 
     fun findByChat_IdAndUser_Id(chatId: Long, userId: Long): ChatParticipant?
