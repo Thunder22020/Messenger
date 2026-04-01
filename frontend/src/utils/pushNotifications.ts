@@ -19,7 +19,7 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 export async function initPushNotifications(): Promise<void> {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const vapidPublicKey = import.meta.env.VAPID_PUBLIC_KEY as string | undefined;
+    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
     if (!vapidPublicKey) return;
 
     try {
