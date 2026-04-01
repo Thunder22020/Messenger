@@ -9,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useLongPress } from "../hooks/useLongPress";
 import { formatSystemContent } from "../pages/chat/chatFormat";
+import { initPushNotifications } from "../utils/pushNotifications";
 
 type JwtPayload = { sub: string };
 
@@ -92,6 +93,10 @@ export default function AppLayout() {
     useEffect(() => {
         notificationSoundRef.current = new Audio("/sounds/notification_sound.mp3");
         notificationSoundRef.current.volume = 0.5;
+    }, []);
+
+    useEffect(() => {
+        initPushNotifications();
     }, []);
 
     const [sidebarWidth, setSidebarWidth] = useState(() => {
