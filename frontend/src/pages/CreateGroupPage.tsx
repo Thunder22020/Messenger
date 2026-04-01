@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AppLayout from "../components/AppLayout";
 import { API_URL } from "../config";
 import { authFetch } from "../utils/authFetch";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -86,9 +85,7 @@ export default function CreateGroupPage() {
     const filteredResults = searchResults.filter(u => !selectedIds.has(u.id));
 
     return (
-        <AppLayout mobileChatView={isMobile}>
-
-            <div className="group-create-container">
+        <div className="group-create-container">
                 {isMobile && (
                     <button
                         className="chat-header-back-btn user-info-back-btn"
@@ -173,8 +170,6 @@ export default function CreateGroupPage() {
                         Create group
                     </button>
                 </div>
-            </div>
-
-        </AppLayout>
+        </div>
     );
 }

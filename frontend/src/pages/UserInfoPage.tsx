@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
 import { API_URL } from "../config";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -56,27 +55,22 @@ export default function UserInfoPage() {
 
     if (loading) {
         return (
-            <AppLayout>
-                <div className="user-info-container">
-                    Loading...
-                </div>
-            </AppLayout>
+            <div className="user-info-container">
+                Loading...
+            </div>
         );
     }
 
     if (!user) {
         return (
-            <AppLayout>
-                <div className="user-info-container">
-                    User not found
-                </div>
-            </AppLayout>
+            <div className="user-info-container">
+                User not found
+            </div>
         );
     }
 
     return (
-        <AppLayout>
-            <div className="user-info-container">
+        <div className="user-info-container">
                 {isMobile && (
                     <button
                         className="chat-header-back-btn user-info-back-btn"
@@ -105,6 +99,5 @@ export default function UserInfoPage() {
 
                 </div>
             </div>
-        </AppLayout>
     );
 }

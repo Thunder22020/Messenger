@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
 import BlankChatPage from "./pages/BlankChatPage";
+import AppLayout from "./components/AppLayout";
 import {WebSocketProvider} from "./context/WebSocketContext.tsx";
 import { PresenceProvider } from "./context/PresenceContext.tsx";
 import { CallProvider } from "./context/CallContext";
@@ -48,40 +49,15 @@ function App() {
                <CallModal />
                <CallScreen />
                <Routes>
-                       <Route
-                           path="/"
-                           element={
-                               accessToken ? (
-                                   <Home />
-                               ) : (
-                                   <Navigate to="/login" />
-                               )
-                           }
-                       />
-                       <Route
-                           path="/login"
-                           element={<Login setAccessToken={setAccessToken} />}
-                       />
+                       <Route path="/login" element={<Login setAccessToken={setAccessToken} />} />
                        <Route path="/register" element={<Register />} />
-                       <Route
-                           path="/chat"
-                           element={
-                               accessToken ? <BlankChatPage /> : <Navigate to="/login" />
-                           }
-                       />
-                       <Route
-                           path="/chat/:chatId"
-                           element={
-                               accessToken ? <ChatPage /> : <Navigate to="/login" />
-                           }
-                       />
-                       <Route
-                           path="/group"
-                           element={
-                               accessToken ? <CreateGroupPage /> : <Navigate to="/login" />
-                           }
-                       />
-                       <Route path="/user/:userId" element={<UserInfoPage />} />
+                       <Route element={accessToken ? <AppLayout /> : <Navigate to="/login" />}>
+                           <Route path="/" element={<Home />} />
+                           <Route path="/chat" element={<BlankChatPage />} />
+                           <Route path="/chat/:chatId" element={<ChatPage />} />
+                           <Route path="/group" element={<CreateGroupPage />} />
+                           <Route path="/user/:userId" element={<UserInfoPage />} />
+                       </Route>
                    </Routes>
            </BrowserRouter>
            </CallProvider>

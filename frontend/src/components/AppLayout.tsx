@@ -1,6 +1,7 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useMatch, Outlet } from "react-router-dom";
 import { API_URL } from "../config";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { AppLayoutContext } from "../context/AppLayoutContext";
 import { authFetch } from "../utils/authFetch";
 import { useWebSocket } from "../context/WebSocketContext";
 import { usePresence } from "../context/PresenceContext";
@@ -39,11 +40,15 @@ const sortChats = (a: ChatListItem, b: ChatListItem) => {
     return new Date(b.lastMessageCreatedAt).getTime() - new Date(a.lastMessageCreatedAt).getTime();
 };
 
-export default function AppLayout({ children, rightPanel, mobileChatView }: {
-    children: React.ReactNode; rightPanel?: React.ReactNode; mobileChatView?: boolean;
-}) {
+export default function AppLayout() {
     const navigate = useNavigate();
-    const { chatId, userId } = useParams();
+    const [rightPanel, setRightPanel] = useState<React.ReactNode>(null);
+    const setRightPanelStable = useCallback((node: React.ReactNode) => setRightPanel(node), []);
+    const chatMatch = useMatch('/chat/:chatId');
+    const userMatch = useMatch('/user/:userId');
+    const groupMatch = useMatch('/group');
+    const chatId = chatMatch?.params.chatId;
+    const userId = userMatch?.params.userId;
     const token = localStorage.getItem("accessToken");
 
     let currentUsername = "";
@@ -726,30 +731,32 @@ export default function AppLayout({ children, rightPanel, mobileChatView }: {
 
     if (isMobile) {
         return (
-            <div className={`mobile-layout ${(chatId || userId || mobileChatView) ? "chat-active" : "list-active"}`}>
-                <div className="mobile-sidebar-panel">
-                    {sidebarJSX}
-                </div>
-                <div className="mobile-chat-panel">
-                    {/* position: fixed children (ChatInfoPanel, MediaViewer) escape
-                        overflow: hidden naturally, so rightPanel works correctly here */}
-                    <div className="content">
-                        {children}
+            <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable }}>
+                <div className={`mobile-layout ${(chatId || userId || groupMatch) ? "chat-active" : "list-active"}`}>
+                    <div className="mobile-sidebar-panel">
+                        {sidebarJSX}
                     </div>
-                    {rightPanel}
+                    <div className="mobile-chat-panel">
+                        <div className="content">
+                            <Outlet />
+                        </div>
+                        {rightPanel}
+                    </div>
                 </div>
-            </div>
+            </AppLayoutContext.Provider>
         );
     }
 
-    // Desktop layout - unchanged
+    // Desktop layout
     return (
-        <div className="app-layout">
-            {sidebarJSX}
-            <div className="content">
-                {children}
+        <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable }}>
+            <div className="app-layout">
+                {sidebarJSX}
+                <div className="content">
+                    <Outlet />
+                </div>
+                {rightPanel}
             </div>
-            {rightPanel}
-        </div>
+        </AppLayoutContext.Provider>
     );
 }

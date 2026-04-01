@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
+import { useSetRightPanel } from "../context/AppLayoutContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { useWebSocket } from "../context/WebSocketContext";
@@ -31,6 +31,7 @@ export default function ChatPage() {
     const isMobile = useIsMobile();
     const client = useWebSocket();
     const { initiateCall, activeCall: currentActiveCall } = useCall();
+    const setRightPanel = useSetRightPanel();
     const { isOnline } = usePresence();
 
     const token = localStorage.getItem("accessToken");
@@ -257,6 +258,28 @@ export default function ChatPage() {
         setShowScrollBtn(hasMoreNewer || distFromBottom > 150);
     };
 
+    useEffect(() => {
+        setRightPanel(
+            <ChatInfoPanel
+                isOpen={isInfoOpen}
+                chatName={chatName}
+                chatType={chatType}
+                chatId={numericChatId}
+                participants={participants}
+                currentUsername={currentUsername}
+                onUserClick={(id) => navigate(`/user/${id}`)}
+                onMediaClick={(items, index, meta) =>
+                    setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
+                }
+                onLeave={handleLeaveChat}
+                onClose={() => setIsInfoOpen(false)}
+                isMobile={isMobile}
+            />
+        );
+        return () => setRightPanel(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isInfoOpen, chatName, chatType, numericChatId, participants, currentUsername, isMobile]);
+
     const dateGroups = useMemo(() => groupMessagesByDateAndSender({
         messages,
         unreadDividerMessageId,
@@ -264,25 +287,6 @@ export default function ChatPage() {
 
     return (
         <>
-        <AppLayout
-            rightPanel={
-                <ChatInfoPanel
-                    isOpen={isInfoOpen}
-                    chatName={chatName}
-                    chatType={chatType}
-                    chatId={numericChatId}
-                    participants={participants}
-                    currentUsername={currentUsername}
-                    onUserClick={(id) => navigate(`/user/${id}`)}
-                    onMediaClick={(items, index, meta) =>
-                        setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
-                    }
-                    onLeave={handleLeaveChat}
-                    onClose={() => setIsInfoOpen(false)}
-                    isMobile={isMobile}
-                />
-            }
-        >
             <div className="chat-container">
                 <ChatHeader
                     chatName={chatName}
@@ -420,7 +424,6 @@ export default function ChatPage() {
                     />
                 )}
             </div>
-        </AppLayout>
 
         {viewerState && (
             <MediaViewer
