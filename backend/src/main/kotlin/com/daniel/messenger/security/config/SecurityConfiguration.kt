@@ -27,7 +27,7 @@ class SecurityConfiguration(
     private val userDetailsService: UserDetailsService,
     private val jwtFilter: JwtFilter,
     @Value("\${app.cors.allowed-origins}")
-    private val allowedOriginsString: String,
+    private val allowedOrigin: String,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
@@ -60,7 +60,7 @@ class SecurityConfiguration(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH")
-            allowedOrigins = allowedOriginsString.split(",").map { it.trim() }
+            allowedOrigins = listOf(allowedOrigin)
             allowedHeaders = listOf("*")
             allowCredentials = true
         }
