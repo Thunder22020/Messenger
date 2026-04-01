@@ -16,12 +16,12 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 class WebSocketConfig(
     private val jwtChannelInterceptor: JwtChannelInterceptor,
     @Value("\${app.cors.allowed-origins}")
-    private val allowedOrigins: String,
+    private val allowedOriginsString: String,
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry.addEndpoint("/ws")
-            .setAllowedOrigins(allowedOrigins)
+            .setAllowedOrigins(*allowedOriginsString.split(",").map { it.trim() }.toTypedArray())
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
