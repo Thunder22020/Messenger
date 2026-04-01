@@ -1,29 +1,32 @@
 package com.daniel.messenger.security.web
 
-import jakarta.servlet.http.Cookie
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.ResponseCookie
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 @Component
 class CookieFactory(
     @Value("\${app.jwt.refresh-expiration}")
     private val expirationDays: Int
 ) {
-    fun createRefreshTokenCookie(token: String) =
-        Cookie(REFRESH_TOKEN_COOKIE, token).apply {
-            isHttpOnly = true
-            secure = true
-            path = "/"
-            maxAge = expirationDays * 24 * 60 * 60
-        }
+    fun createRefreshTokenCookie(token: String): ResponseCookie =
+        ResponseCookie.from(REFRESH_TOKEN_COOKIE, token)
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .maxAge(Duration.ofDays(expirationDays.toLong()))
+            .sameSite("Lax")
+            .build()
 
-    fun getEmptyRefreshCookie() =
-        Cookie(REFRESH_TOKEN_COOKIE, "").apply {
-            isHttpOnly = true
-            secure = true
-            path = "/"
-            maxAge = 0
-        }
+    fun getEmptyRefreshCookie(): ResponseCookie =
+        ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .maxAge(Duration.ZERO)
+            .sameSite("Lax")
+            .build()
 
     companion object {
         private const val REFRESH_TOKEN_COOKIE = "refreshToken"

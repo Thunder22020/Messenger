@@ -9,6 +9,7 @@ import com.daniel.messenger.user.dto.UserRequest
 import com.daniel.messenger.user.service.UserService
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -34,7 +35,7 @@ class AuthController(
         val tokens = authService.verifyAndGetTokens(user)
 
         val cookie = cookieFactory.createRefreshTokenCookie(tokens.refreshToken)
-        response.addCookie(cookie)
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
 
         return AccessTokenResponse(tokens.accessToken)
     }
@@ -58,7 +59,7 @@ class AuthController(
             refreshTokenService.deleteByToken(it)
         }
         val cookie = cookieFactory.getEmptyRefreshCookie()
-        response.addCookie(cookie)
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
     }
 
 }
