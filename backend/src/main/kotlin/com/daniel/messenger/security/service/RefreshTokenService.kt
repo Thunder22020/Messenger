@@ -18,7 +18,7 @@ class RefreshTokenService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val userService: UserService,
     private val jwtService: JwtService,
-    @Value("\${spring.security.jwt.refresh-expiration}")
+    @Value("\${app.jwt.refresh-expiration}")
     private val expirationDays: Long
 ) {
     fun createRefreshToken(username: String) : RefreshToken =

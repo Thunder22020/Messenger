@@ -11,9 +11,9 @@ import javax.crypto.SecretKey
 
 @Service
 class JwtService(
-    @Value("\${spring.security.jwt.secretKey}")
+    @Value("\${app.jwt.secret-key}")
     private val secret: String,
-    @Value("\${spring.security.jwt.access-expiration}")
+    @Value("\${app.jwt.access-expiration}")
     private val expiration: Long
 ) {
 

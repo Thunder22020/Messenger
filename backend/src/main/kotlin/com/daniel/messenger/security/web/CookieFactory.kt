@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class CookieFactory(
-    @Value("\${spring.security.jwt.refresh-expiration}")
+    @Value("\${app.jwt.refresh-expiration}")
     private val expirationDays: Int
 ) {
     fun createRefreshTokenCookie(token: String) =
