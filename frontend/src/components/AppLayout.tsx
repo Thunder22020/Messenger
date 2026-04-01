@@ -89,13 +89,9 @@ export default function AppLayout() {
     const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     const recentNotificationsRef = useRef<Set<number>>(new Set());
     const lastMessageTimestampRef = useRef<Map<number, string>>(new Map());
-    const lastTouchRef = useRef<number>(0);
     useEffect(() => {
         notificationSoundRef.current = new Audio("/sounds/notification_sound.mp3");
         notificationSoundRef.current.volume = 0.5;
-        const trackTouch = () => { lastTouchRef.current = Date.now(); };
-        window.addEventListener("touchstart", trackTouch, { passive: true });
-        return () => window.removeEventListener("touchstart", trackTouch);
     }, []);
 
     const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -232,9 +228,7 @@ export default function AppLayout() {
                         recentNotificationsRef.current.add(body.chatId);
                         setTimeout(() => recentNotificationsRef.current.delete(body.chatId), 500);
                         if (!muteSound) notificationSoundRef.current?.play().catch(() => {});
-                        if (Date.now() - lastTouchRef.current < 5000) {
-                            try { navigator.vibrate?.(150); } catch { /* unsupported */ }
-                        }
+                        navigator.vibrate?.(150);
                         if (document.visibilityState !== "visible") {
                             document.title = "You have new messages - Synk.";
                         }
