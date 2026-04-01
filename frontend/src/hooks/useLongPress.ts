@@ -17,6 +17,7 @@ export function useLongPress(onLongPress: (x: number, y: number) => void) {
         if (timerRef.current) {
             clearTimeout(timerRef.current);
             timerRef.current = null;
+            try { navigator.vibrate?.(0); } catch { /* unsupported */ }
         }
         startPos.current = null;
     }, []);
@@ -25,10 +26,13 @@ export function useLongPress(onLongPress: (x: number, y: number) => void) {
         fired.current = false;
         const touch = e.touches[0];
         startPos.current = { x: touch.clientX, y: touch.clientY };
+        // Schedule vibration via the Vibration API pattern from within the touchstart
+        // user-gesture context: 0ms buzz (noop) → pause LONG_PRESS_DELAY ms → 50ms buzz.
+        // This is cancelled by vibrate(0) in clear() if the touch ends early.
+        try { navigator.vibrate?.([0, LONG_PRESS_DELAY, 50]); } catch { /* unsupported */ }
         timerRef.current = setTimeout(() => {
             fired.current = true;
             timerRef.current = null;
-            navigator.vibrate?.(10);
             onLongPress(touch.clientX, touch.clientY);
         }, LONG_PRESS_DELAY);
     }, [onLongPress]);
