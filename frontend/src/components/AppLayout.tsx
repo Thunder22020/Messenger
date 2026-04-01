@@ -112,15 +112,37 @@ export default function AppLayout() {
     const { isOnline } = usePresence();
     const isMobile = useIsMobile();
 
-    // Keep --mobile-vvh in sync with the visual viewport (accounts for keyboard height on iOS/Android)
+    // Keep --mobile-vvh in sync with the visual viewport (accounts for keyboard height on iOS/Android).
+    // Also preserves scroll position relative to the bottom when keyboard opens/closes.
     useEffect(() => {
         if (!isMobile) return;
+
         const update = () => {
-            const h = window.visualViewport?.height ?? window.innerHeight;
-            document.documentElement.style.setProperty('--mobile-vvh', `${h}px`);
+            const newH = window.visualViewport?.height ?? window.innerHeight;
+            const prevH = parseFloat(
+                document.documentElement.style.getPropertyValue('--mobile-vvh') || '0'
+            );
+
+            // Capture distance-from-bottom before the layout changes
+            const chatMessages = document.querySelector('.chat-messages') as HTMLElement | null;
+            const distFromBottom = chatMessages
+                ? chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight
+                : 0;
+
+            document.documentElement.style.setProperty('--mobile-vvh', `${newH}px`);
+
+            // After the browser has reflowed, restore the same distance-from-bottom
+            if (prevH > 0 && newH !== prevH && chatMessages) {
+                requestAnimationFrame(() => {
+                    chatMessages.scrollTop =
+                        chatMessages.scrollHeight - chatMessages.clientHeight - distFromBottom;
+                });
+            }
         };
+
         // Prevent iOS Safari from scrolling the layout viewport when keyboard appears
         const preventScroll = () => window.scrollTo(0, 0);
+
         update();
         window.visualViewport?.addEventListener('resize', update);
         window.visualViewport?.addEventListener('scroll', preventScroll);
