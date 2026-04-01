@@ -2,10 +2,13 @@ package com.daniel.messenger.call.controller
 
 import com.daniel.messenger.call.dto.InitiateCallRequest
 import com.daniel.messenger.call.dto.InitiateCallResponse
+import com.daniel.messenger.call.dto.TurnCredentialsResponse
 import com.daniel.messenger.call.service.CallService
+import com.daniel.messenger.call.service.TurnService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -15,7 +18,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/call")
-class CallController(private val callService: CallService) {
+class CallController(
+    private val callService: CallService,
+    private val turnService: TurnService,
+) {
+
+    @GetMapping("/turn-credentials")
+    fun getTurnCredentials(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): TurnCredentialsResponse =
+        turnService.generateCredentials(requireNotNull(userPrincipal.user.id))
 
     @PostMapping("/initiate")
     fun initiateCall(

@@ -56,6 +56,19 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Fix 1: callIdRef kept in sync with activeCall.callId, passed to useWebRTC
   const callIdRef = useRef<string | null>(null);
   const videoRef = useRef<boolean>(false);
+  const rtcConfigRef = useRef<RTCConfiguration>({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+
+  const fetchRtcConfig = useCallback(async () => {
+    const res = await authFetch(`${API_URL}/call/turn-credentials`);
+    if (!res?.ok) return;
+    const { username, credential, urls } = await res.json();
+    rtcConfigRef.current = {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls, username, credential },
+      ],
+    };
+  }, []);
 
   // Fix 6: wrap syncActiveCall in useCallback
   const syncActiveCall = useCallback((call: ActiveCallState | null) => {
@@ -90,6 +103,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     onSignal,
     callIdRef,
     videoRef,
+    rtcConfigRef,
   });
 
   // Stable refs for webRTC functions to avoid STOMP resubscribe on connectionState change
@@ -196,6 +210,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const initiateCall = useCallback(async (chatId: number, peerUsername: string, video = false): Promise<void> => {
     videoRef.current = video;
+    await fetchRtcConfig();
     const res = await authFetch(`${API_URL}/call/initiate`, {
       method: "POST",
       body: JSON.stringify({ chatId, video }),
@@ -213,13 +228,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     };
     syncActiveCall(call);
     syncCallStatus("ringing");
-  }, [syncActiveCall, syncCallStatus, videoRef]);
+  }, [syncActiveCall, syncCallStatus, videoRef, fetchRtcConfig]);
 
   const acceptCall = useCallback(async (): Promise<void> => {
     const call = incomingCall;
     if (!call) return;
 
     videoRef.current = call.video ?? false;
+    await fetchRtcConfig();
     await authFetch(`${API_URL}/call/${call.callId}/accept`, { method: "POST" });
 
     syncActiveCall({
@@ -232,7 +248,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
     syncIncomingCall(null);
     syncCallStatus("connecting");
-  }, [incomingCall, syncActiveCall, syncCallStatus, syncIncomingCall, videoRef]);
+  }, [incomingCall, syncActiveCall, syncCallStatus, syncIncomingCall, videoRef, fetchRtcConfig]);
 
   // Fix 8: add .catch(console.error) to authFetch calls
   const rejectCall = useCallback((): void => {

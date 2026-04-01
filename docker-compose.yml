@@ -52,6 +52,9 @@ services:
       JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       # CORS
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
+      # TURN
+      TURN_SECRET: ${TURN_SECRET}
+      TURN_URL: ${TURN_URL:-synk.su}
       # S3
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}

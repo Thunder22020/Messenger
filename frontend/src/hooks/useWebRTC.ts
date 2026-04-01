@@ -1,14 +1,11 @@
 import { useRef, useState, useCallback } from "react";
 import type { CallSignalMessage } from "../types/callTypes";
 
-const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-};
-
 interface UseWebRTCOptions {
   onSignal: (msg: CallSignalMessage) => void;
   callIdRef: React.MutableRefObject<string | null>;
   videoRef: React.MutableRefObject<boolean>;
+  rtcConfigRef: React.MutableRefObject<RTCConfiguration>;
 }
 
 interface UseWebRTCReturn {
@@ -28,6 +25,7 @@ export function useWebRTC({
   onSignal,
   callIdRef,
   videoRef,
+  rtcConfigRef,
 }: UseWebRTCOptions): UseWebRTCReturn {
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -42,7 +40,7 @@ export function useWebRTC({
   const [videoEnabled, setVideoEnabled] = useState(false);
 
   const createPeerConnection = useCallback((): RTCPeerConnection => {
-    const pc = new RTCPeerConnection(RTC_CONFIG);
+    const pc = new RTCPeerConnection(rtcConfigRef.current);
 
     pc.onicecandidate = (event) => {
       // Fix 1: read callIdRef.current at signal-send time, never stale
@@ -68,7 +66,7 @@ export function useWebRTC({
     };
 
     return pc;
-  }, [callIdRef, onSignal]);
+  }, [callIdRef, onSignal, rtcConfigRef]);
 
   const startAsOffer = useCallback(async (): Promise<void> => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
