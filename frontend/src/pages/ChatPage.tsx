@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import { authFetch } from "../utils/authFetch";
 import { useNavigate, useParams } from "react-router-dom";
@@ -257,10 +257,10 @@ export default function ChatPage() {
         setShowScrollBtn(hasMoreNewer || distFromBottom > 150);
     };
 
-    const dateGroups = groupMessagesByDateAndSender({
+    const dateGroups = useMemo(() => groupMessagesByDateAndSender({
         messages,
         unreadDividerMessageId,
-    });
+    }), [messages, unreadDividerMessageId]);
 
     return (
         <>

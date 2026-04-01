@@ -12,7 +12,7 @@ export type CallEventType = "RINGING" | "ACCEPTED" | "REJECTED" | "ENDED" | "BUS
 
 export interface CallSignalMessage {
   callId: string;
-  type: "OFFER" | "ANSWER" | "ICE_CANDIDATE";
+  type: "OFFER" | "ANSWER" | "ICE_CANDIDATE" | "CAMERA_STATE";
   payload: string;
 }
 

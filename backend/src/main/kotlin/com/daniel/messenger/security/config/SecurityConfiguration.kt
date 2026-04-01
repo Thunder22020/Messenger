@@ -2,6 +2,7 @@ package com.daniel.messenger.security.config
 
 import com.daniel.messenger.security.filter.JwtFilter
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -25,6 +26,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfiguration(
     private val userDetailsService: UserDetailsService,
     private val jwtFilter: JwtFilter,
+    @Value("\${app.cors.allowed-origins}")
+    private val allowedOrigin: String,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
@@ -57,7 +60,7 @@ class SecurityConfiguration(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH")
-            allowedOrigins = listOf("http://localhost:5173")
+            allowedOrigins = listOf(allowedOrigin)
             allowedHeaders = listOf("*")
             allowCredentials = true
         }

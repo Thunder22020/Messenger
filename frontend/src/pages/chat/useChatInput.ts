@@ -16,6 +16,7 @@ interface UseChatInputParams {
     jumpToLatest: () => Promise<void>;
 }
 
+const MAX_FILE_SIZE_BYTES = 40 * 1024 * 1024; // 40 MB
 const MAX_IMAGE_DIM = 1280;
 const JPEG_QUALITY  = 0.82;
 
@@ -209,6 +210,13 @@ export function useChatInput({
     const handleFilesSelected = useCallback((files: FileList | File[]) => {
         const incoming = Array.from(files);
         if (incoming.length === 0) return;
+
+        const oversized = incoming.filter(f => f.size > MAX_FILE_SIZE_BYTES);
+        if (oversized.length > 0) {
+            const names = oversized.map(f => f.name).join(", ");
+            alert(`File${oversized.length > 1 ? "s" : ""} exceed the 40 MB limit: ${names}`);
+            return;
+        }
 
         const incomingHasImages = incoming.some(f => f.type.startsWith("image/"));
         const incomingHasNonImages = incoming.some(f => !f.type.startsWith("image/"));

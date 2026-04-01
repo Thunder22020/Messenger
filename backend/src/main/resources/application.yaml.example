@@ -4,15 +4,19 @@
 # Copy to application.yaml and fill in all required values.
 #
 # Required environment variables:
-#   JWT_SECRET     – HS256 signing key, min 32 chars (generate: openssl rand -base64 48)
-#   DB_USERNAME    – PostgreSQL user
-#   DB_PASSWORD    – PostgreSQL password
-#   S3_ACCESS_KEY  – S3-compatible storage access key
-#   S3_SECRET_KEY  – S3-compatible storage secret key
-#   S3_REGION      – Storage region (e.g. ru-7)
-#   S3_ENDPOINT    – Full endpoint URL
-#   S3_BUCKET      – Bucket name
-#   S3_FETCH_URL   – Public base URL for serving files to clients
+#   JWT_SECRET                – HS256 signing key, min 32 chars (generate: openssl rand -base64 48)
+#   DB_USERNAME               – PostgreSQL user
+#   DB_PASSWORD               – PostgreSQL password
+#   S3_ACCESS_KEY             – S3-compatible storage access key
+#   S3_SECRET_KEY             – S3-compatible storage secret key
+#   S3_REGION                 – Storage region (e.g. ru-7)
+#   S3_ENDPOINT               – Full endpoint URL
+#   S3_BUCKET                 – Bucket name
+#   S3_FETCH_URL              – Public base URL for serving files to clients
+#
+# Optional environment variables (have defaults):
+#   APP_CORS_ALLOWED_ORIGINS  – Frontend origin (default: http://localhost:5173)
+#   JPA_DDL_AUTO              – Hibernate DDL mode (default: update; use validate in prod)
 # ──────────────────────────────────────────────────────────────────────────────
 
 spring:
@@ -41,7 +45,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false
@@ -70,3 +74,8 @@ s3:
   endpoint: ${S3_ENDPOINT}
   bucket: ${S3_BUCKET}
   fetch-url: ${S3_FETCH_URL}      # public base URL used to build client-facing download links
+
+# ── CORS ─────────────────────────────────────────────────────────────────────
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}

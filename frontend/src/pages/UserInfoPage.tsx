@@ -34,7 +34,7 @@ export default function UserInfoPage() {
             const data = await res.json();
 
             setUser(data);
-            setLoading(false);   // ← ВОТ ЭТО ОБЯЗАТЕЛЬНО
+            setLoading(false);
         };
 
         loadUser();

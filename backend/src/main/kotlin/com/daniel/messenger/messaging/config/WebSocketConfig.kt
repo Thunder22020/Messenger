@@ -1,6 +1,7 @@
 package com.daniel.messenger.messaging.config
 
 import com.daniel.messenger.messaging.interceptor.JwtChannelInterceptor
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
@@ -13,12 +14,14 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
-    private val jwtChannelInterceptor: JwtChannelInterceptor
+    private val jwtChannelInterceptor: JwtChannelInterceptor,
+    @Value("\${app.cors.allowed-origins}")
+    private val allowedOrigins: String,
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry.addEndpoint("/ws")
-            .setAllowedOrigins("http://localhost:5173")
+            .setAllowedOrigins(allowedOrigins)
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
