@@ -159,12 +159,16 @@ export default function ChatPage() {
         applyPendingScroll();
     }, [messages, unreadDividerMessageId, applyPendingScroll]);
 
-    // Context menu close on click outside
+    // Context menu close on click/tap outside
     useEffect(() => {
         if (!contextMenu) return;
         const close = () => setContextMenu(null);
         document.addEventListener("mousedown", close);
-        return () => document.removeEventListener("mousedown", close);
+        document.addEventListener("touchstart", close);
+        return () => {
+            document.removeEventListener("mousedown", close);
+            document.removeEventListener("touchstart", close);
+        };
     }, [contextMenu]);
 
     // Escape key handler
@@ -205,10 +209,7 @@ export default function ChatPage() {
         }
     };
 
-    const handleMessageRightClick = (e: React.MouseEvent, msg: Message, isMine: boolean) => {
-        e.preventDefault();
-        const x = Math.min(e.clientX, window.innerWidth - 148);
-        const y = Math.min(e.clientY, window.innerHeight - 160);
+    const handleMessageRightClick = (x: number, y: number, msg: Message, isMine: boolean) => {
         setContextMenu({ x, y, messageId: msg.id, content: msg.content, sender: msg.sender, isMine });
     };
 

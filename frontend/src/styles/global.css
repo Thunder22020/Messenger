@@ -571,6 +571,8 @@ button {
 .message-bubble {
     max-width: 65%;
     min-width: 80px;
+    -webkit-user-select: none;
+    user-select: none;
 
     padding: 10px 14px;
 
@@ -996,6 +998,8 @@ button {
     display: flex;
     align-items: center;
     gap: 14px;
+    -webkit-user-select: none;
+    user-select: none;
 
     padding: 14px 16px;
 

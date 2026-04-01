@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import type { RefObject } from "react";
+import { useLongPress } from "../../hooks/useLongPress";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
 import { formatMessageTime, formatFileSize, fileExtension, formatSystemContent } from "./chatFormat";
 
@@ -293,7 +294,7 @@ export function MessageList(props: {
   dividerRef: RefObject<HTMLDivElement | null>;
   deletingMessageIds: Set<number>;
   isReadByAnyOther: (messageId: number) => boolean;
-  onMessageContextMenu: (e: React.MouseEvent, msg: Message, isMine: boolean) => void;
+  onMessageContextMenu: (x: number, y: number, msg: Message, isMine: boolean) => void;
   onScrollToMessage: (messageId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onImageLoad?: () => void;
@@ -312,6 +313,19 @@ export function MessageList(props: {
     onMediaClick,
     onImageLoad,
   } = props;
+
+  // Long-press state: which message is being held
+  const pendingMsg = useRef<{ msg: Message; isMine: boolean } | null>(null);
+
+  const longPress = useLongPress(
+    useCallback((x: number, y: number) => {
+      if (!pendingMsg.current) return;
+      const { msg, isMine } = pendingMsg.current;
+      const cx = Math.min(x, window.innerWidth - 148);
+      const cy = Math.min(y, window.innerHeight - 160);
+      onMessageContextMenu(cx, cy, msg, isMine);
+    }, [onMessageContextMenu])
+  );
 
   return (
     <div className="messages-column">
@@ -392,9 +406,20 @@ export function MessageList(props: {
 
                           <div
                             className={`message-bubble${isMediaOnly ? " media-only" : hasMedia ? " has-media" : ""}`}
-                            onContextMenu={(e) =>
-                              onMessageContextMenu(e, msg, isMine)
-                            }
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              const cx = Math.min(e.clientX, window.innerWidth - 148);
+                              const cy = Math.min(e.clientY, window.innerHeight - 160);
+                              onMessageContextMenu(cx, cy, msg, isMine);
+                            }}
+                            onTouchStart={(e) => {
+                              pendingMsg.current = { msg, isMine };
+                              longPress.onTouchStart(e);
+                            }}
+                            onTouchMove={longPress.onTouchMove}
+                            onTouchEnd={longPress.onTouchEnd}
+                            onTouchCancel={longPress.onTouchCancel}
+                            onClick={longPress.onClick}
                           >
                             {msg.replyPreview && (
                               <div

@@ -7,6 +7,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 import { usePresence } from "../context/PresenceContext";
 import { jwtDecode } from "jwt-decode";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useLongPress } from "../hooks/useLongPress";
 import { formatSystemContent } from "../pages/chat/chatFormat";
 
 type JwtPayload = { sub: string };
@@ -363,8 +364,23 @@ export default function AppLayout() {
         if (!chatContextMenu) return;
         const close = () => setChatContextMenu(null);
         document.addEventListener("mousedown", close);
-        return () => document.removeEventListener("mousedown", close);
+        document.addEventListener("touchstart", close);
+        return () => {
+            document.removeEventListener("mousedown", close);
+            document.removeEventListener("touchstart", close);
+        };
     }, [chatContextMenu]);
+
+    // Long press on chat tiles
+    const pendingChatId = useRef<number | null>(null);
+    const chatTileLongPress = useLongPress(
+        useCallback((x: number, y: number) => {
+            if (pendingChatId.current === null) return;
+            const chat = chats.find(c => c.chatId === pendingChatId.current);
+            if (!chat) return;
+            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x, y });
+        }, [chats])
+    );
 
     const handlePinChat = async (chatIdToPin: number, isCurrentlyPinned: boolean) => {
         const method = isCurrentlyPinned ? "DELETE" : "POST";
@@ -488,11 +504,18 @@ export default function AppLayout() {
                                             className={`chat-tile fade-item ${
                                                 String(chat.chatId) === chatId ? "active" : ""
                                             }`}
-                                            onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                            onClick={(e) => {
+                                                chatTileLongPress.onClick(e);
+                                                if (!e.defaultPrevented) navigate(`/chat/${chat.chatId}`);
+                                            }}
                                             onContextMenu={(e) => {
                                                 e.preventDefault();
                                                 setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
                                             }}
+                                            onTouchStart={(e) => { pendingChatId.current = chat.chatId; chatTileLongPress.onTouchStart(e); }}
+                                            onTouchMove={chatTileLongPress.onTouchMove}
+                                            onTouchEnd={chatTileLongPress.onTouchEnd}
+                                            onTouchCancel={chatTileLongPress.onTouchCancel}
                                         >
                                             <div className="chat-avatar-wrap">
                                                 <div className="chat-avatar">
@@ -555,11 +578,18 @@ export default function AppLayout() {
                                                         className={`chat-tile fade-item ${
                                                             String(chat.chatId) === chatId ? "active" : ""
                                                         }`}
-                                                        onClick={() => navigate(`/chat/${chat.chatId}`)}
+                                                        onClick={(e) => {
+                                                            chatTileLongPress.onClick(e);
+                                                            if (!e.defaultPrevented) navigate(`/chat/${chat.chatId}`);
+                                                        }}
                                                         onContextMenu={(e) => {
                                                             e.preventDefault();
                                                             setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
                                                         }}
+                                                        onTouchStart={(e) => { pendingChatId.current = chat.chatId; chatTileLongPress.onTouchStart(e); }}
+                                                        onTouchMove={chatTileLongPress.onTouchMove}
+                                                        onTouchEnd={chatTileLongPress.onTouchEnd}
+                                                        onTouchCancel={chatTileLongPress.onTouchCancel}
                                                     >
                                                         <div className="chat-avatar-wrap">
                                                             <div className="chat-avatar">
