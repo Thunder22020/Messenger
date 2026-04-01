@@ -4,8 +4,9 @@ WORKDIR /app
 COPY package*.json .
 RUN npm ci
 COPY . .
-# VITE_API_URL is empty so all API calls use relative paths (proxied by Nginx)
-RUN VITE_API_URL="" npm run build
+ARG VITE_API_URL
+ARG VITE_WS_URL
+RUN VITE_API_URL=${VITE_API_URL} VITE_WS_URL=${VITE_WS_URL} npm run build
 
 # Stage 2: serve
 FROM nginx:alpine
