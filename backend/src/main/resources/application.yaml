@@ -1,0 +1,46 @@
+#file: noinspection SpringBootApplicationYaml
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  application:
+    name: Messenger
+  datasource:
+    url: jdbc:postgresql://localhost:5432/messenger_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    properties:
+      hibernate:
+        format-sql: false
+        transaction:
+          jta:
+            platform: org.hibernate.service.jta.JtaService
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cache:
+    type: redis
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    secret-key: ${JWT_SECRET}
+    access-expiration: 300000
+    refresh-expiration: 7
+
+s3:
+  access-key: ${S3_ACCESS_KEY}
+  secret-key: ${S3_SECRET_KEY}
+  region: ${S3_REGION}
+  endpoint: ${S3_ENDPOINT}
+  bucket: ${S3_BUCKET}
+  fetch-url: ${S3_FETCH_URL}
