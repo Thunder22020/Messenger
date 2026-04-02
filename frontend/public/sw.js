@@ -8,9 +8,6 @@ self.addEventListener('push', event => {
     const options = {
         body: data.body ?? '',
         icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
-        tag: `chat-${data.chatId}`,      // replaces previous notification for same chat
-        renotify: true,                  // ring again even if replacing same tag
         data: { url: `/chat/${data.chatId}` },
     };
 
