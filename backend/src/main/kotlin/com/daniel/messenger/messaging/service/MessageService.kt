@@ -14,6 +14,7 @@ import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.messaging.toResponse
 import com.daniel.messenger.user.entity.User
 import com.daniel.messenger.user.service.UserService
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,8 +26,10 @@ class MessageService(
     private val chatService: ChatService,
     private val userService: UserService,
     private val attachmentService: AttachmentService,
-    private val chatAccessService: ChatAccessService
+    private val chatAccessService: ChatAccessService,
+    private val meterRegistry: MeterRegistry,
 ) {
+    private val messagesSentCounter = meterRegistry.counter("messenger.messages.sent")
 
     @Transactional
     fun sendMessage(request: SendMessageRequest, sender: User): MessageResponse {
@@ -47,6 +50,7 @@ class MessageService(
         val attachments = attachmentService.linkToMessage(request.attachmentIds, message, senderId)
 
         chatService.updateChatLastMessage(chat, message, sender.username, attachments)
+        messagesSentCounter.increment()
 
         return message.toResponse(
             senderUsername = sender.username,

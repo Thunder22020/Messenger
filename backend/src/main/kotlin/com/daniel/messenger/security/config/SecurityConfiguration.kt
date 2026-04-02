@@ -46,6 +46,9 @@ class SecurityConfiguration(
                 "/api/auth/refresh",
                 "/ws/**",
                 "/ws",
+                "/health",
+                "/actuator/health",
+                "/actuator/prometheus",
             ).permitAll()
             .anyRequest()
             .authenticated()
