@@ -3159,6 +3159,10 @@ button {
     margin-bottom: 4px;
 }
 
+.message-bubble.media-only .video-attachment-list {
+    margin-bottom: 0;
+}
+
 .message-video {
     display: block;
     width: 100%;
@@ -3171,8 +3175,8 @@ button {
     position: relative;
     display: block;
     cursor: pointer;
-    border-radius: 10px;
     overflow: hidden;
+    border-radius: 15px;
     width: 100%;
     max-width: 320px;
     aspect-ratio: 16 / 9;

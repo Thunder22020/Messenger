@@ -375,6 +375,7 @@ export function MessageList(props: {
                     const hasVideos = videos.length > 0;
                     const hasAudios = audios.length > 0;
                     const hasFiles = fileDtos.length > 0;
+                    const isVideoOnly = hasVideos && !msg.content && !hasMedia && !hasAudios && !hasFiles;
                     const isMediaOnly = hasMedia && !msg.content && !hasVideos && !hasAudios && !hasFiles;
 
                     return (
@@ -405,7 +406,7 @@ export function MessageList(props: {
                           )}
 
                           <div
-                            className={`message-bubble${isMediaOnly ? " media-only" : hasMedia ? " has-media" : ""}`}
+                            className={`message-bubble${isMediaOnly || isVideoOnly ? " media-only" : hasMedia || hasVideos ? " has-media" : ""}`}
                             onContextMenu={(e) => {
                               e.preventDefault();
                               const cx = Math.min(e.clientX, window.innerWidth - 148);
