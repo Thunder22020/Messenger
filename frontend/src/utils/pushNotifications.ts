@@ -43,13 +43,17 @@ export async function initPushNotifications(): Promise<void> {
         const auth   = sub.getKey('auth');
         if (!p256dh || !auth) return;
 
+        const toBase64Url = (buf: ArrayBuffer) =>
+            btoa(String.fromCharCode(...new Uint8Array(buf)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
         await authFetch(`${API_URL}/api/push/subscribe`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 endpoint: sub.endpoint,
-                p256dh: btoa(String.fromCharCode(...new Uint8Array(p256dh))),
-                auth:   btoa(String.fromCharCode(...new Uint8Array(auth))),
+                p256dh: toBase64Url(p256dh),
+                auth:   toBase64Url(auth),
             }),
         });
     } catch (err) {
