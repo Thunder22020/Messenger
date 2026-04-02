@@ -123,7 +123,7 @@ export function ChatHeader(props: {
           <img src="/icons/search.png" alt="search" />
         </button>
         <button className="chat-menu-btn" onClick={onToggleInfo}>
-          <img src="/icons/menu.png" alt="menu" />
+          <img src="/icons/info.png" alt="menu" />
         </button>
       </div>
 
