@@ -3175,10 +3175,15 @@ button {
     cursor: pointer;
     border-radius: 10px;
     overflow: hidden;
-    max-width: 320px;
-    max-height: 240px;
+    width: 320px;
+    height: 180px;
 }
 .message-video-thumb .message-video {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
     pointer-events: none;
 }
 .message-video-thumb:hover .message-video-play-icon {
@@ -3383,7 +3388,7 @@ button {
 /* ===== DRAG OVER ===== */
 
 .chat-messages-wrapper.drag-over::after {
-    content: "Drop images here";
+    content: "Drop files here";
     position: absolute;
     inset: 0;
     background: rgba(232, 221, 208, 0.06);
