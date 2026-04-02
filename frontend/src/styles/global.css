@@ -5739,8 +5739,8 @@ body,
 .call-modal-card--video {
     padding: 0;
     overflow: hidden;
-    width: 480px;
-    height: 360px;
+    width: 720px;
+    height: 480px;
 }
 
 .call-card--video {
