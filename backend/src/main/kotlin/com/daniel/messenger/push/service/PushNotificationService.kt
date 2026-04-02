@@ -85,6 +85,7 @@ class PushNotificationService(
 
     private fun deliver(recipientUsername: String, batch: PendingBatch) {
         val subscriptions = pushSubscriptionRepository.findByUsername(recipientUsername)
+        log.info("Push deliver to={} subs={} chatId={}", recipientUsername, subscriptions.size, batch.chatId)
         if (subscriptions.isEmpty()) return
 
         val body = if (batch.count == 1) batch.firstBody.take(120) else "${batch.count} new messages"
@@ -103,8 +104,8 @@ class PushNotificationService(
             if (statusCode == 404 || statusCode == 410) {
                 log.debug("Push subscription expired ({}), removing: {}", statusCode, sub.endpoint)
                 pushSubscriptionRepository.delete(sub)
-            } else if (statusCode !in 200..299) {
-                log.warn("Push delivery failed with status {}", statusCode)
+            } else {
+                log.info("Push sent ok, status={} endpoint={}...", statusCode, sub.endpoint.takeLast(20))
             }
         } catch (e: Exception) {
             log.warn("Push delivery error for endpoint {}: {}", sub.endpoint, e.message)
