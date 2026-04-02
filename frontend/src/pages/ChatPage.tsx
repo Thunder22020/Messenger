@@ -155,9 +155,9 @@ export default function ChatPage() {
 
     // Apply pending scroll actions after messages/divider change (useLayoutEffect = before paint)
     useLayoutEffect(() => {
-        if (messages.length === 0) return;
+        if (messages.length === 0 && uploadingBubbles.length === 0) return;
         applyPendingScroll();
-    }, [messages, unreadDividerMessageId, applyPendingScroll]);
+    }, [messages, uploadingBubbles, unreadDividerMessageId, applyPendingScroll]);
 
     // Context menu close on click/tap outside
     useEffect(() => {
