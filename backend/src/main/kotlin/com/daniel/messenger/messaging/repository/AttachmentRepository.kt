@@ -42,8 +42,19 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
     fun deleteByChatIdReturningFilePaths(@Param("chatId") chatId: Long): List<String>
 
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids")
-    fun bulkLinkToMessage(@Param("ids") ids: List<Long>, @Param("message") message: MessageEntity): Int
+    @Query("UPDATE Attachment a SET a.message = :message WHERE a.id IN :ids AND a.uploadedByUserId = :senderId AND a.message IS NULL")
+    fun bulkLinkToMessage(@Param("ids") ids: List<Long>, @Param("message") message: MessageEntity, @Param("senderId") senderId: Long): Int
+
+    @Modifying
+    @Query(
+        """
+        DELETE FROM attachments
+        WHERE message_id IS NULL AND created_at < :cutoff
+        RETURNING file_path
+        """,
+        nativeQuery = true
+    )
+    fun deleteOrphanedReturningFilePaths(@Param("cutoff") cutoff: java.time.Instant): List<String>
 
     @Query("""
         SELECT att

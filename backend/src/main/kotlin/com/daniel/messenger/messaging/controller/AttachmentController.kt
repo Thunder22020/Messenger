@@ -16,8 +16,13 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/attachments")
 class AttachmentController(private val attachmentService: AttachmentService) {
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun upload(@RequestParam("file") file: MultipartFile): AttachmentDto =
-        attachmentService.upload(file)
+    fun upload(
+        @RequestParam("file") file: MultipartFile,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): AttachmentDto {
+        val userId = requireNotNull(userPrincipal.user.id)
+        return attachmentService.upload(file, userId)
+    }
 
     @GetMapping("/media")
     fun getMediaAttachments(

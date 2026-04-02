@@ -44,7 +44,7 @@ class MessageService(
             )
         )
 
-        val attachments = attachmentService.linkToMessage(request.attachmentIds, message)
+        val attachments = attachmentService.linkToMessage(request.attachmentIds, message, senderId)
 
         chatService.updateChatLastMessage(chat, message, sender.username, attachments)
 
@@ -197,7 +197,7 @@ class MessageService(
 
     @Transactional(readOnly = true)
     fun searchMessagesByContent(chatId: Long, userId: Long, query: String): List<MessageResponse> {
-        if (query.length < 3) return emptyList()
+        if (query.length < 3 || query.length > 200) return emptyList()
         checkAccess(chatId, userId)
         val ids = messageRepository.findIdsByContentLike(chatId, query)
         if (ids.isEmpty()) return emptyList()

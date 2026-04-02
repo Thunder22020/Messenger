@@ -33,14 +33,6 @@ class ChatParticipantService(
 ) {
     @Transactional
     @CacheEvict(cacheNames = ["chat-membership"], key = "#chatId + ':' + #userId", beforeInvocation = true)
-    fun removeParticipant(chatId: Long, requesterId: Long, userId: Long) {
-        chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
-        val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
-        chatParticipantRepository.delete(participant)
-    }
-
-    @Transactional
-    @CacheEvict(cacheNames = ["chat-membership"], key = "#chatId + ':' + #userId", beforeInvocation = true)
     fun leaveChat(chatId: Long, userId: Long) {
         val participant = chatAccessService.getChatParticipantOrThrow(chatId, userId)
         val username = participant.user.username

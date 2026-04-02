@@ -33,4 +33,7 @@ class Attachment(
     var filePath: String,
 
     var createdAt: Instant = Instant.now(),
+
+    @Column(name = "uploaded_by_user_id")
+    var uploadedByUserId: Long? = null,
 )

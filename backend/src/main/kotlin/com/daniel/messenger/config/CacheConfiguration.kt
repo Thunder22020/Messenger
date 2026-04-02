@@ -8,7 +8,6 @@ import org.springframework.cache.support.CompositeCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
-import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.data.redis.cache.RedisCacheConfiguration
 import org.springframework.data.redis.cache.RedisCacheManager
 import org.springframework.data.redis.connection.RedisConnectionFactory
@@ -17,7 +16,6 @@ import java.util.concurrent.TimeUnit
 
 @Configuration
 @EnableCaching
-@EnableScheduling
 class CacheConfiguration {
     @Bean
     fun redisCacheManager(factory: RedisConnectionFactory): RedisCacheManager =

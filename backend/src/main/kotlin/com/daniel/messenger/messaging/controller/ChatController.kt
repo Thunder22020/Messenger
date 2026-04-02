@@ -121,18 +121,4 @@ class ChatController(
         val userId = requireNotNull(userPrincipal.user.id)
         chatParticipantService.deleteChat(chatId, userId)
     }
-
-    @DeleteMapping("/{chatId}/participants/{userId}")
-    fun removeParticipant(
-        @PathVariable chatId: Long,
-        @PathVariable userId: Long,
-        @AuthenticationPrincipal userPrincipal: UserPrincipal
-    ) {
-        val requesterId = requireNotNull(userPrincipal.user.id)
-        chatParticipantService.removeParticipant(
-            chatId,
-            requesterId,
-            userId
-        )
-    }
 }

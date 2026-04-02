@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
 import java.util.UUID
 
 @Service
@@ -20,7 +21,7 @@ class AttachmentService(
     private val attachmentRepository: AttachmentRepository,
     private val chatAccessService: ChatAccessService,
 ) {
-    fun upload(file: MultipartFile): AttachmentDto {
+    fun upload(file: MultipartFile, uploadedByUserId: Long): AttachmentDto {
         val contentType = file.contentType ?: "application/octet-stream"
         val originalName = file.originalFilename ?: "file"
         val ext = originalName.substringAfterLast('.', "bin")
@@ -40,6 +41,7 @@ class AttachmentService(
                 mimeType = contentType,
                 fileSize = file.size,
                 filePath = url,
+                uploadedByUserId = uploadedByUserId,
             )
         )
         return attachment.toDto()
@@ -74,9 +76,9 @@ class AttachmentService(
 
     fun normalizeKeys(filePaths: List<String>) = filePaths.map { it.substringAfterLast("/") }
 
-    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity): List<Attachment> {
+    fun linkToMessage(attachmentIds: List<Long>, message: MessageEntity, senderId: Long): List<Attachment> {
         attachmentIds.ifEmpty { return emptyList() }
-        attachmentRepository.bulkLinkToMessage(attachmentIds, message)
+        attachmentRepository.bulkLinkToMessage(attachmentIds, message, senderId)
         return attachmentRepository.findAllByMessageId(requireNotNull(message.id))
     }
 
@@ -111,6 +113,12 @@ class AttachmentService(
     fun getAttachmentsGroupedByMessageId(messageIds: List<Long>) = attachmentRepository
             .findAllByMessageIdIn(messageIds)
             .groupBy{requireNotNull(it.message?.id)}
+
+    @Transactional
+    fun deleteOrphaned(olderThan: Instant) {
+        val keys = normalizeKeys(attachmentRepository.deleteOrphanedReturningFilePaths(olderThan))
+        deleteFromS3Async(keys)
+    }
 
     private fun checkAccess(chatId: Long, userId: Long) {
         chatAccessService.isChatParticipantOrThrow(chatId, userId)
