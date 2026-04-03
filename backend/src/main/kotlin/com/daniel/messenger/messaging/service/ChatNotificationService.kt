@@ -52,6 +52,7 @@ class ChatNotificationService(
                     lastMessageSender = response.sender,
                     lastMessageCreatedAt = response.createdAt,
                     unreadCount = participant.unreadCount,
+                    lastMessageId = response.id,
                 ),
             )
         }
@@ -68,6 +69,7 @@ class ChatNotificationService(
                     lastMessageSender = chat.lastMessageSender,
                     lastMessageCreatedAt = chat.lastMessageCreatedAt,
                     unreadCount = participant.unreadCount,
+                    lastMessageId = chat.lastMessageId,
                 ),
             )
         }

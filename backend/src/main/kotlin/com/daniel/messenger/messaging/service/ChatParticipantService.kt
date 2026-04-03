@@ -187,5 +187,18 @@ class ChatParticipantService(
                 lastReadMessageId = lastReadId
             ),
         )
+
+        // Notify the last message sender's sidebar so their read-dot disappears in real time
+        val lastSenderUsername = chat.lastMessageSender
+        if (lastSenderUsername != null && lastSenderUsername != participant.user.username) {
+            chatNotificationService.sendSidebarUpdate(
+                lastSenderUsername,
+                ChatUpdateEvent(
+                    chatId = chatId,
+                    type = ChatUpdateType.READ_ACK,
+                    peerLastReadMessageId = lastReadId,
+                ),
+            )
+        }
     }
 }

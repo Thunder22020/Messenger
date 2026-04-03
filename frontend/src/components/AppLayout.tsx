@@ -22,6 +22,8 @@ type ChatListItem = {
     lastMessageCreatedAt?: string | null;
     unreadCount: number;
     pinnedAt?: string | null;
+    lastMessageId?: number | null;
+    peerLastReadMessageId?: number | null;
 };
 
 type UserSearchResult = {
@@ -254,7 +256,11 @@ export default function AppLayout() {
                     const updated = prev.map(chat => {
                         if (chat.chatId !== body.chatId) return chat;
                         if (body.type === "READ_ACK") {
-                            return { ...chat, unreadCount: body.unreadCount ?? 0 };
+                            return {
+                                ...chat,
+                                ...(body.unreadCount != null ? { unreadCount: body.unreadCount } : {}),
+                                ...(body.peerLastReadMessageId != null ? { peerLastReadMessageId: body.peerLastReadMessageId } : {}),
+                            };
                         }
                         return {
                             ...chat,
@@ -262,6 +268,7 @@ export default function AppLayout() {
                             lastMessageSender: body.lastMessageSender ?? null,
                             lastMessageCreatedAt: body.lastMessageCreatedAt ?? chat.lastMessageCreatedAt,
                             unreadCount: body.unreadCount ?? 0,
+                            lastMessageId: body.lastMessageId ?? chat.lastMessageId,
                         };
                     });
 
@@ -340,6 +347,12 @@ export default function AppLayout() {
             return `${sender}: ${content}`;
         }
         return content ?? "No messages yet";
+    };
+
+    const showReadDot = (chat: ChatListItem): boolean => {
+        if (chat.lastMessageSender !== currentUsername) return false;
+        if (chat.lastMessageId == null) return false;
+        return chat.peerLastReadMessageId == null || chat.peerLastReadMessageId < chat.lastMessageId;
     };
 
     const filteredChats = searchQuery.trim()
@@ -544,6 +557,10 @@ export default function AppLayout() {
                                                         )}
                                                         <div className="chat-time">{formattedTime}</div>
 
+                                                        {showReadDot(chat) && (
+                                                            <span className="read-dot" />
+                                                        )}
+
                                                         {chat.unreadCount > 0 && (
                                                             <span className="unread-badge">
                                                                 {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
@@ -614,6 +631,10 @@ export default function AppLayout() {
 
                                                                 <div className="chat-tile-meta">
                                                                     <div className="chat-time">{formattedTime}</div>
+
+                                                                    {showReadDot(chat) && (
+                                                                        <span className="read-dot" />
+                                                                    )}
 
                                                                     {chat.unreadCount > 0 && (
                                                                         <span className="unread-badge">

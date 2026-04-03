@@ -8,7 +8,9 @@ data class ChatUpdateEvent(
     val lastMessageContent: String? = null,
     val lastMessageSender: String? = null,
     val lastMessageCreatedAt: Instant? = null,
-    val unreadCount: Long,
+    val unreadCount: Long? = null,
+    val lastMessageId: Long? = null,
+    val peerLastReadMessageId: Long? = null,
 )
 
 enum class ChatUpdateType {
