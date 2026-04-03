@@ -3,6 +3,7 @@ import type { AttachmentDto, ChatParticipant } from "./chatTypes";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
 import { formatFileSize, fileExtension, formatShortDate, formatMessageTime } from "./chatFormat";
+import { useLanguage } from "../../context/LanguageContext";
 
 type Tab = "members" | "media" | "files";
 
@@ -20,6 +21,7 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
   addMode: boolean;
   onEnterAddMode: () => void;
 }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [selected, setSelected] = useState<SearchUser[]>([]);
@@ -81,7 +83,7 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
         <div className="info-add-search-row">
           <input
             className="info-add-search-input"
-            placeholder="Search users..."
+            placeholder={t("info.searchUsers")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -131,12 +133,12 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
             </div>
             <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
             <span className="info-member-name">{user.username}</span>
-            <span className="info-you-label">Member</span>
+            <span className="info-you-label">{t("info.member")}</span>
           </div>
         ))}
 
         {query.trim() && searchResults.length === 0 && (
-          <div className="info-panel-empty">No users found</div>
+          <div className="info-panel-empty">{t("info.noUsers")}</div>
         )}
       </div>
     );
@@ -154,7 +156,7 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
         <div key={user.id} className="info-member-row" onClick={() => onUserClick(user.id)}>
           <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
           <span className="info-member-name">{user.username}</span>
-          {user.username === currentUsername && <span className="info-you-label">You</span>}
+          {user.username === currentUsername && <span className="info-you-label">{t("info.you")}</span>}
         </div>
       ))}
     </div>
@@ -170,10 +172,11 @@ function MediaTab({ items, loading, hasMore, onLoadMore, onItemClick }: {
   onLoadMore: () => void;
   onItemClick: (index: number) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="info-tab-section">
       {items.length === 0 && !loading && (
-        <div className="info-panel-empty">No media yet</div>
+        <div className="info-panel-empty">{t("info.noMedia")}</div>
       )}
       {items.length > 0 && (
         <div className="info-media-grid">
@@ -192,9 +195,9 @@ function MediaTab({ items, loading, hasMore, onLoadMore, onItemClick }: {
         </div>
       )}
       {hasMore && !loading && (
-        <button className="info-load-more-btn" onClick={onLoadMore}>Load more</button>
+        <button className="info-load-more-btn" onClick={onLoadMore}>{t("info.loadMore")}</button>
       )}
-      {loading && <div className="info-panel-loading">Loading…</div>}
+      {loading && <div className="info-panel-loading">{t("info.loading")}</div>}
     </div>
   );
 }
@@ -207,10 +210,11 @@ function FilesTab({ items, loading, hasMore, onLoadMore }: {
   hasMore: boolean;
   onLoadMore: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="info-tab-section">
       {items.length === 0 && !loading && (
-        <div className="info-panel-empty">No files yet</div>
+        <div className="info-panel-empty">{t("info.noFiles")}</div>
       )}
       <div className="info-files-list">
         {items.map((item) => (
@@ -236,9 +240,9 @@ function FilesTab({ items, loading, hasMore, onLoadMore }: {
         ))}
       </div>
       {hasMore && !loading && (
-        <button className="info-load-more-btn" onClick={onLoadMore}>Load more</button>
+        <button className="info-load-more-btn" onClick={onLoadMore}>{t("info.loadMore")}</button>
       )}
-      {loading && <div className="info-panel-loading">Loading…</div>}
+      {loading && <div className="info-panel-loading">{t("info.loading")}</div>}
     </div>
   );
 }
@@ -259,6 +263,7 @@ export function ChatInfoPanel(props: {
   isMobile?: boolean;
 }) {
   const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, onLeave, isMobile } = props;
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
   const [membersAddMode, setMembersAddMode] = useState(false);
@@ -341,14 +346,18 @@ export function ChatInfoPanel(props: {
   }, [activeTab, isOpen, loadMedia, loadFiles]);
 
   const tabs: Tab[] = chatType === "GROUP" ? ["members", "media", "files"] : ["media", "files"];
-  const tabLabels: Record<Tab, string> = { members: "Members", media: "Media", files: "Files" };
+  const tabLabels: Record<Tab, string> = {
+    members: t("info.tabs.members"),
+    media: t("info.tabs.media"),
+    files: t("info.tabs.files"),
+  };
 
   return (
     <div className={`chat-info-panel ${isOpen ? "open" : ""}${isMobile && isOpen ? " info-panel-mobile" : ""}`}>
       <div className="info-chat-header">
         <span className="info-close-icon" onClick={onClose} />
         {chatType === "GROUP" && onLeave && (
-          <span className="info-leave-icon" onClick={onLeave} title="Leave group" />
+          <span className="info-leave-icon" onClick={onLeave} title={t("info.leaveGroup")} />
         )}
         <div className="info-chat-avatar">
           {chatName ? chatName.charAt(0).toUpperCase() : "?"}
@@ -414,7 +423,7 @@ export function ChatInfoPanel(props: {
         <div className="info-bottom-bar">
           <button className="info-add-user-btn" onClick={() => setMembersAddMode(true)}>
             <img src="/icons/add-user.png" alt="" className="info-add-user-icon" />
-            Add user
+            {t("info.addUser")}
           </button>
         </div>
       )}

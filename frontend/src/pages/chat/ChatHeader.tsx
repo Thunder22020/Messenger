@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function ChatHeader(props: {
   chatName: string;
@@ -16,6 +17,7 @@ export function ChatHeader(props: {
   isInCall?: boolean;
 }) {
   const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
+  const { t } = useLanguage();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -38,14 +40,14 @@ export function ChatHeader(props: {
   const renderSubtitle = () => {
     if (chatType === "PRIVATE") {
       if (typingText) return <div className="chat-header-typing">{typingText}</div>;
-      if (isOnline)   return <div className="chat-header-online">online</div>;
+      if (isOnline)   return <div className="chat-header-online">{t("chatHeader.online")}</div>;
       return null;
     }
     if (chatType === "GROUP") {
       if (typingText) return <div className="chat-header-typing">{typingText}</div>;
       return (
         <div className="chat-header-members" onClick={onHeaderClick}>
-          {participantsCount} members
+          {t("chatHeader.members", { count: participantsCount })}
         </div>
       );
     }
@@ -54,22 +56,22 @@ export function ChatHeader(props: {
 
   const mobileMenuItems = [
     ...(chatType === "PRIVATE" && onCall ? [{
-      icon: "/icons/phone.png", label: "Audio Call",
+      icon: "/icons/phone.png", label: t("chatHeader.audioCall"),
       action: () => { if (!isInCall) onCall(); setMobileMenuOpen(false); },
       disabled: !!isInCall,
     }] : []),
     ...(chatType === "PRIVATE" && onVideoCall ? [{
-      icon: "/icons/cam-recorder.png", label: "Video Call",
+      icon: "/icons/cam-recorder.png", label: t("chatHeader.videoCall"),
       action: () => { if (!isInCall) onVideoCall(); setMobileMenuOpen(false); },
       disabled: !!isInCall,
     }] : []),
     {
-      icon: "/icons/search.png", label: "Search",
+      icon: "/icons/search.png", label: t("chatHeader.search"),
       action: () => { onToggleSearch(); setMobileMenuOpen(false); },
       disabled: false,
     },
     {
-      icon: "/icons/info.png", label: "Chat Info",
+      icon: "/icons/info.png", label: t("chatHeader.chatInfo"),
       action: () => { onToggleInfo(); setMobileMenuOpen(false); },
       disabled: false,
     },
@@ -99,7 +101,7 @@ export function ChatHeader(props: {
           <button
             className={`chat-menu-btn${isInCall ? " disabled" : ""}`}
             onClick={!isInCall ? onCall : undefined}
-            title="Voice call"
+            title={t("chatHeader.audioCall")}
             style={isInCall ? { opacity: 0.4, pointerEvents: "none" } : undefined}
           >
             <img src="/icons/phone.png" alt="call" />
@@ -109,7 +111,7 @@ export function ChatHeader(props: {
           <button
             className={`chat-menu-btn${isInCall ? " disabled" : ""}`}
             onClick={!isInCall ? onVideoCall : undefined}
-            title="Video call"
+            title={t("chatHeader.videoCall")}
             style={isInCall ? { opacity: 0.4, pointerEvents: "none" } : undefined}
           >
             <img style={{width: 30, height: 30}} src="/icons/cam-recorder.png" alt="video call" />
@@ -118,11 +120,11 @@ export function ChatHeader(props: {
         <button
           className={`chat-menu-btn${isSearchOpen ? " active" : ""}`}
           onClick={onToggleSearch}
-          title="Search messages"
+          title={t("chatHeader.search")}
         >
           <img src="/icons/search.png" alt="search" />
         </button>
-        <button className="chat-menu-btn" onClick={onToggleInfo}>
+        <button className="chat-menu-btn" onClick={onToggleInfo} title={t("chatHeader.chatInfo")}>
           <img src="/icons/info.png" alt="menu" />
         </button>
       </div>

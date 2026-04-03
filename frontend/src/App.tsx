@@ -9,6 +9,7 @@ import AppLayout from "./components/AppLayout";
 import {WebSocketProvider} from "./context/WebSocketContext.tsx";
 import { PresenceProvider } from "./context/PresenceContext.tsx";
 import { CallProvider } from "./context/CallContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { IncomingCallModal } from "./components/call/IncomingCallModal";
 import { CallModal } from "./components/call/CallModal";
 import { CallScreen } from "./components/call/CallScreen";
@@ -40,6 +41,7 @@ function App() {
     );
 
     return (
+        <LanguageProvider>
         <WebSocketProvider key={accessToken} accessToken={accessToken}>
            <PresenceProvider>
            <CallProvider>
@@ -63,6 +65,7 @@ function App() {
            </CallProvider>
            </PresenceProvider>
        </WebSocketProvider>
+        </LanguageProvider>
     );
 }
 

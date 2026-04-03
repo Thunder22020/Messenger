@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
+import { useLanguage } from "../context/LanguageContext";
 
 interface FieldErrors {
     username?: string;
@@ -8,24 +9,26 @@ interface FieldErrors {
     server?: string;
 }
 
-function validateUsername(value: string): string | undefined {
-    if (!value) return "Username is required";
-    if (/\s/.test(value)) return "Username must not contain spaces";
-    if (/^\d/.test(value)) return "Username must not start with a number";
-    if (!/[a-zA-Z]/.test(value)) return "Username must contain at least one letter";
-    if (value.length < 3) return "Username must be at least 3 characters";
-    if (value.length > 30) return "Username must be at most 30 characters";
-    return undefined;
-}
-
-function validatePassword(value: string): string | undefined {
-    if (!value) return "Password is required";
-    if (value.length < 6) return "Password must be at least 6 characters";
-    if (value.length > 72) return "Password must be at most 72 characters";
-    return undefined;
-}
-
 export default function Register() {
+    const { t } = useLanguage();
+
+    const validateUsername = (value: string): string | undefined => {
+        if (!value) return t("register.error.usernameRequired");
+        if (/\s/.test(value)) return t("register.error.noSpaces");
+        if (/^\d/.test(value)) return t("register.error.noStartDigit");
+        if (!/[a-zA-Z]/.test(value)) return t("register.error.mustHaveLetter");
+        if (value.length < 3) return t("register.error.minLength");
+        if (value.length > 30) return t("register.error.maxLength");
+        return undefined;
+    };
+
+    const validatePassword = (value: string): string | undefined => {
+        if (!value) return t("register.error.passwordRequired");
+        if (value.length < 6) return t("register.error.passwordMin");
+        if (value.length > 72) return t("register.error.passwordMax");
+        return undefined;
+    };
+
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<FieldErrors>({});
@@ -33,19 +36,43 @@ export default function Register() {
     const navigate = useNavigate();
 
     const handleBlur = (field: "username" | "password") => {
-        setTouched(prev => ({ ...prev, [field]: true }));
-        if (field === "username") setErrors(prev => ({ ...prev, username: validateUsername(username) }));
-        if (field === "password") setErrors(prev => ({ ...prev, password: validatePassword(password) }));
+        setTouched((prev) => ({ ...prev, [field]: true }));
+
+        if (field === "username") {
+            setErrors((prev) => ({
+                ...prev,
+                username: validateUsername(username),
+            }));
+        }
+
+        if (field === "password") {
+            setErrors((prev) => ({
+                ...prev,
+                password: validatePassword(password),
+            }));
+        }
     };
 
     const handleUsernameChange = (value: string) => {
         setUsername(value);
-        if (touched.username) setErrors(prev => ({ ...prev, username: validateUsername(value), server: undefined }));
+        if (touched.username) {
+            setErrors((prev) => ({
+                ...prev,
+                username: validateUsername(value),
+                server: undefined,
+            }));
+        }
     };
 
     const handlePasswordChange = (value: string) => {
         setPassword(value);
-        if (touched.password) setErrors(prev => ({ ...prev, password: validatePassword(value), server: undefined }));
+        if (touched.password) {
+            setErrors((prev) => ({
+                ...prev,
+                password: validatePassword(value),
+                server: undefined,
+            }));
+        }
     };
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -68,7 +95,10 @@ export default function Register() {
 
         if (!res.ok) {
             const data = await res.json().catch(() => null);
-            setErrors({ server: data?.error ?? "Registration failed. Please try again." });
+
+            setErrors({
+                server: data?.error ?? t("register.error.server"),
+            });
             return;
         }
 
@@ -80,11 +110,12 @@ export default function Register() {
             <div className="login-with-logo login-with-logo--ready">
                 <div className="auth-page-logo" role="img" aria-label="Synk" />
                 <div className="card">
-                    <h2>Sign up</h2>
+                    <h2>{t("register.title")}</h2>
+
                     <form onSubmit={handleRegister}>
                         <div className="form-group">
                             <input
-                                placeholder="Username"
+                                placeholder={t("register.username")}
                                 value={username}
                                 onChange={(e) => handleUsernameChange(e.target.value)}
                                 onBlur={() => handleBlur("username")}
@@ -94,10 +125,11 @@ export default function Register() {
                                 {touched.username && errors.username}
                             </div>
                         </div>
+
                         <div className="form-group">
                             <input
                                 type="password"
-                                placeholder="Password"
+                                placeholder={t("register.password")}
                                 value={password}
                                 onChange={(e) => handlePasswordChange(e.target.value)}
                                 onBlur={() => handleBlur("password")}
@@ -107,11 +139,13 @@ export default function Register() {
                                 {touched.password && errors.password}
                             </div>
                         </div>
+
                         <div className="form-field-error form-server-error">
                             {errors.server}
                         </div>
+
                         <button className="btn-primary" type="submit">
-                            Register
+                            {t("register.submit")}
                         </button>
                     </form>
                 </div>

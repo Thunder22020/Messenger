@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
 import { authFetch } from "../utils/authFetch";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useLanguage } from "../context/LanguageContext";
 
 interface User {
     id: number;
@@ -18,6 +19,7 @@ export default function CreateGroupPage() {
 
     const navigate = useNavigate();
     const isMobile = useIsMobile();
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (!query.trim()) {
@@ -48,12 +50,12 @@ export default function CreateGroupPage() {
     const createGroup = async () => {
 
         if (!title.trim()) {
-            alert("Group name required");
+            alert(t("group.error.nameRequired"));
             return;
         }
 
         if (selectedUsers.length === 0) {
-            alert("Select at least one participant");
+            alert(t("group.error.noParticipants"));
             return;
         }
 
@@ -72,7 +74,7 @@ export default function CreateGroupPage() {
         );
 
         if (!res || !res.ok) {
-            alert("Failed to create group");
+            alert(t("group.error.failed"));
             return;
         }
 
@@ -96,22 +98,22 @@ export default function CreateGroupPage() {
                     </button>
                 )}
                 <div className="group-create-card">
-                    <h2>Create group</h2>
+                    <h2>{t("group.title")}</h2>
 
                     <input
                         className="group-title-input"
-                        placeholder="Group name..."
+                        placeholder={t("group.namePlaceholder")}
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         maxLength={50}
                     />
 
                     <div className="group-search-label">
-                        Search users
+                        {t("group.searchLabel")}
                     </div>
 
                     <input
-                        placeholder="Search users..."
+                        placeholder={t("group.searchPlaceholder")}
                         className="search-input"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -158,7 +160,7 @@ export default function CreateGroupPage() {
 
                         {searchResults.length === 0 && selectedUsers.length === 0 && (
                             <div className="group-empty">
-                                No users found
+                                {t("group.noUsersFound")}
                             </div>
                         )}
                     </div>
@@ -167,7 +169,7 @@ export default function CreateGroupPage() {
                         className="group-create-btn"
                         onClick={createGroup}
                     >
-                        Create group
+                        {t("group.createBtn")}
                     </button>
                 </div>
         </div>

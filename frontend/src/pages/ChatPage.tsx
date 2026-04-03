@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { authFetch } from "../utils/authFetch";
 import { useSetRightPanel } from "../context/AppLayoutContext";
 import { useNavigate, useParams } from "react-router-dom";
@@ -33,6 +34,7 @@ export default function ChatPage() {
     const { initiateCall, activeCall: currentActiveCall } = useCall();
     const setRightPanel = useSetRightPanel();
     const { isOnline } = usePresence();
+    const { t } = useLanguage();
 
     const token = localStorage.getItem("accessToken");
     const currentUsername = token ? jwtDecode<JwtPayload>(token).sub : null;
@@ -398,7 +400,7 @@ export default function ChatPage() {
                         key={numericChatId}
                         ref={inputRef}
                         className="chat-input-field"
-                        placeholder="Type something..."
+                        placeholder={t("chat.inputPlaceholder")}
                         value={input}
                         rows={1}
                         onChange={handleInputChange}

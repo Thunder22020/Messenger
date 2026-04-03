@@ -10,6 +10,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { useLongPress } from "../hooks/useLongPress";
 import { formatSystemContent } from "../pages/chat/chatFormat";
 import { initPushNotifications } from "../utils/pushNotifications";
+import { useLanguage } from "../context/LanguageContext";
 
 type JwtPayload = { sub: string };
 
@@ -62,6 +63,8 @@ export default function AppLayout() {
             currentUsername = payload.sub;
         } catch { /* empty */ }
     }
+
+    const { t, lang, setLang } = useLanguage();
 
     const [theme, setTheme] = useState<"dark" | "light">(() => {
         const saved = localStorage.getItem("theme") as "dark" | "light" | null;
@@ -333,20 +336,20 @@ export default function AppLayout() {
     const getSidebarTypingLabel = (chat: ChatListItem): string | null => {
         const users = typingByChatId[String(chat.chatId)];
         if (!users || users.length === 0) return null;
-        if (chat.type === "PRIVATE") return "typing...";
-        if (users.length === 1) return `${users[0]} is typing...`;
-        if (users.length === 2) return `${users[0]}, ${users[1]} are typing...`;
-        return `${users[0]}, ${users[1]} and ${users.length - 2} other${users.length - 2 > 1 ? "s" : ""} are typing...`;
+        if (chat.type === "PRIVATE") return t("sidebar.typing");
+        if (users.length === 1) return t("sidebar.typingOne", { user: users[0] });
+        if (users.length === 2) return t("sidebar.typingTwo", { user1: users[0], user2: users[1] });
+        return t("sidebar.typingMany", { user1: users[0], user2: users[1], count: users.length - 2 });
     };
 
     const getLastMessagePreview = (chat: ChatListItem): string => {
-        if (!chat.lastMessageContent && chat.lastMessageContent !== "") return "No messages yet";
+        if (!chat.lastMessageContent && chat.lastMessageContent !== "") return t("sidebar.noMessages");
         const content = formatSystemContent(chat.lastMessageContent);
         const sender = chat.lastMessageSender;
         if (chat.type === "GROUP" && sender && sender !== currentUsername) {
             return `${sender}: ${content}`;
         }
-        return content ?? "No messages yet";
+        return content ?? t("sidebar.noMessages");
     };
 
     const showReadDot = (chat: ChatListItem): boolean => {
@@ -486,7 +489,7 @@ export default function AppLayout() {
                     <div className="sidebar-search-wrapper">
                         <input
                             className="sidebar-search-input"
-                            placeholder="Search"
+                            placeholder={t("sidebar.search")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -505,7 +508,7 @@ export default function AppLayout() {
                             <div className="chat-list">
                                 {chats.length === 0 && (
                                     <div className="chat-list-empty">
-                                        No chats yet
+                                        {t("sidebar.noChats")}
                                     </div>
                                 )}
 
@@ -585,7 +588,7 @@ export default function AppLayout() {
                             <div className="search-results-panel">
                                 {filteredChats.length > 0 && (
                                     <div className="search-section">
-                                        <div className="search-section-label">Chats</div>
+                                        <div className="search-section-label">{t("nav.chats")}</div>
                                         <div className="search-chat-list">
                                             {filteredChats.map((chat) => {
                                                 const formattedTime = chat.lastMessageCreatedAt
@@ -648,7 +651,7 @@ export default function AppLayout() {
                                                                 <div className="chat-last-message typing">{getSidebarTypingLabel(chat)}</div>
                                                             ) : (
                                                                 <div className={`chat-last-message ${chat.unreadCount > 0 ? "unread" : ""}`}>
-                                                                    {formatSystemContent(chat.lastMessageContent) ?? "No messages yet"}
+                                                                    {formatSystemContent(chat.lastMessageContent) ?? t("sidebar.noMessages")}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -660,10 +663,10 @@ export default function AppLayout() {
                                 )}
 
                                 <div className="search-section">
-                                    <div className="search-section-label">People</div>
+                                    <div className="search-section-label">{t("sidebar.people")}</div>
 
                                     {searchResults.length === 0 ? (
-                                        <div className="search-section-empty">No people found</div>
+                                        <div className="search-section-empty">{t("sidebar.noPeopleFound")}</div>
                                     ) : (
                                         searchResults.map((user) => (
                                             <div
@@ -689,7 +692,7 @@ export default function AppLayout() {
                     <div className="sidebar-settings">
                         <div className="settings-section">
                             <div className="settings-row" onClick={toggleTheme}>
-                                <span className="settings-row-label">Light theme</span>
+                                <span className="settings-row-label">{t("settings.lightTheme")}</span>
                                 <button
                                     className={`settings-theme-toggle ${theme === "light" ? "on" : "off"}`}
                                     onClick={(e) => { e.stopPropagation(); toggleTheme(); }}
@@ -698,12 +701,23 @@ export default function AppLayout() {
                                 </button>
                             </div>
                             <div className="settings-row" onClick={toggleMuteSound}>
-                                <span className="settings-row-label">Turn off notification sound</span>
+                                <span className="settings-row-label">{t("settings.muteSound")}</span>
                                 <button
                                     className={`settings-theme-toggle ${muteSound ? "on" : "off"}`}
                                     onClick={(e) => { e.stopPropagation(); toggleMuteSound(); }}
                                 >
                                     <span className="settings-toggle-knob" />
+                                </button>
+                            </div>
+                            <div className="settings-row" onClick={() => setLang(lang === "ru" ? "en" : "ru")}>
+                                <span className="settings-row-label">{t("settings.language")}</span>
+                                <button
+                                    className={`settings-lang-toggle ${lang === "en" ? "en" : ""}`}
+                                    onClick={(e) => { e.stopPropagation(); setLang(lang === "ru" ? "en" : "ru"); }}
+                                >
+                                    <span className={`settings-lang-label${lang === "ru" ? " active" : ""}`}>RU</span>
+                                    <span className={`settings-lang-label${lang === "en" ? " active" : ""}`}>EN</span>
+                                    <span className="settings-lang-knob" />
                                 </button>
                             </div>
                         </div>
@@ -714,7 +728,7 @@ export default function AppLayout() {
                                 onClick={() => setShowLogoutPopup(true)}
                             >
                                 <img src="/icons/log-out.png" alt="" className="settings-logout-icon" />
-                                Log out
+                                {t("settings.logout")}
                             </button>
                         </div>
                     </div>
@@ -726,7 +740,7 @@ export default function AppLayout() {
                 <div
                     className={`sidebar-nav-btn ${activeTab === "chats" ? "active" : ""}`}
                     onClick={() => setActiveTab("chats")}
-                    title="Chats"
+                    title={t("nav.chats")}
                 >
                     <span className="sidebar-nav-icon sidebar-nav-icon--chats" />
                 </div>
@@ -734,7 +748,7 @@ export default function AppLayout() {
                 <div
                     className={`sidebar-nav-btn ${activeTab === "settings" ? "active" : ""}`}
                     onClick={() => setActiveTab("settings")}
-                    title="Settings"
+                    title={t("nav.settings")}
                 >
                     <span className="sidebar-nav-icon sidebar-nav-icon--settings" />
                 </div>
@@ -744,10 +758,10 @@ export default function AppLayout() {
             {showLogoutPopup && (
                 <div className="logout-popup-overlay">
                     <div className="logout-popup">
-                        <div className="logout-title">Logout?</div>
+                        <div className="logout-title">{t("logout.title")}</div>
 
                         <div className="logout-subtitle">
-                            Are you sure you want to sign out?
+                            {t("logout.subtitle")}
                         </div>
 
                         <div className="logout-actions">
@@ -755,14 +769,14 @@ export default function AppLayout() {
                                 className="btn-secondary"
                                 onClick={() => setShowLogoutPopup(false)}
                             >
-                                Cancel
+                                {t("logout.cancel")}
                             </button>
 
                             <button
                                 className="logout-confirm-btn"
                                 onClick={handleLogout}
                             >
-                                Logout
+                                {t("logout.confirm")}
                             </button>
                         </div>
                     </div>
@@ -781,7 +795,7 @@ export default function AppLayout() {
                         className="context-menu-item"
                         onClick={() => handlePinChat(chatContextMenu.chatId, chatContextMenu.isPinned)}
                     >
-                        {chatContextMenu.isPinned ? "Unpin" : "Pin"}
+                        {chatContextMenu.isPinned ? t("menu.unpin") : t("menu.pin")}
                     </button>
                     <button
                         className="context-menu-item danger"
@@ -790,7 +804,7 @@ export default function AppLayout() {
                             setChatContextMenu(null);
                         }}
                     >
-                        Delete
+                        {t("menu.delete")}
                     </button>
                 </div>
             )}
@@ -799,19 +813,19 @@ export default function AppLayout() {
             {deleteChatConfirm !== null && (
                 <div className="logout-popup-overlay" onClick={() => setDeleteChatConfirm(null)}>
                     <div className="logout-popup" onClick={(e) => e.stopPropagation()}>
-                        <div className="logout-title">Delete chat?</div>
+                        <div className="logout-title">{t("deleteChat.title")}</div>
                         <div className="logout-subtitle">
-                            Are you sure you want to delete this chat? This cannot be undone.
+                            {t("deleteChat.subtitle")}
                         </div>
                         <div className="logout-actions">
                             <button className="btn-secondary" onClick={() => setDeleteChatConfirm(null)}>
-                                Cancel
+                                {t("deleteChat.cancel")}
                             </button>
                             <button
                                 className="logout-confirm-btn"
                                 onClick={() => handleDeleteChat(deleteChatConfirm)}
                             >
-                                Delete
+                                {t("deleteChat.confirm")}
                             </button>
                         </div>
                     </div>

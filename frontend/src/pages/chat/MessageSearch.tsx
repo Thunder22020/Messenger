@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
 import { formatShortDate } from "./chatFormat";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function MessageSearch({ chatId, onNavigate, onClose, isClosing }: Props) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,7 +85,7 @@ export function MessageSearch({ chatId, onNavigate, onClose, isClosing }: Props)
         <input
           ref={inputRef}
           className="message-search-input"
-          placeholder="Search messages..."
+          placeholder={t("chat.searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
