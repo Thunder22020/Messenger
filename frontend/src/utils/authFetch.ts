@@ -19,18 +19,29 @@ export async function authFetch(
     }
 
     // пробуем refresh
-    const refreshResponse = await fetch(
-        `${API_URL}/api/auth/refresh`,
-        {
-            method: "POST",
-            credentials: "include",
-        }
-    );
+    let refreshResponse: Response;
+    try {
+        refreshResponse = await fetch(
+            `${API_URL}/api/auth/refresh`,
+            {
+                method: "POST",
+                credentials: "include",
+            }
+        );
+    } catch {
+        // network error — backend is down/restarting, don't log out
+        throw new Error("Network error during token refresh");
+    }
 
-    if (!refreshResponse.ok) {
+    // only log out on actual auth failures, not transient server errors
+    if (refreshResponse.status === 401 || refreshResponse.status === 400 || refreshResponse.status === 403) {
         localStorage.removeItem("accessToken");
         window.location.href = "/login";
         return;
+    }
+
+    if (!refreshResponse.ok) {
+        throw new Error(`Refresh failed with status ${refreshResponse.status}`);
     }
 
     const data = await refreshResponse.json();
