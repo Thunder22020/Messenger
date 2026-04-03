@@ -18,6 +18,8 @@ interface UseWebRTCReturn {
   connectionState: RTCIceConnectionState;
   videoEnabled: boolean;
   toggleVideo: () => void;
+  switchCamera: () => Promise<void>;
+  canSwitchCamera: boolean;
   cleanup: () => void;
 }
 
@@ -33,6 +35,9 @@ export function useWebRTC({
   // Fix 5: ICE candidate buffer for candidates arriving before setRemoteDescription
   const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
   const remoteDescSetRef = useRef(false);
+
+  const facingModeRef = useRef<"user" | "environment">("user");
+  const [canSwitchCamera, setCanSwitchCamera] = useState(false);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -68,11 +73,18 @@ export function useWebRTC({
     return pc;
   }, [callIdRef, onSignal, rtcConfigRef]);
 
+  const checkCameraCount = useCallback((): void => {
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      setCanSwitchCamera(devices.filter(d => d.kind === "videoinput").length >= 2);
+    }).catch(() => {});
+  }, []);
+
   const startAsOffer = useCallback(async (): Promise<void> => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
     localStreamRef.current = stream;
     setLocalStream(stream);
     setVideoEnabled(videoRef.current);
+    if (videoRef.current) checkCameraCount();
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
@@ -90,13 +102,14 @@ export function useWebRTC({
         payload: offer.sdp ?? "",
       });
     }
-  }, [callIdRef, videoRef, createPeerConnection, onSignal]);
+  }, [callIdRef, videoRef, createPeerConnection, onSignal, checkCameraCount]);
 
   const handleOffer = useCallback(async (sdp: string): Promise<void> => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
     localStreamRef.current = stream;
     setLocalStream(stream);
     setVideoEnabled(videoRef.current);
+    if (videoRef.current) checkCameraCount();
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
@@ -124,7 +137,7 @@ export function useWebRTC({
         payload: answer.sdp ?? "",
       });
     }
-  }, [callIdRef, videoRef, createPeerConnection, onSignal]);
+  }, [callIdRef, videoRef, createPeerConnection, onSignal, checkCameraCount]);
 
   const handleAnswer = useCallback(async (sdp: string): Promise<void> => {
     const pc = peerConnectionRef.current;
@@ -161,6 +174,38 @@ export function useWebRTC({
     }
   }, [callIdRef, onSignal]);
 
+  const switchCamera = useCallback(async (): Promise<void> => {
+    const pc = peerConnectionRef.current;
+    const stream = localStreamRef.current;
+    if (!pc || !stream) return;
+
+    const newFacing = facingModeRef.current === "user" ? "environment" : "user";
+
+    try {
+      const newVideoStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { exact: newFacing } },
+      });
+
+      const newVideoTrack = newVideoStream.getVideoTracks()[0];
+      if (!newVideoTrack) return;
+
+      // Replace the video track in the peer connection without renegotiation
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) await sender.replaceTrack(newVideoTrack);
+
+      // Stop old video track and build updated stream with existing audio
+      stream.getVideoTracks().forEach(t => t.stop());
+      const updated = new MediaStream([...stream.getAudioTracks(), newVideoTrack]);
+      localStreamRef.current = updated;
+      setLocalStream(updated);
+
+      facingModeRef.current = newFacing;
+    } catch {
+      // Only one camera available or constraint unsupported — do nothing
+    }
+  }, []);
+
   const cleanup = useCallback((): void => {
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
     localStreamRef.current = null;
@@ -187,6 +232,8 @@ export function useWebRTC({
     connectionState,
     videoEnabled,
     toggleVideo,
+    switchCamera,
+    canSwitchCamera,
     cleanup,
   };
 }

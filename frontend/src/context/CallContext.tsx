@@ -19,6 +19,8 @@ interface CallContextValue {
   videoEnabled: boolean;
   remoteVideoEnabled: boolean;
   toggleVideo: () => void;
+  switchCamera: () => Promise<void>;
+  canSwitchCamera: boolean;
   initiateCall: (chatId: number, peerUsername: string, video?: boolean) => Promise<void>;
   acceptCall: () => Promise<void>;
   rejectCall: () => void;
@@ -34,6 +36,8 @@ const CallContext = createContext<CallContextValue>({
   videoEnabled: false,
   remoteVideoEnabled: true,
   toggleVideo: () => {},
+  switchCamera: async () => {},
+  canSwitchCamera: false,
   initiateCall: async () => {},
   acceptCall: async () => {},
   rejectCall: () => {},
@@ -310,6 +314,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         videoEnabled: webRTC.videoEnabled,
         remoteVideoEnabled,
         toggleVideo: webRTC.toggleVideo,
+        switchCamera: webRTC.switchCamera,
+        canSwitchCamera: webRTC.canSwitchCamera,
         initiateCall,
         acceptCall,
         rejectCall,

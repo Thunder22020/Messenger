@@ -12,7 +12,7 @@ interface CallViewProps {
 }
 
 export function CallView({ layout }: CallViewProps) {
-  const { activeCall, callStatus, endCall, remoteStream, localStream, videoEnabled, remoteVideoEnabled, toggleVideo } = useCall();
+  const { activeCall, callStatus, endCall, remoteStream, localStream, videoEnabled, remoteVideoEnabled, toggleVideo, switchCamera, canSwitchCamera } = useCall();
   const audioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -126,6 +126,15 @@ export function CallView({ layout }: CallViewProps) {
             >
               <img src="/icons/cam-recorder.png" alt="camera" />
             </button>
+            {layout === "screen" && canSwitchCamera && videoEnabled && (
+              <button
+                className="call-toggle-video-btn"
+                onClick={switchCamera}
+                title="Switch camera"
+              >
+                <img src="/icons/rotate.png" alt="Switch camera" />
+              </button>
+            )}
             <button className="call-hangup-btn" onClick={endCall} title="Hang up">
               <img src="/icons/close.png" alt="Hang up" />
             </button>
@@ -150,6 +159,7 @@ export function CallView({ layout }: CallViewProps) {
               <img src="/icons/close.png" alt="Hang up" />
             </button>
           </div>
+
         </>
       )}
     </div>
