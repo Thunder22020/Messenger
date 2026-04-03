@@ -239,9 +239,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     if (!call) return;
 
     videoRef.current = call.video ?? false;
-    await fetchRtcConfig();
-    await authFetch(`${API_URL}/call/${call.callId}/accept`, { method: "POST" });
 
+    // Transition state BEFORE any awaits so that the ACCEPTED WebSocket event
+    // (sent by the backend as soon as it processes the accept request) cannot
+    // race with our async operations and mistakenly reset us to idle via the
+    // "dismiss on another tab" branch in handleCallEvent.
     syncActiveCall({
       callId: call.callId,
       chatId: call.chatId,
@@ -252,6 +254,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     });
     syncIncomingCall(null);
     syncCallStatus("connecting");
+
+    await fetchRtcConfig();
+    const res = await authFetch(`${API_URL}/call/${call.callId}/accept`, { method: "POST" });
+    if (!res?.ok) {
+      // Roll back if the HTTP request failed
+      syncActiveCall(null);
+      syncCallStatus("idle");
+    }
   }, [incomingCall, syncActiveCall, syncCallStatus, syncIncomingCall, videoRef, fetchRtcConfig]);
 
   // Fix 8: add .catch(console.error) to authFetch calls

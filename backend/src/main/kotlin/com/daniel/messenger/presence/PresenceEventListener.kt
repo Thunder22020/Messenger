@@ -27,6 +27,6 @@ class PresenceEventListener(
         val user = event.user?.toUserPrincipal()?.user ?: return
         val userId = user.id ?: return
         presenceService.userDisconnected(userId, user.username)
-        callService.handleDisconnect(userId)
+        callService.handleDisconnect(userId, user.username, event.sessionId)
     }
 }

@@ -138,7 +138,15 @@ class CallService(
         )
     }
 
-    fun handleDisconnect(userId: Long) {
+    fun handleDisconnect(userId: Long, username: String, disconnectingSessionId: String?) {
+        // Only terminate if this was the user's last active WebSocket session.
+        // Prevents a background-tab disconnect from killing a call running on another tab.
+        val simpUser = simpUserRegistry.getUser(username)
+        val isLastSession = simpUser == null
+            || disconnectingSessionId == null
+            || simpUser.sessions.all { it.id == disconnectingSessionId }
+        if (!isLastSession) return
+
         val call = activeCallStore.findByUserId(userId) ?: return
         val peerUsername = call.peerOf(userId)
 
