@@ -1,3 +1,5 @@
+import { useLanguage } from "../../context/LanguageContext";
+
 export type MessageContextMenuState = {
   x: number;
   y: number;
@@ -15,6 +17,7 @@ export function MessageContextMenu(props: {
   onDelete: () => void;
 }) {
   const { menu, onReply, onCopy, onEdit, onDelete } = props;
+  const { t } = useLanguage();
 
   return (
     <div
@@ -24,20 +27,20 @@ export function MessageContextMenu(props: {
       onTouchStart={(e) => e.stopPropagation()}
     >
       <button className="context-menu-item" onClick={onReply}>
-        Reply
+        {t("menu.reply")}
       </button>
       {menu.content && (
         <button className="context-menu-item" onClick={onCopy}>
-          Copy text
+          {t("menu.copy")}
         </button>
       )}
       {menu.isMine && (
         <>
           <button className="context-menu-item" onClick={onEdit}>
-            Edit
+            {t("menu.edit")}
           </button>
           <button className="context-menu-item danger" onClick={onDelete}>
-            Delete
+            {t("menu.deleteMessage")}
           </button>
         </>
       )}

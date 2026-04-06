@@ -85,6 +85,10 @@ const en: Translations = {
   "menu.pin": "Pin",
   "menu.unpin": "Unpin",
   "menu.delete": "Delete",
+  "menu.reply": "Reply",
+  "menu.copy": "Copy text",
+  "menu.edit": "Edit",
+  "menu.deleteMessage": "Delete",
 
   // Chat input / search
   "chat.inputPlaceholder": "Type something...",
@@ -197,6 +201,10 @@ const ru: Translations = {
   "menu.pin": "Закрепить",
   "menu.unpin": "Открепить",
   "menu.delete": "Удалить",
+  "menu.reply": "Ответить",
+  "menu.copy": "Копировать текст",
+  "menu.edit": "Редактировать",
+  "menu.deleteMessage": "Удалить",
 
   // Chat input / search
   "chat.inputPlaceholder": "Написать сообщение...",
