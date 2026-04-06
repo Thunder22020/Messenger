@@ -5,7 +5,6 @@ import com.daniel.messenger.messaging.enum.ChatType
 import com.daniel.messenger.messaging.repository.ChatRepository
 import com.daniel.messenger.push.service.PushNotificationService
 import org.slf4j.LoggerFactory
-import org.springframework.messaging.simp.user.SimpUserRegistry
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -14,7 +13,6 @@ import org.springframework.transaction.event.TransactionalEventListener
 class PushNotificationEventListener(
     private val pushNotificationService: PushNotificationService,
     private val chatRepository: ChatRepository,
-    private val simpUserRegistry: SimpUserRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -31,18 +29,22 @@ class PushNotificationEventListener(
             else -> return
         }
 
-        val offlineRecipients = event.participants
-            .filter { it.username != senderUsername }
-            .filter { simpUserRegistry.getUser(it.username) == null }
+        // Send push to all recipients — the service worker suppresses the notification
+        // if the app is currently focused, avoiding duplicates for online users.
+        // We do NOT filter by online status here because mobile PWAs keep WebSocket
+        // connections alive in the background, making online detection unreliable.
+        val recipients = event.participants.filter { it.username != senderUsername }
 
-        if (offlineRecipients.isEmpty()) return
+        if (recipients.isEmpty()) return
 
         val (title, notificationBody) = when (chat.type) {
             ChatType.PRIVATE -> senderUsername to body
             ChatType.GROUP   -> (chat.title ?: "Group") to "$senderUsername: $body"
         }
 
-        offlineRecipients.forEach { participant ->
+        log.debug("Scheduling push for chat={} sender={} recipients={}", event.chatId, senderUsername, recipients.map { it.username })
+
+        recipients.forEach { participant ->
             pushNotificationService.schedule(
                 recipientUsername = participant.username,
                 chatId = event.chatId,

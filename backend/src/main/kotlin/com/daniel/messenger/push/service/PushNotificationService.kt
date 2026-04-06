@@ -104,7 +104,8 @@ class PushNotificationService(
                 log.debug("Push subscription expired ({}), removing: {}", statusCode, sub.endpoint)
                 pushSubscriptionRepository.delete(sub)
             } else if (statusCode !in 200..299) {
-                log.warn("Push delivery failed with status {}", statusCode)
+                val responseBody = response.entity?.content?.bufferedReader()?.readText() ?: ""
+                log.warn("Push delivery failed with status {}: {}", statusCode, responseBody)
             }
         } catch (e: Exception) {
             // Transient errors (network timeout, etc.) should not delete valid subscriptions

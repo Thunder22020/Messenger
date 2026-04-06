@@ -14,7 +14,14 @@ self.addEventListener('push', event => {
         data: { url: `/chat/${data.chatId}` },
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+            // Suppress notification if the app is open and focused
+            const isFocused = windowClients.some(c => c.focused);
+            if (isFocused) return;
+            return self.registration.showNotification(title, options);
+        })
+    );
 });
 
 self.addEventListener('notificationclick', event => {
