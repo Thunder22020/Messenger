@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface PushSubscriptionRepository : JpaRepository<PushSubscription, Long> {
     fun findByUsername(username: String): List<PushSubscription>
+    fun findByUsernameAndEndpointStartingWith(username: String, endpointPrefix: String): List<PushSubscription>
     fun deleteByEndpoint(endpoint: String)
     fun existsByEndpoint(endpoint: String): Boolean
 }

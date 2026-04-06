@@ -82,7 +82,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
         VITE_WS_URL: ${VITE_WS_URL}
-        VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+        VITE_VAPID_PUBLIC_KEY: ${VITE_VAPID_PUBLIC_KEY}
     restart: always
     ports:
       - "80:80"

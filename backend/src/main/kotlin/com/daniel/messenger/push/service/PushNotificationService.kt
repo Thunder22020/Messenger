@@ -61,6 +61,16 @@ class PushNotificationService(
             log.debug("Push subscription already registered for user={}", username)
             return
         }
+        // Delete stale subscriptions from the same push service (same host) for this user
+        // so old registrations don't accumulate when the PWA is reinstalled.
+        val host = runCatching { java.net.URI(endpoint).let { "${it.scheme}://${it.host}" } }.getOrNull()
+        if (host != null) {
+            val stale = pushSubscriptionRepository.findByUsernameAndEndpointStartingWith(username, host)
+            if (stale.isNotEmpty()) {
+                pushSubscriptionRepository.deleteAll(stale)
+                log.info("Removed {} stale push subscriptions for user={} host={}", stale.size, username, host)
+            }
+        }
         pushSubscriptionRepository.save(
             PushSubscription(username = username, endpoint = endpoint, p256dh = p256dh, auth = auth)
         )
