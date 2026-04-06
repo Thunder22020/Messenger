@@ -158,7 +158,7 @@ function AudioPlayer({ src }: { src: string }) {
 
   return (
     <div className="audio-player" onClick={(e) => e.stopPropagation()}>
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
       <button className="audio-play-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
         {playing ? (
           <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
@@ -240,14 +240,20 @@ function drawWaveform(
 }
 
 function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolean; time: string }) {
-  const audioRef  = useRef<HTMLAudioElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number | null>(null);
-  const peaksRef  = useRef<number[]>([]);
+  const audioRef    = useRef<HTMLAudioElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const rafRef      = useRef<number | null>(null);
+  const peaksRef    = useRef<number[]>([]);
+  const durationRef = useRef(0);  // mirrors duration state, readable inside RAF closures
 
   const [playing,  setPlaying]  = useState(false);
   const [current,  setCurrent]  = useState(0);   // seconds elapsed, drives display
   const [duration, setDuration] = useState(0);   // total duration, set from decode
+
+  const setDurationSynced = useCallback((d: number) => {
+    durationRef.current = d;
+    setDuration(d);
+  }, []);
 
   // Draw with an explicit progress value (0-1) — no hidden state
   const draw = useCallback((progress: number) => {
@@ -265,7 +271,8 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
         canvas.width  = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
         const audio = audioRef.current;
-        const p = audio && audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        const dur = durationRef.current;
+        const p = audio && dur > 0 ? audio.currentTime / dur : 0;
         draw(p);
       }
     };
@@ -280,7 +287,8 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
     const loop = () => {
       const audio = audioRef.current;
       if (!audio) return;
-      const p = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+      const dur = durationRef.current;
+      const p = dur > 0 ? audio.currentTime / dur : 0;
       setCurrent(audio.currentTime);
       draw(p);
       rafRef.current = requestAnimationFrame(loop);
@@ -307,7 +315,7 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
 
     async function decode() {
       try {
-        const res     = await fetch(src, { cache: "no-cache" });
+        const res     = await fetch(src, { cache: "no-store" });
         const buf     = await res.arrayBuffer();
         // OfflineAudioContext is not subject to Chrome's autoplay-policy
         // suspension that can silently abort decodeAudioData on a regular
@@ -328,9 +336,9 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
         const maxPeak = Math.max(...ps, 0.001);
         peaksRef.current = ps.map(p => p / maxPeak);
 
-        setDuration(decoded.duration);   // ← duration from decode, instant
+        setDurationSynced(decoded.duration);
         const audio = audioRef.current;
-        const p = audio && audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        const p = audio && decoded.duration > 0 ? audio.currentTime / decoded.duration : 0;
         draw(p);
       } catch {
         if (!cancelled) {
@@ -348,7 +356,9 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
     const audio = audioRef.current;
     if (!audio) return;
     const onMeta  = () => {
-      if (isFinite(audio.duration) && audio.duration > 0) setDuration(d => d > 0 ? d : audio.duration);
+      if (isFinite(audio.duration) && audio.duration > 0 && durationRef.current === 0) {
+        setDurationSynced(audio.duration);
+      }
     };
     const onEnded = () => {
       stopRAF();
@@ -359,8 +369,8 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
     };
     audio.addEventListener("loadedmetadata", onMeta);
     // Race-condition guard: metadata may have already loaded before this effect ran
-    if (audio.readyState >= 1 && isFinite(audio.duration) && audio.duration > 0) {
-      setDuration(d => d > 0 ? d : audio.duration);
+    if (audio.readyState >= 1 && isFinite(audio.duration) && audio.duration > 0 && durationRef.current === 0) {
+      setDurationSynced(audio.duration);
     }
     audio.addEventListener("ended",          onEnded);
     return () => {
@@ -389,10 +399,11 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
     const audio = audioRef.current;
-    if (!audio || !audio.duration) return;
+    const dur = durationRef.current;
+    if (!audio || !dur) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const p    = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audio.currentTime = p * audio.duration;
+    audio.currentTime = p * dur;
     setCurrent(audio.currentTime);
     draw(p);
   };
@@ -402,7 +413,7 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
 
   return (
     <div className="voice-message-bubble" onClick={(e) => e.stopPropagation()}>
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
       <div className="voice-bubble-top">
         <button className="audio-play-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
           {playing ? (
