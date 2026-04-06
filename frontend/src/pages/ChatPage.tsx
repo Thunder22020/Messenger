@@ -405,8 +405,8 @@ export default function ChatPage() {
                         rows={1}
                         onChange={handleInputChange}
                         onKeyDown={(e) => {
-                            const isMobile = navigator.maxTouchPoints > 0;
-                            if (e.key === "Enter" && !e.shiftKey && !isMobile) {
+                            const isTouch = window.matchMedia("(pointer: coarse)").matches;
+                            if (e.key === "Enter" && !e.shiftKey && !isTouch) {
                                 e.preventDefault();
                                 sendMessage();
                             }
