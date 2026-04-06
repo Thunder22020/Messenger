@@ -4,6 +4,7 @@ import com.daniel.messenger.push.entity.PushSubscription
 import com.daniel.messenger.push.repository.PushSubscriptionRepository
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
+import nl.martijndwars.webpush.Encoding
 import nl.martijndwars.webpush.Notification
 import nl.martijndwars.webpush.PushService
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -121,7 +122,7 @@ class PushNotificationService(
     private fun sendPush(sub: PushSubscription, payload: ByteArray) {
         try {
             val notification = Notification(sub.endpoint, sub.p256dh, sub.auth, payload)
-            val response = pushService.send(notification)
+            val response = pushService.send(notification, Encoding.AES128GCM)
             val statusCode = response.statusLine.statusCode
             if (statusCode == 404 || statusCode == 410) {
                 log.debug("Push subscription expired ({}), removing: {}", statusCode, sub.endpoint)

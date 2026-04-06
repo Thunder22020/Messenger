@@ -1,8 +1,7 @@
 import { API_URL } from "../config";
 import { authFetch } from "./authFetch";
 
-/** Converts a VAPID Base64URL public key to the Uint8Array format required by PushManager. */
-function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+function urlBase64ToUint8Array(base64: string): Uint8Array {
     const padding = '='.repeat((4 - (base64.length % 4)) % 4);
     const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
     const binary = atob(b64);
@@ -11,45 +10,34 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
     return bytes;
 }
 
-/**
- * Removes the push subscription from the browser and notifies the backend.
- * Should be called on logout so the device stops receiving notifications.
- */
-export async function unsubscribePush(): Promise<void> {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const sub = await registration.pushManager.getSubscription();
-        if (!sub) return;
-        await authFetch(`${API_URL}/api/push/subscribe`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: sub.endpoint, p256dh: '', auth: '' }),
-        });
-        await sub.unsubscribe();
-    } catch (err) {
-        console.warn('[push] unsubscribe failed:', err);
-    }
+function toBase64Url(buf: ArrayBuffer): string {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-/**
- * Registers the service worker, requests notification permission, subscribes to
- * Web Push and sends the subscription to the backend. Safe to call on every mount -
- * re-uses an existing subscription if one is already active.
- */
+async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
+    const reg = await navigator.serviceWorker.register('/custom-sw.js', { scope: '/' });
+    // Wait until the SW is active (handles first install + updates)
+    await navigator.serviceWorker.ready;
+    return reg;
+}
+
 export async function initPushNotifications(): Promise<void> {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
-    if (!vapidPublicKey) return;
+    if (!vapidPublicKey) {
+        console.warn('[push] VITE_VAPID_PUBLIC_KEY is not set');
+        return;
+    }
 
     try {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await registerServiceWorker();
 
-        let permission = Notification.permission;
-        if (permission === 'default') {
-            permission = await Notification.requestPermission();
-        }
+        const permission = Notification.permission === 'default'
+            ? await Notification.requestPermission()
+            : Notification.permission;
+
         if (permission !== 'granted') return;
 
         let sub = await registration.pushManager.getSubscription();
@@ -64,21 +52,33 @@ export async function initPushNotifications(): Promise<void> {
         const auth   = sub.getKey('auth');
         if (!p256dh || !auth) return;
 
-        const toBase64Url = (buf: ArrayBuffer) =>
-            btoa(String.fromCharCode(...new Uint8Array(buf)))
-                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
         await authFetch(`${API_URL}/api/push/subscribe`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 endpoint: sub.endpoint,
-                p256dh: toBase64Url(p256dh),
-                auth:   toBase64Url(auth),
+                p256dh:   toBase64Url(p256dh),
+                auth:     toBase64Url(auth),
             }),
         });
     } catch (err) {
-        // Non-fatal - app works without push notifications
-        console.warn('[push] setup failed:', err);
+        console.warn('[push] init failed:', err);
+    }
+}
+
+export async function unsubscribePush(): Promise<void> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const sub = await registration.pushManager.getSubscription();
+        if (!sub) return;
+        await authFetch(`${API_URL}/api/push/subscribe`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint, p256dh: '', auth: '' }),
+        });
+        await sub.unsubscribe();
+    } catch (err) {
+        console.warn('[push] unsubscribe failed:', err);
     }
 }
