@@ -10,14 +10,20 @@ self.addEventListener('push', (event) => {
 
     const { title = 'Synk.', body = '', chatId } = payload;
 
+    const options = {
+        body,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: chatId != null ? `chat-${chatId}` : 'synk',
+        renotify: true,
+        data: { url: chatId != null ? `/chat/${chatId}` : '/' },
+    };
+
     event.waitUntil(
-        self.registration.showNotification(title, {
-            body,
-            icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
-            tag: chatId != null ? `chat-${chatId}` : 'synk',
-            renotify: true,
-            data: { url: chatId != null ? `/chat/${chatId}` : '/' },
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            const appFocused = windowClients.some((c) => c.focused);
+            if (appFocused) return;
+            return self.registration.showNotification(title, options);
         })
     );
 });
