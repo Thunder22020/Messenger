@@ -222,8 +222,12 @@ function drawWaveform(
   const totalW = N * barW + (N - 1) * gap;
   const offsetX = Math.floor((W - totalW) / 2);
 
-  const colorPlayed   = isMine ? "rgba(25,22,15,0.80)"  : "rgba(234,224,210,0.90)";
-  const colorUnplayed = isMine ? "rgba(25,22,15,0.22)"  : "rgba(234,224,210,0.28)";
+  const isLight = document.documentElement.dataset.theme === 'light';
+  // Light theme: mine=dark espresso bg → light bars; other=near-white bg → dark bars
+  // Dark theme:  mine=cream bg         → dark bars;  other=dark bg       → light bars
+  const wantLight = isLight ? isMine : !isMine;
+  const colorPlayed   = wantLight ? "rgba(234,224,210,0.90)" : "rgba(25,22,15,0.80)";
+  const colorUnplayed = wantLight ? "rgba(234,224,210,0.28)" : "rgba(25,22,15,0.22)";
 
   ctx.clearRect(0, 0, W, H);
 
@@ -380,6 +384,18 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   }, [draw, stopRAF]);
 
   useEffect(() => () => stopRAF(), [stopRAF]);
+
+  // Redraw when theme changes so waveform colors update immediately
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const audio = audioRef.current;
+      const dur = durationRef.current;
+      const p = audio && dur > 0 ? audio.currentTime / dur : 0;
+      draw(p);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, [draw]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();

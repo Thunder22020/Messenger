@@ -3463,6 +3463,28 @@ button {
 
 /* ===== VOICE MESSAGE BUBBLE ===== */
 
+/* Play button tokens — mirrors .audio-player but scoped to voice bubbles */
+.voice-message-bubble {
+    --ap-btn-bg:       rgba(234, 224, 210, 0.14);
+    --ap-btn-color:    rgba(234, 224, 210, 0.90);
+    --ap-btn-hover-bg: rgba(234, 224, 210, 0.22);
+}
+.message-row.mine .voice-message-bubble {
+    --ap-btn-bg:       rgba(0, 0, 0, 0.13);
+    --ap-btn-color:    rgba(25, 22, 15, 0.80);
+    --ap-btn-hover-bg: rgba(0, 0, 0, 0.20);
+}
+[data-theme="light"] .message-row.other .voice-message-bubble {
+    --ap-btn-bg:       rgba(0, 0, 0, 0.08);
+    --ap-btn-color:    rgba(30, 24, 18, 0.78);
+    --ap-btn-hover-bg: rgba(0, 0, 0, 0.14);
+}
+[data-theme="light"] .message-row.mine .voice-message-bubble {
+    --ap-btn-bg:       rgba(255, 255, 255, 0.13);
+    --ap-btn-color:    rgba(234, 224, 210, 0.90);
+    --ap-btn-hover-bg: rgba(255, 255, 255, 0.20);
+}
+
 .message-bubble.voice-bubble {
     min-width: 220px;
     max-width: 280px;
@@ -4970,6 +4992,15 @@ body,
 }
 
 [data-theme="light"] .chat-attach-btn:hover img {
+    opacity: 0.85;
+}
+
+[data-theme="light"] .chat-voice-btn img {
+    filter: brightness(0);
+    opacity: 0.55;
+}
+
+[data-theme="light"] .chat-voice-btn:hover img {
     opacity: 0.85;
 }
 
