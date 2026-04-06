@@ -3518,40 +3518,6 @@ button {
     cursor: pointer;
 }
 
-.voice-waveform-shimmer {
-    position: absolute;
-    inset: 0;
-    border-radius: 3px;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-.voice-waveform-shimmer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.35) 50%,
-        transparent 100%
-    );
-    animation: voice-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes voice-shimmer {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-[data-theme="light"] .message-row.other .voice-waveform-shimmer::after {
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(0, 0, 0, 0.10) 50%,
-        transparent 100%
-    );
-}
 
 .voice-bubble-meta {
     display: flex;

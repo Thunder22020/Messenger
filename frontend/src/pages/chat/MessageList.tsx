@@ -211,6 +211,7 @@ function drawWaveform(
   peaks: number[],
   progress: number,
   isMine: boolean,
+  shimmerPos?: number,  // 0–1 sweep position; undefined = not loading
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx || peaks.length === 0) return;
@@ -236,7 +237,19 @@ function drawWaveform(
     const x = offsetX + i * (barW + gap);
     const y = Math.floor((H - barH) / 2);
     const r = Math.min(barW / 2, 2);
-    ctx.fillStyle = i / N < progress ? colorPlayed : colorUnplayed;
+
+    if (shimmerPos !== undefined) {
+      // Per-bar shimmer: brightness pulse travels across bars
+      const barCenter = (x + barW / 2) / W;
+      const dist = Math.abs(barCenter - shimmerPos);
+      const glow = Math.max(0, 1 - dist / 0.25);
+      const [baseA, peakA] = wantLight ? [0.18, 0.65] : [0.13, 0.52];
+      const a = (baseA + glow * (peakA - baseA)).toFixed(2);
+      ctx.fillStyle = wantLight ? `rgba(234,224,210,${a})` : `rgba(25,22,15,${a})`;
+    } else {
+      ctx.fillStyle = i / N < progress ? colorPlayed : colorUnplayed;
+    }
+
     ctx.beginPath();
     ctx.roundRect(x, y, barW, barH, r);
     ctx.fill();
@@ -250,10 +263,12 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   const peaksRef    = useRef<number[]>([]);
   const durationRef = useRef(0);  // mirrors duration state, readable inside RAF closures
 
+  const loadedRef    = useRef(false);
+  const shimmerPosRef = useRef(0);
+
   const [playing,  setPlaying]  = useState(false);
   const [current,  setCurrent]  = useState(0);   // seconds elapsed, drives display
   const [duration, setDuration] = useState(0);   // total duration, set from decode
-  const [loaded,   setLoaded]   = useState(false);
 
   const setDurationSynced = useCallback((d: number) => {
     durationRef.current = d;
@@ -264,7 +279,7 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   const draw = useCallback((progress: number) => {
     const canvas = canvasRef.current;
     if (!canvas || peaksRef.current.length === 0) return;
-    drawWaveform(canvas, peaksRef.current, progress, isMine);
+    drawWaveform(canvas, peaksRef.current, progress, isMine, loadedRef.current ? undefined : shimmerPosRef.current);
   }, [isMine]);
 
   // Keep canvas pixel dimensions in sync with CSS layout
@@ -342,14 +357,14 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
         peaksRef.current = ps.map(p => p / maxPeak);
 
         setDurationSynced(decoded.duration);
-        setLoaded(true);
+        loadedRef.current = true;
         const audio = audioRef.current;
         const p = audio && decoded.duration > 0 ? audio.currentTime / decoded.duration : 0;
         draw(p);
       } catch {
         if (!cancelled) {
           peaksRef.current = Array(NUM_PEAKS).fill(0.5);
-          setLoaded(true);
+          loadedRef.current = true;
           draw(0);
         }
       }
@@ -387,6 +402,21 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   }, [draw, stopRAF]);
 
   useEffect(() => () => stopRAF(), [stopRAF]);
+
+  // Shimmer animation — runs until decode completes
+  useEffect(() => {
+    const cycleDuration = 1400;
+    const startTime = performance.now();
+    let rafId: number;
+    const animate = (now: number) => {
+      if (loadedRef.current) return;
+      shimmerPosRef.current = ((now - startTime) % cycleDuration) / cycleDuration;
+      draw(0);
+      rafId = requestAnimationFrame(animate);
+    };
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [draw]);
 
   // Redraw when theme changes so waveform colors update immediately
   useEffect(() => {
@@ -453,7 +483,6 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
             height={36}
             onClick={onCanvasClick}
           />
-          {!loaded && <div className="voice-waveform-shimmer" />}
         </div>
       </div>
       <div className="voice-bubble-meta">
