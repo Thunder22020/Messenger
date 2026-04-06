@@ -4,7 +4,6 @@ import com.daniel.messenger.messaging.dto.event.MessageSentEvent
 import com.daniel.messenger.messaging.enum.ChatType
 import com.daniel.messenger.messaging.repository.ChatRepository
 import com.daniel.messenger.push.service.PushNotificationService
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -14,8 +13,6 @@ class PushNotificationEventListener(
     private val pushNotificationService: PushNotificationService,
     private val chatRepository: ChatRepository,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onMessageSent(event: MessageSentEvent) {
         if (event.response.type == "SYSTEM") return
@@ -41,8 +38,6 @@ class PushNotificationEventListener(
             ChatType.PRIVATE -> senderUsername to body
             ChatType.GROUP   -> (chat.title ?: "Group") to "$senderUsername: $body"
         }
-
-        log.info("Scheduling push for chat={} sender={} recipients={}", event.chatId, senderUsername, recipients.map { it.username })
 
         recipients.forEach { participant ->
             pushNotificationService.schedule(

@@ -49,7 +49,6 @@ class PushNotificationService(
         val pubKey  = vapidPublicKey .trimEnd('=').replace('+', '-').replace('/', '_')
         val privKey = vapidPrivateKey.trimEnd('=').replace('+', '-').replace('/', '_')
         pushService = PushService(pubKey, privKey, vapidSubject)
-        log.info("Push service initialized, public key prefix={}", pubKey.take(10))
     }
 
     @PreDestroy
@@ -58,10 +57,7 @@ class PushNotificationService(
     }
 
     fun saveSubscription(username: String, endpoint: String, p256dh: String, auth: String) {
-        if (pushSubscriptionRepository.existsByEndpoint(endpoint)) {
-            log.debug("Push subscription already registered for user={}", username)
-            return
-        }
+        if (pushSubscriptionRepository.existsByEndpoint(endpoint)) return
         // Delete stale subscriptions from the same push service (same host) for this user
         // so old registrations don't accumulate when the PWA is reinstalled.
         val host = runCatching { java.net.URI(endpoint).let { "${it.scheme}://${it.host}" } }.getOrNull()
@@ -69,13 +65,11 @@ class PushNotificationService(
             val stale = pushSubscriptionRepository.findByUsernameAndEndpointStartingWith(username, host)
             if (stale.isNotEmpty()) {
                 pushSubscriptionRepository.deleteAll(stale)
-                log.info("Removed {} stale push subscriptions for user={} host={}", stale.size, username, host)
             }
         }
         pushSubscriptionRepository.save(
             PushSubscription(username = username, endpoint = endpoint, p256dh = p256dh, auth = auth)
         )
-        log.info("Push subscription saved for user={} endpoint={}...", username, endpoint.take(40))
     }
 
     fun deleteSubscription(endpoint: String) {
@@ -105,11 +99,7 @@ class PushNotificationService(
 
     private fun deliver(recipientUsername: String, batch: PendingBatch) {
         val subscriptions = pushSubscriptionRepository.findByUsername(recipientUsername)
-        if (subscriptions.isEmpty()) {
-            log.debug("No push subscriptions for user={}, skipping", recipientUsername)
-            return
-        }
-        log.info("Delivering push to user={} subscriptions={}", recipientUsername, subscriptions.size)
+        if (subscriptions.isEmpty()) return
 
         val body = if (batch.count == 1) batch.firstBody.take(120) else "${batch.count} new messages"
         val payload = objectMapper.writeValueAsBytes(
@@ -125,15 +115,10 @@ class PushNotificationService(
             val response = pushService.send(notification, Encoding.AES128GCM)
             val statusCode = response.statusLine.statusCode
             if (statusCode == 404 || statusCode == 410) {
-                log.debug("Push subscription expired ({}), removing: {}", statusCode, sub.endpoint)
                 pushSubscriptionRepository.delete(sub)
-            } else if (statusCode !in 200..299) {
-                val responseBody = response.entity?.content?.bufferedReader()?.readText() ?: ""
-                log.warn("Push delivery failed with status {}: {}", statusCode, responseBody)
             }
         } catch (e: Exception) {
-            // Transient errors (network timeout, etc.) should not delete valid subscriptions
-            log.warn("Push delivery error for endpoint {}: {}", sub.endpoint, e.message)
+            log.warn("Push delivery error: {}", e.message)
         }
     }
 }
