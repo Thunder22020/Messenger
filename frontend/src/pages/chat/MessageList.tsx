@@ -253,6 +253,7 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
   const [playing,  setPlaying]  = useState(false);
   const [current,  setCurrent]  = useState(0);   // seconds elapsed, drives display
   const [duration, setDuration] = useState(0);   // total duration, set from decode
+  const [loaded,   setLoaded]   = useState(false);
 
   const setDurationSynced = useCallback((d: number) => {
     durationRef.current = d;
@@ -341,12 +342,14 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
         peaksRef.current = ps.map(p => p / maxPeak);
 
         setDurationSynced(decoded.duration);
+        setLoaded(true);
         const audio = audioRef.current;
         const p = audio && decoded.duration > 0 ? audio.currentTime / decoded.duration : 0;
         draw(p);
       } catch {
         if (!cancelled) {
           peaksRef.current = Array(NUM_PEAKS).fill(0.5);
+          setLoaded(true);
           draw(0);
         }
       }
@@ -443,12 +446,15 @@ function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolea
             </svg>
           )}
         </button>
-        <canvas
-          ref={canvasRef}
-          className="voice-bubble-canvas"
-          height={36}
-          onClick={onCanvasClick}
-        />
+        <div className="voice-waveform-wrap">
+          <canvas
+            ref={canvasRef}
+            className="voice-bubble-canvas"
+            height={36}
+            onClick={onCanvasClick}
+          />
+          {!loaded && <div className="voice-waveform-shimmer" />}
+        </div>
       </div>
       <div className="voice-bubble-meta">
         <span className="voice-bubble-duration">{displayTime}</span>
