@@ -12,6 +12,27 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
+ * Removes the push subscription from the browser and notifies the backend.
+ * Should be called on logout so the device stops receiving notifications.
+ */
+export async function unsubscribePush(): Promise<void> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const sub = await registration.pushManager.getSubscription();
+        if (!sub) return;
+        await authFetch(`${API_URL}/api/push/subscribe`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint, p256dh: '', auth: '' }),
+        });
+        await sub.unsubscribe();
+    } catch (err) {
+        console.warn('[push] unsubscribe failed:', err);
+    }
+}
+
+/**
  * Registers the service worker, requests notification permission, subscribes to
  * Web Push and sends the subscription to the backend. Safe to call on every mount -
  * re-uses an existing subscription if one is already active.

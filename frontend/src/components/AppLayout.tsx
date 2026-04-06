@@ -9,7 +9,7 @@ import { jwtDecode } from "jwt-decode";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useLongPress } from "../hooks/useLongPress";
 import { formatSystemContent } from "../pages/chat/chatFormat";
-import { initPushNotifications } from "../utils/pushNotifications";
+import { initPushNotifications, unsubscribePush } from "../utils/pushNotifications";
 import { useLanguage } from "../context/LanguageContext";
 
 type JwtPayload = { sub: string };
@@ -427,6 +427,8 @@ export default function AppLayout() {
 
     const handleLogout = async () => {
         const token = localStorage.getItem("accessToken");
+
+        await unsubscribePush();
 
         await fetch(`${API_URL}/api/auth/logout`, {
             method: "POST",

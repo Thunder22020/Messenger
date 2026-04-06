@@ -107,8 +107,8 @@ class PushNotificationService(
                 log.warn("Push delivery failed with status {}", statusCode)
             }
         } catch (e: Exception) {
+            // Transient errors (network timeout, etc.) should not delete valid subscriptions
             log.warn("Push delivery error for endpoint {}: {}", sub.endpoint, e.message)
-            pushSubscriptionRepository.delete(sub)
         }
     }
 }
