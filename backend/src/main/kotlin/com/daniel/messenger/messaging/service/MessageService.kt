@@ -7,6 +7,8 @@ import com.daniel.messenger.messaging.dto.response.PagedMessageResponse
 import com.daniel.messenger.messaging.dto.ReplyPreviewDto
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.entity.MessageEntity
+import com.daniel.messenger.messaging.enum.AttachmentType
+import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
 import com.daniel.messenger.messaging.exception.NotMessageOwnerException
 import com.daniel.messenger.messaging.repository.MessageRepository
@@ -48,6 +50,11 @@ class MessageService(
         )
 
         val attachments = attachmentService.linkToMessage(request.attachmentIds, message, senderId)
+
+        if (request.isVoice && attachments.size == 1 && attachments[0].attachmentType == AttachmentType.AUDIO) {
+            message.type = MessageType.VOICE
+            messageRepository.save(message)
+        }
 
         chatService.updateChatLastMessage(chat, message, sender.username, attachments)
         messagesSentCounter.increment()

@@ -59,6 +59,9 @@ const en: Translations = {
   "sidebar.typingTwo": "{user1}, {user2} are typing...",
   "sidebar.typingMany": "{user1}, {user2} and {count} others are typing...",
 
+  // Messages
+  "message.voice": "Voice message",
+
   // Settings
   "settings.lightTheme": "Light theme",
   "settings.muteSound": "Turn off notification sound",
@@ -174,6 +177,9 @@ const ru: Translations = {
   "sidebar.typingOne": "{user} печатает...",
   "sidebar.typingTwo": "{user1}, {user2} печатают...",
   "sidebar.typingMany": "{user1}, {user2} и ещё {count} печатают...",
+
+  // Messages
+  "message.voice": "Голосовое сообщение",
 
   // Settings
   "settings.lightTheme": "Светлая тема",

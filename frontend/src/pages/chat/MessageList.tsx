@@ -158,7 +158,7 @@ function AudioPlayer({ src }: { src: string }) {
 
   return (
     <div className="audio-player" onClick={(e) => e.stopPropagation()}>
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
       <button className="audio-play-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
         {playing ? (
           <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
@@ -199,6 +199,245 @@ function AudioAttachmentList({ audios }: { audios: AttachmentDto[] }) {
   return (
     <div className="audio-attachment-list">
       {audios.map((a) => <AudioPlayer key={a.id} src={a.url} />)}
+    </div>
+  );
+}
+
+const NUM_PEAKS = 50;
+const MIN_BAR_H = 3;
+
+function drawWaveform(
+  canvas: HTMLCanvasElement,
+  peaks: number[],
+  progress: number,
+  isMine: boolean,
+) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx || peaks.length === 0) return;
+  const W = canvas.width;
+  const H = canvas.height;
+  const N = peaks.length;
+  const gap = 2;
+  const barW = Math.max(2, Math.floor((W - (N - 1) * gap) / N));
+  const totalW = N * barW + (N - 1) * gap;
+  const offsetX = Math.floor((W - totalW) / 2);
+
+  const colorPlayed   = isMine ? "rgba(25,22,15,0.80)"  : "rgba(234,224,210,0.90)";
+  const colorUnplayed = isMine ? "rgba(25,22,15,0.22)"  : "rgba(234,224,210,0.28)";
+
+  ctx.clearRect(0, 0, W, H);
+
+  for (let i = 0; i < N; i++) {
+    const barH = Math.max(MIN_BAR_H, Math.round(peaks[i] * (H - 4)));
+    const x = offsetX + i * (barW + gap);
+    const y = Math.floor((H - barH) / 2);
+    const r = Math.min(barW / 2, 2);
+    ctx.fillStyle = i / N < progress ? colorPlayed : colorUnplayed;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, r);
+    ctx.fill();
+  }
+}
+
+function VoiceMessageBubble({ src, isMine, time }: { src: string; isMine: boolean; time: string }) {
+  const audioRef    = useRef<HTMLAudioElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const rafRef      = useRef<number | null>(null);
+  const peaksRef    = useRef<number[]>([]);
+  const durationRef = useRef(0);  // mirrors duration state, readable inside RAF closures
+
+  const [playing,  setPlaying]  = useState(false);
+  const [current,  setCurrent]  = useState(0);   // seconds elapsed, drives display
+  const [duration, setDuration] = useState(0);   // total duration, set from decode
+
+  const setDurationSynced = useCallback((d: number) => {
+    durationRef.current = d;
+    setDuration(d);
+  }, []);
+
+  // Draw with an explicit progress value (0-1) — no hidden state
+  const draw = useCallback((progress: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || peaksRef.current.length === 0) return;
+    drawWaveform(canvas, peaksRef.current, progress, isMine);
+  }, [isMine]);
+
+  // Keep canvas pixel dimensions in sync with CSS layout
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const sync = () => {
+      if (canvas.offsetWidth > 0) {
+        canvas.width  = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        const audio = audioRef.current;
+        const dur = durationRef.current;
+        const p = audio && dur > 0 ? audio.currentTime / dur : 0;
+        draw(p);
+      }
+    };
+    const ro = new ResizeObserver(sync);
+    ro.observe(canvas);
+    sync();
+    return () => ro.disconnect();
+  }, [draw]);
+
+  // RAF loop — runs while playing, drives both canvas and time display
+  const startRAF = useCallback(() => {
+    const loop = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const dur = durationRef.current;
+      const p = dur > 0 ? audio.currentTime / dur : 0;
+      setCurrent(audio.currentTime);
+      draw(p);
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+  }, [draw]);
+
+  const stopRAF = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  // Decode audio → amplitude peaks + duration (no need to wait for loadedmetadata)
+  useEffect(() => {
+    let cancelled = false;
+
+    // Seed placeholder bars immediately so the waveform and RAF progress are
+    // visible before the async decode finishes (Chrome re-downloads via fetch
+    // due to partitioned cache, so decode can take several seconds).
+    peaksRef.current = Array(NUM_PEAKS).fill(0.5);
+    draw(0);
+
+    async function decode() {
+      try {
+        const res     = await fetch(src, { cache: "no-store" });
+        const buf     = await res.arrayBuffer();
+        // OfflineAudioContext is not subject to Chrome's autoplay-policy
+        // suspension that can silently abort decodeAudioData on a regular
+        // AudioContext created without a user gesture.
+        const audioCtx = new OfflineAudioContext(1, 44100, 44100);
+        const decoded  = await audioCtx.decodeAudioData(buf);
+        if (cancelled) return;
+
+        const data = decoded.getChannelData(0);  // no close() — OfflineAudioContext is GC'd automatically
+        const step = Math.floor(data.length / NUM_PEAKS);
+        const ps: number[] = [];
+        for (let i = 0; i < NUM_PEAKS; i++) {
+          let max = 0;
+          const end = Math.min((i + 1) * step, data.length);
+          for (let j = i * step; j < end; j++) max = Math.max(max, Math.abs(data[j]));
+          ps.push(max);
+        }
+        const maxPeak = Math.max(...ps, 0.001);
+        peaksRef.current = ps.map(p => p / maxPeak);
+
+        setDurationSynced(decoded.duration);
+        const audio = audioRef.current;
+        const p = audio && decoded.duration > 0 ? audio.currentTime / decoded.duration : 0;
+        draw(p);
+      } catch {
+        if (!cancelled) {
+          peaksRef.current = Array(NUM_PEAKS).fill(0.5);
+          draw(0);
+        }
+      }
+    }
+    decode();
+    return () => { cancelled = true; };
+  }, [src, draw]);
+
+  // loadedmetadata: fallback duration if decode hasn't fired yet
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onMeta  = () => {
+      if (isFinite(audio.duration) && audio.duration > 0 && durationRef.current === 0) {
+        setDurationSynced(audio.duration);
+      }
+    };
+    const onEnded = () => {
+      stopRAF();
+      setPlaying(false);
+      setCurrent(0);
+      if (audio) audio.currentTime = 0;
+      draw(0);
+    };
+    audio.addEventListener("loadedmetadata", onMeta);
+    // Race-condition guard: metadata may have already loaded before this effect ran
+    if (audio.readyState >= 1 && isFinite(audio.duration) && audio.duration > 0 && durationRef.current === 0) {
+      setDurationSynced(audio.duration);
+    }
+    audio.addEventListener("ended",          onEnded);
+    return () => {
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("ended",          onEnded);
+    };
+  }, [draw, stopRAF]);
+
+  useEffect(() => () => stopRAF(), [stopRAF]);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+      stopRAF();
+    } else {
+      audio.play();
+      setPlaying(true);
+      startRAF();
+    }
+  };
+
+  const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    const dur = durationRef.current;
+    if (!audio || !dur) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const p    = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = p * dur;
+    setCurrent(audio.currentTime);
+    draw(p);
+  };
+
+  // Before any playback: show total duration. During/after seek: show elapsed.
+  const displayTime = current > 0 ? fmtTime(current) : fmtTime(duration);
+
+  return (
+    <div className="voice-message-bubble" onClick={(e) => e.stopPropagation()}>
+      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
+      <div className="voice-bubble-top">
+        <button className="audio-play-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+          {playing ? (
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <rect x="4" y="3" width="4" height="14" rx="1.5" />
+              <rect x="12" y="3" width="4" height="14" rx="1.5" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path d="M5 3.5l12 6.5-12 6.5V3.5z" />
+            </svg>
+          )}
+        </button>
+        <canvas
+          ref={canvasRef}
+          className="voice-bubble-canvas"
+          height={36}
+          onClick={onCanvasClick}
+        />
+      </div>
+      <div className="voice-bubble-meta">
+        <span className="voice-bubble-duration">{displayTime}</span>
+        <span className="message-time">{time}</span>
+      </div>
     </div>
   );
 }
@@ -366,10 +605,11 @@ export function MessageList(props: {
                     const isLast = msgIdx === group.messages.length - 1;
                     const formattedTime = formatMessageTime(msg.createdAt);
                     const showUnreadDot = isMine && !isReadByAnyOther(msg.id);
+                    const isVoice = msg.type === "VOICE";
                     const photos = msg.attachments?.filter(a => a.type === "PHOTO") ?? [];
                     const videos = msg.attachments?.filter(a => a.type === "VIDEO") ?? [];
                     const mediaItems = msg.attachments?.filter(a => a.type === "PHOTO" || a.type === "VIDEO") ?? [];
-                    const audios = msg.attachments?.filter(a => a.type === "AUDIO") ?? [];
+                    const audios = isVoice ? [] : (msg.attachments?.filter(a => a.type === "AUDIO") ?? []);
                     const fileDtos = msg.attachments?.filter(a => a.type === "FILE") ?? [];
                     const hasMedia = photos.length > 0;
                     const hasVideos = videos.length > 0;
@@ -377,6 +617,7 @@ export function MessageList(props: {
                     const hasFiles = fileDtos.length > 0;
                     const isVideoOnly = hasVideos && !msg.content && !hasMedia && !hasAudios && !hasFiles;
                     const isMediaOnly = hasMedia && !msg.content && !hasVideos && !hasAudios && !hasFiles;
+                    const voiceAttachment = isVoice ? (msg.attachments?.find(a => a.type === "AUDIO") ?? null) : null;
 
                     return (
                       <div
@@ -406,7 +647,7 @@ export function MessageList(props: {
                           )}
 
                           <div
-                            className={`message-bubble${isMediaOnly || isVideoOnly ? " media-only" : hasMedia || hasVideos ? " has-media" : ""}`}
+                            className={`message-bubble${isVoice ? " voice-bubble" : isMediaOnly || isVideoOnly ? " media-only" : hasMedia || hasVideos ? " has-media" : ""}`}
                             onContextMenu={(e) => {
                               e.preventDefault();
                               const cx = Math.min(e.clientX, window.innerWidth - 148);
@@ -443,50 +684,60 @@ export function MessageList(props: {
                               </div>
                             )}
 
-                            {hasMedia && (
-                              <div className="attachment-grid-wrapper">
-                                <AttachmentGrid
-                                  photos={photos}
-                                  onImageClick={(i) => onMediaClick(mediaItems, mediaItems.indexOf(photos[i]), { sender: msg.sender, createdAt: msg.createdAt })}
-                                  hasTextBelow={!isMediaOnly}
-                                  onImageLoad={onImageLoad}
-                                />
-                                {isMediaOnly && (
-                                  <div className="message-meta-overlay">
-                                    {msg.editedAt && (
-                                      <span className="message-edited-icon" role="img" aria-label="edited" />
+                            {isVoice && voiceAttachment ? (
+                              <VoiceMessageBubble
+                                src={voiceAttachment.url}
+                                isMine={isMine}
+                                time={formattedTime}
+                              />
+                            ) : (
+                              <>
+                                {hasMedia && (
+                                  <div className="attachment-grid-wrapper">
+                                    <AttachmentGrid
+                                      photos={photos}
+                                      onImageClick={(i) => onMediaClick(mediaItems, mediaItems.indexOf(photos[i]), { sender: msg.sender, createdAt: msg.createdAt })}
+                                      hasTextBelow={!isMediaOnly}
+                                      onImageLoad={onImageLoad}
+                                    />
+                                    {isMediaOnly && (
+                                      <div className="message-meta-overlay">
+                                        {msg.editedAt && (
+                                          <span className="message-edited-icon" role="img" aria-label="edited" />
+                                        )}
+                                        <span className="message-time">{formattedTime}</span>
+                                      </div>
                                     )}
-                                    <span className="message-time">{formattedTime}</span>
                                   </div>
                                 )}
-                              </div>
-                            )}
 
-                            {hasVideos && (
-                              <VideoAttachmentList
-                                videos={videos}
-                                onVideoClick={(j) => onMediaClick(mediaItems, mediaItems.indexOf(videos[j]), { sender: msg.sender, createdAt: msg.createdAt })}
-                              />
-                            )}
+                                {hasVideos && (
+                                  <VideoAttachmentList
+                                    videos={videos}
+                                    onVideoClick={(j) => onMediaClick(mediaItems, mediaItems.indexOf(videos[j]), { sender: msg.sender, createdAt: msg.createdAt })}
+                                  />
+                                )}
 
-                            {hasAudios && (
-                              <AudioAttachmentList audios={audios} />
-                            )}
+                                {hasAudios && (
+                                  <AudioAttachmentList audios={audios} />
+                                )}
 
-                            {hasFiles && (
-                              <FileAttachmentList files={fileDtos} />
-                            )}
+                                {hasFiles && (
+                                  <FileAttachmentList files={fileDtos} />
+                                )}
 
-                            {!isMediaOnly && (
-                              <div className="message-content">
-                                <span className="message-text">{msg.content}</span>
-                                <span className="message-time">
-                                  {msg.editedAt && (
-                                    <span className="message-edited-icon" role="img" aria-label="edited" />
-                                  )}
-                                  {formattedTime}
-                                </span>
-                              </div>
+                                {!isMediaOnly && (
+                                  <div className="message-content">
+                                    <span className="message-text">{msg.content}</span>
+                                    <span className="message-time">
+                                      {msg.editedAt && (
+                                        <span className="message-edited-icon" role="img" aria-label="edited" />
+                                      )}
+                                      {formattedTime}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

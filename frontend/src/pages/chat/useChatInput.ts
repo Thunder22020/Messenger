@@ -67,24 +67,44 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 
 function uploadFileWithProgress(file: File, onProgress: (pct: number) => void): Promise<AttachmentDto | null> {
     return new Promise((resolve) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-        });
-        xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(JSON.parse(xhr.responseText));
-            } else {
+        function attempt(token: string | null, isRetry: boolean) {
+            const formData = new FormData();
+            formData.append("file", file);
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener("progress", (e) => {
+                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+            });
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(JSON.parse(xhr.responseText));
+                    return;
+                }
+                if (xhr.status === 401 && !isRetry) {
+                    fetch(`${API_URL}/api/auth/refresh`, { method: "POST", credentials: "include" })
+                        .then(r => {
+                            if (r.status === 401 || r.status === 400 || r.status === 403) {
+                                localStorage.removeItem("accessToken");
+                                window.location.href = "/login";
+                                return null;
+                            }
+                            return r.ok ? r.json() : null;
+                        })
+                        .then(data => {
+                            if (!data) { resolve(null); return; }
+                            localStorage.setItem("accessToken", data.accessToken);
+                            attempt(data.accessToken, true);
+                        })
+                        .catch(() => resolve(null));
+                    return;
+                }
                 resolve(null);
-            }
-        });
-        xhr.addEventListener("error", () => resolve(null));
-        const token = localStorage.getItem("accessToken");
-        xhr.open("POST", `${API_URL}/attachments/upload`);
-        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-        xhr.send(formData);
+            });
+            xhr.addEventListener("error", () => resolve(null));
+            xhr.open("POST", `${API_URL}/attachments/upload`);
+            if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+            xhr.send(formData);
+        }
+        attempt(localStorage.getItem("accessToken"), false);
     });
 }
 
@@ -388,6 +408,18 @@ export function useChatInput({
         scrollToBottom, isAtBottomRef, stopTypingIndicator, jumpToLatest,
     ]);
 
+    const sendVoiceMessage = useCallback(async (blob: Blob) => {
+        if (!client || !numericChatId) return;
+        const ext = blob.type.includes("ogg") ? "ogg" : "webm";
+        const file = new File([blob], `voice-message.${ext}`, { type: blob.type });
+        const dto = await uploadFileWithProgress(file, () => {});
+        if (!dto) return;
+        client.publish({
+            destination: "/app/chat.send",
+            body: JSON.stringify({ chatId: numericChatId, content: "", attachmentIds: [dto.id], isVoice: true }),
+        });
+    }, [client, numericChatId]);
+
     const startEdit = useCallback((messageId: number, content: string) => {
         setEditingMessageId(messageId);
         setEditingOriginalContent(content);
@@ -430,5 +462,6 @@ export function useChatInput({
         startReply,
         cancelReply,
         removePendingFile,
+        sendVoiceMessage,
     };
 }

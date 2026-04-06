@@ -225,9 +225,14 @@ class ChatService(
 
     private fun resolveLastMessageContent(message: MessageEntity?, attachments: List<Attachment>): String? {
         if (message == null) return null
+        if (message.type == MessageType.VOICE) return VOICE_MESSAGE_PREVIEW
         if (!message.content.isNullOrBlank()) return message.content
         if (attachments.isEmpty()) return message.content
         return attachmentPreviewText(attachments.first().attachmentType, attachments.size)
+    }
+
+    companion object {
+        const val VOICE_MESSAGE_PREVIEW = "🎤 Voice message"
     }
 
 }

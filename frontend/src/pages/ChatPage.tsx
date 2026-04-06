@@ -22,6 +22,8 @@ import { useChatScroll } from "./chat/useChatScroll";
 import { useChatMessages } from "./chat/useChatMessages";
 import { useChatSubscriptions } from "./chat/useChatSubscriptions";
 import { useChatInput } from "./chat/useChatInput";
+import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
+import { VoiceRecordingBar } from "./chat/VoiceRecordingBar";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useCall } from "../context/CallContext";
 
@@ -108,6 +110,10 @@ export default function ChatPage() {
         client,
     });
 
+    // --- Voice recorder ---
+    const [voiceMode, setVoiceMode] = useState(false);
+    const recorder = useVoiceRecorder();
+
     // --- Input ---
     const {
         input, pendingFiles, uploadingBubbles,
@@ -115,6 +121,7 @@ export default function ChatPage() {
         inputRef, fileInputRef,
         handleInputChange, handleFilesSelected, sendMessage,
         startEdit, cancelEditing, startReply, cancelReply, removePendingFile,
+        sendVoiceMessage,
     } = useChatInput({
         numericChatId,
         currentUsername,
@@ -378,6 +385,19 @@ export default function ChatPage() {
                     onRemove={removePendingFile}
                 />
 
+                {voiceMode && (
+                    <button
+                        className="chat-trash-float"
+                        type="button"
+                        onClick={() => {
+                            recorder.cancel();
+                            setVoiceMode(false);
+                        }}
+                    >
+                        <img src="/icons/trash.png" alt="cancel recording" />
+                    </button>
+                )}
+
                 <div className="chat-input-bar">
                     <input
                         ref={fileInputRef}
@@ -389,31 +409,80 @@ export default function ChatPage() {
                             e.target.value = "";
                         }}
                     />
+                    {voiceMode ? (
+                        <VoiceRecordingBar
+                            analyserNode={recorder.analyserNode}
+                            isRecording={recorder.isRecording}
+                            isPaused={recorder.isPaused}
+                            durationMs={recorder.durationMs}
+                        />
+                    ) : (
+                        <>
+                            <button
+                                className="chat-attach-btn"
+                                onClick={() => fileInputRef.current?.click()}
+                                type="button"
+                            >
+                                <img src="/icons/paperclip.png" alt="attach" />
+                            </button>
+                            <textarea
+                                key={numericChatId}
+                                ref={inputRef}
+                                className="chat-input-field"
+                                placeholder={t("chat.inputPlaceholder")}
+                                value={input}
+                                rows={1}
+                                onChange={handleInputChange}
+                                onKeyDown={(e) => {
+                                    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+                                    if (e.key === "Enter" && !e.shiftKey && !isTouch) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                }}
+                            />
+                        </>
+                    )}
+                    {editingMessageId === null && (
+                        <button
+                            className="chat-voice-btn"
+                            type="button"
+                            onClick={async () => {
+                                if (!voiceMode) {
+                                    await recorder.start();
+                                    setVoiceMode(true);
+                                } else {
+                                    if (recorder.isMaxReached) return;
+                                    if (recorder.isPaused) recorder.resume();
+                                    else recorder.pause();
+                                }
+                            }}
+                        >
+                            <img
+                                src={
+                                    !voiceMode
+                                        ? "/icons/voice.png"
+                                        : recorder.isPaused
+                                        ? "/icons/play-button.png"
+                                        : "/icons/pause-button.png"
+                                }
+                                alt="voice"
+                            />
+                        </button>
+                    )}
+                    <div className="chat-input-divider" />
                     <button
-                        className="chat-attach-btn"
-                        onClick={() => fileInputRef.current?.click()}
-                        type="button"
-                    >
-                        <img src="/icons/paperclip.png" alt="attach" />
-                    </button>
-                    <textarea
-                        key={numericChatId}
-                        ref={inputRef}
-                        className="chat-input-field"
-                        placeholder={t("chat.inputPlaceholder")}
-                        value={input}
-                        rows={1}
-                        onChange={handleInputChange}
-                        onKeyDown={(e) => {
-                            const isTouch = window.matchMedia("(pointer: coarse)").matches;
-                            if (e.key === "Enter" && !e.shiftKey && !isTouch) {
-                                e.preventDefault();
+                        className="chat-send-btn"
+                        onClick={async () => {
+                            if (voiceMode) {
+                                const blob = await recorder.stop();
+                                setVoiceMode(false);
+                                await sendVoiceMessage(blob);
+                            } else {
                                 sendMessage();
                             }
                         }}
-                    />
-                    <div className="chat-input-divider" />
-                    <button className="chat-send-btn" onClick={sendMessage}>
+                    >
                         <img src="/icons/send.png" alt="send" />
                     </button>
                 </div>
