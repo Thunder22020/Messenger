@@ -388,6 +388,18 @@ export function useChatInput({
         scrollToBottom, isAtBottomRef, stopTypingIndicator, jumpToLatest,
     ]);
 
+    const sendVoiceMessage = useCallback(async (blob: Blob) => {
+        if (!client || !numericChatId) return;
+        const ext = blob.type.includes("ogg") ? "ogg" : "webm";
+        const file = new File([blob], `voice-message.${ext}`, { type: blob.type });
+        const dto = await uploadFileWithProgress(file, () => {});
+        if (!dto) return;
+        client.publish({
+            destination: "/app/chat.send",
+            body: JSON.stringify({ chatId: numericChatId, content: "", attachmentIds: [dto.id], isVoice: true }),
+        });
+    }, [client, numericChatId]);
+
     const startEdit = useCallback((messageId: number, content: string) => {
         setEditingMessageId(messageId);
         setEditingOriginalContent(content);
@@ -430,5 +442,6 @@ export function useChatInput({
         startReply,
         cancelReply,
         removePendingFile,
+        sendVoiceMessage,
     };
 }

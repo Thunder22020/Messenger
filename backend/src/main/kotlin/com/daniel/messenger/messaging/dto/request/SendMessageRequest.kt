@@ -9,4 +9,5 @@ data class SendMessageRequest(
     val replyToMessageId: Long? = null,
     @field:Size(max = 5)
     val attachmentIds: List<Long> = emptyList(),
+    val isVoice: Boolean = false,
 )

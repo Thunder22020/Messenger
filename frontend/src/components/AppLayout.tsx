@@ -344,7 +344,8 @@ export default function AppLayout() {
 
     const getLastMessagePreview = (chat: ChatListItem): string => {
         if (!chat.lastMessageContent && chat.lastMessageContent !== "") return t("sidebar.noMessages");
-        const content = formatSystemContent(chat.lastMessageContent);
+        const isVoice = chat.lastMessageContent === "🎤 Voice message";
+        const content = isVoice ? t("message.voice") : formatSystemContent(chat.lastMessageContent);
         const sender = chat.lastMessageSender;
         if (chat.type === "GROUP" && sender && sender !== currentUsername) {
             return `${sender}: ${content}`;
