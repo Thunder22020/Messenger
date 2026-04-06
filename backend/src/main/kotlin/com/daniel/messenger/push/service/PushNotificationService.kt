@@ -43,7 +43,12 @@ class PushNotificationService(
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(BouncyCastleProvider())
         }
-        pushService = PushService(vapidPublicKey, vapidPrivateKey, vapidSubject)
+        // Keys must be base64url WITHOUT padding — normalize in case they were stored
+        // with standard base64 characters (+, /) or trailing = padding.
+        val pubKey  = vapidPublicKey .trimEnd('=').replace('+', '-').replace('/', '_')
+        val privKey = vapidPrivateKey.trimEnd('=').replace('+', '-').replace('/', '_')
+        pushService = PushService(pubKey, privKey, vapidSubject)
+        log.info("Push service initialized, public key prefix={}", pubKey.take(10))
     }
 
     @PreDestroy
@@ -52,10 +57,14 @@ class PushNotificationService(
     }
 
     fun saveSubscription(username: String, endpoint: String, p256dh: String, auth: String) {
-        if (pushSubscriptionRepository.existsByEndpoint(endpoint)) return
+        if (pushSubscriptionRepository.existsByEndpoint(endpoint)) {
+            log.debug("Push subscription already registered for user={}", username)
+            return
+        }
         pushSubscriptionRepository.save(
             PushSubscription(username = username, endpoint = endpoint, p256dh = p256dh, auth = auth)
         )
+        log.info("Push subscription saved for user={} endpoint={}...", username, endpoint.take(40))
     }
 
     fun deleteSubscription(endpoint: String) {
@@ -85,7 +94,11 @@ class PushNotificationService(
 
     private fun deliver(recipientUsername: String, batch: PendingBatch) {
         val subscriptions = pushSubscriptionRepository.findByUsername(recipientUsername)
-        if (subscriptions.isEmpty()) return
+        if (subscriptions.isEmpty()) {
+            log.debug("No push subscriptions for user={}, skipping", recipientUsername)
+            return
+        }
+        log.info("Delivering push to user={} subscriptions={}", recipientUsername, subscriptions.size)
 
         val body = if (batch.count == 1) batch.firstBody.take(120) else "${batch.count} new messages"
         val payload = objectMapper.writeValueAsBytes(

@@ -42,7 +42,7 @@ class PushNotificationEventListener(
             ChatType.GROUP   -> (chat.title ?: "Group") to "$senderUsername: $body"
         }
 
-        log.debug("Scheduling push for chat={} sender={} recipients={}", event.chatId, senderUsername, recipients.map { it.username })
+        log.info("Scheduling push for chat={} sender={} recipients={}", event.chatId, senderUsername, recipients.map { it.username })
 
         recipients.forEach { participant ->
             pushNotificationService.schedule(
