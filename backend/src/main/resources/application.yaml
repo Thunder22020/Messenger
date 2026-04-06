@@ -15,7 +15,7 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
     database: postgresql
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
@@ -27,6 +27,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+      repositories:
+        enabled: false
   cache:
     type: redis
 app:
@@ -43,6 +45,10 @@ app:
   turn:
     secret: ${TURN_SECRET}
     url: ${TURN_URL:synk.su}
+
+logging:
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
 
 management:
   endpoints:
