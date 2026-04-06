@@ -21,8 +21,8 @@ self.addEventListener('push', (event) => {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            const appFocused = windowClients.some((c) => c.focused);
-            if (appFocused) return;
+            const appVisible = windowClients.some((c) => c.visibilityState === 'visible');
+            if (appVisible) return;
             return self.registration.showNotification(title, options);
         })
     );
