@@ -10,6 +10,7 @@ import com.daniel.messenger.messaging.entity.Chat
 import com.daniel.messenger.messaging.entity.ChatParticipant
 import com.daniel.messenger.messaging.entity.MessageEntity
 import com.daniel.messenger.messaging.enum.AttachmentType
+import com.daniel.messenger.messaging.service.ChatService
 import java.time.Instant
 
 fun MessageEntity.toResponse(
@@ -73,6 +74,7 @@ fun attachmentPreviewText(type: AttachmentType, count: Int): String = when (type
 }
 
 fun resolveContentPreview(response: MessageResponse): String? {
+    if (response.type == "VOICE") return ChatService.VOICE_MESSAGE_PREVIEW
     if (!response.content.isNullOrBlank()) return response.content
     if (response.attachments.isEmpty()) return response.content
     return attachmentPreviewText(response.attachments.first().type, response.attachments.size)
