@@ -5693,7 +5693,6 @@ body,
     right: 0;
     height: var(--mobile-vvh, 100dvh);
     overflow: hidden;
-    clip-path: inset(0);
 }
 
 .mobile-sidebar-panel,
@@ -5708,11 +5707,11 @@ body,
 
 /* List view: sidebar visible, chat off-screen right */
 .mobile-layout.list-active .mobile-sidebar-panel { transform: translateX(0); }
-.mobile-layout.list-active .mobile-chat-panel     { transform: translateX(100%); }
+.mobile-layout.list-active .mobile-chat-panel     { transform: translateX(100%); visibility: hidden; }
 
 /* Chat view: sidebar off-screen left, chat visible */
 .mobile-layout.chat-active .mobile-sidebar-panel  { transform: translateX(-100%); }
-.mobile-layout.chat-active .mobile-chat-panel     { transform: translateX(0); }
+.mobile-layout.chat-active .mobile-chat-panel     { transform: translateX(0); visibility: visible; }
 
 /* Sidebar fills the full mobile panel */
 .mobile-sidebar-panel .sidebar {

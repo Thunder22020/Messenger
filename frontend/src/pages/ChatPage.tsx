@@ -331,7 +331,7 @@ export default function ChatPage() {
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
                     onToggleSearch={() => isSearchOpen ? closeSearch() : openSearch()}
                     isSearchOpen={isSearchOpen}
-                    onBack={isMobile ? () => navigate("/chat") : undefined}
+                    onBack={isMobile ? () => window.dispatchEvent(new CustomEvent("mobile-chat-back")) : undefined}
                     onCall={numericChatId ? () => {
                         const peerUsername = participants.find(p => p.username !== currentUsername)?.username ?? chatName;
                         initiateCall(numericChatId, peerUsername, false);

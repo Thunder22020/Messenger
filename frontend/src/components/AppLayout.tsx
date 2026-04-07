@@ -123,6 +123,118 @@ export default function AppLayout() {
     const { isOnline } = usePresence();
     const isMobile = useIsMobile();
 
+    // Mobile swipe-back refs
+    const sidebarPanelRef = useRef<HTMLDivElement>(null);
+    const chatPanelRef = useRef<HTMLDivElement>(null);
+    const isChatActiveRef = useRef(false);
+    const isAnimatingRef = useRef(false);
+    useEffect(() => {
+        isChatActiveRef.current = !!(chatId || userId || groupMatch);
+    }, [chatId, userId, groupMatch]);
+
+    // Animate panels to sidebar, then navigate — used by swipe gesture and back button
+    const animateMobileBack = useCallback(() => {
+        if (isAnimatingRef.current) return;
+        isAnimatingRef.current = true;
+        const sidebar = sidebarPanelRef.current;
+        const chat = chatPanelRef.current;
+        if (!sidebar || !chat) { navigate('/chat'); isAnimatingRef.current = false; return; }
+
+        const tr = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
+        sidebar.style.transition = tr;
+        chat.style.transition = tr;
+        sidebar.style.transform = 'translateX(0)';
+        chat.style.transform = 'translateX(100%)';
+
+        chat.addEventListener('transitionend', () => {
+            navigate('/chat');
+            // Remove inline styles after React re-renders (CSS class takes over)
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                sidebar.style.cssText = '';
+                chat.style.cssText = '';
+                isAnimatingRef.current = false;
+            }));
+        }, { once: true });
+    }, [navigate]);
+
+    // Listen for back event dispatched by ChatPage back button
+    useEffect(() => {
+        if (!isMobile) return;
+        const handler = () => animateMobileBack();
+        window.addEventListener('mobile-chat-back', handler);
+        return () => window.removeEventListener('mobile-chat-back', handler);
+    }, [isMobile, animateMobileBack]);
+
+    // Swipe-right-to-go-back gesture (non-passive so we can preventDefault)
+    useEffect(() => {
+        if (!isMobile) return;
+
+        let sw: { startX: number; startY: number; startTime: number; locked: 'h' | 'v' | null; active: boolean } | null = null;
+
+        const onStart = (e: TouchEvent) => {
+            if (!isChatActiveRef.current || isAnimatingRef.current) return;
+            const t = e.touches[0];
+            sw = { startX: t.clientX, startY: t.clientY, startTime: Date.now(), locked: null, active: false };
+        };
+
+        const onMove = (e: TouchEvent) => {
+            if (!sw || !isChatActiveRef.current) return;
+            const t = e.touches[0];
+            const dx = t.clientX - sw.startX;
+            const dy = t.clientY - sw.startY;
+
+            if (!sw.locked) {
+                if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                sw.locked = (Math.abs(dx) > Math.abs(dy) && dx > 0) ? 'h' : 'v';
+            }
+            if (sw.locked !== 'h') return;
+
+            e.preventDefault();
+            sw.active = true;
+
+            const w = window.innerWidth;
+            const pct = Math.max(0, Math.min(dx, w)) / w * 100;
+            const sidebar = sidebarPanelRef.current;
+            const chat = chatPanelRef.current;
+            if (sidebar) { sidebar.style.transition = 'none'; sidebar.style.transform = `translateX(${pct - 100}%)`; }
+            if (chat)    { chat.style.transition = 'none';    chat.style.transform    = `translateX(${pct}%)`; }
+        };
+
+        const onEnd = (e: TouchEvent) => {
+            if (!sw?.active) { sw = null; return; }
+            const t = e.changedTouches[0];
+            const dx = t.clientX - sw.startX;
+            const dt = Math.max(1, Date.now() - sw.startTime);
+            const velocity = dx / dt; // px/ms
+            const pct = dx / window.innerWidth;
+            sw = null;
+
+            if (pct > 0.35 || velocity > 0.5) {
+                animateMobileBack();
+            } else {
+                // Snap back to chat
+                const sidebar = sidebarPanelRef.current;
+                const chat = chatPanelRef.current;
+                const tr = 'transform 0.25s cubic-bezier(0.4,0,0.2,1)';
+                if (sidebar) { sidebar.style.transition = tr; sidebar.style.transform = 'translateX(-100%)'; }
+                if (chat)    { chat.style.transition    = tr; chat.style.transform    = 'translateX(0)'; }
+                chat?.addEventListener('transitionend', () => {
+                    if (sidebar) sidebar.style.cssText = '';
+                    if (chat)    chat.style.cssText    = '';
+                }, { once: true });
+            }
+        };
+
+        document.addEventListener('touchstart', onStart, { passive: true });
+        document.addEventListener('touchmove',  onMove,  { passive: false });
+        document.addEventListener('touchend',   onEnd,   { passive: true });
+        return () => {
+            document.removeEventListener('touchstart', onStart);
+            document.removeEventListener('touchmove',  onMove);
+            document.removeEventListener('touchend',   onEnd);
+        };
+    }, [isMobile, animateMobileBack]);
+
     // Keep --mobile-vvh in sync with the visual viewport (accounts for keyboard height on iOS/Android).
     // Also preserves scroll position relative to the bottom when keyboard opens/closes.
     useEffect(() => {
@@ -849,12 +961,12 @@ export default function AppLayout() {
         return (
             <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable }}>
                 <div className={`mobile-layout ${(chatId || userId || groupMatch) ? "chat-active" : "list-active"}`}>
-                    <div className="mobile-sidebar-panel">
+                    <div className="mobile-sidebar-panel" ref={sidebarPanelRef}>
                         {sidebarJSX}
                     </div>
-                    <div className="mobile-chat-panel">
+                    <div className="mobile-chat-panel" ref={chatPanelRef}>
                         <div className="content">
-                            {(chatId || userId || groupMatch) && <Outlet />}
+                            <Outlet />
                         </div>
                         {rightPanel}
                     </div>
