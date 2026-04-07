@@ -854,7 +854,7 @@ export default function AppLayout() {
                     </div>
                     <div className="mobile-chat-panel">
                         <div className="content">
-                            <Outlet />
+                            {(chatId || userId || groupMatch) && <Outlet />}
                         </div>
                         {rightPanel}
                     </div>
