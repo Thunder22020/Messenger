@@ -2434,6 +2434,8 @@ button {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-primary);
+    text-align: left;
+    white-space: nowrap;
 
     cursor: pointer;
     transition: background 0.1s ease;
