@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import { useLongPress } from "../../hooks/useLongPress";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
 import { formatMessageTime, formatFileSize, fileExtension, formatSystemContent } from "./chatFormat";
+import { useLanguage } from "../../context/LanguageContext";
 
 const IMAGE_CORNER_R = 13; // bubble outer radius (16) minus bubble padding (3)
 
@@ -603,6 +604,7 @@ export function MessageList(props: {
     onMediaClick,
     onImageLoad,
   } = props;
+  const { t } = useLanguage();
 
   // Long-press state: which message is being held
   const pendingMsg = useRef<{ msg: Message; isMine: boolean } | null>(null);
@@ -635,7 +637,7 @@ export function MessageList(props: {
               <div key={group.messages[0].id}>
                 {showGroupDivider && (
                   <div ref={dividerRef} className="unread-messages-divider">
-                    <span className="unread-messages-divider-label">Unread messages</span>
+                    <span className="unread-messages-divider-label">{t("chat.unreadMessages")}</span>
                   </div>
                 )}
 

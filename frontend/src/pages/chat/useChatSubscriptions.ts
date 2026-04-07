@@ -3,6 +3,7 @@ import type { Client } from "@stomp/stompjs";
 import type { ChatParticipant, ReadAckEvent } from "./chatTypes";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface UseChatSubscriptionsParams {
     numericChatId: number | null;
@@ -17,6 +18,7 @@ export function useChatSubscriptions({
     chatType,
     client,
 }: UseChatSubscriptionsParams) {
+    const { t } = useLanguage();
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
     const [otherParticipantsReadMap, setOtherParticipantsReadMap] = useState<Record<string, number>>({});
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -130,11 +132,11 @@ export function useChatSubscriptions({
     );
 
     const getTypingText = useCallback((): string => {
-        if (chatType === "PRIVATE") return "typing...";
-        if (typingUsers.length === 1) return `${typingUsers[0]} is typing...`;
-        if (typingUsers.length === 2) return `${typingUsers[0]}, ${typingUsers[1]} are typing...`;
-        return `${typingUsers[0]}, ${typingUsers[1]} and ${typingUsers.length - 2} other${typingUsers.length - 2 > 1 ? "s" : ""} are typing...`;
-    }, [chatType, typingUsers]);
+        if (chatType === "PRIVATE") return t("sidebar.typing");
+        if (typingUsers.length === 1) return t("sidebar.typingOne", { user: typingUsers[0] });
+        if (typingUsers.length === 2) return t("sidebar.typingTwo", { user1: typingUsers[0], user2: typingUsers[1] });
+        return t("sidebar.typingMany", { user1: typingUsers[0], user2: typingUsers[1], count: typingUsers.length - 2 });
+    }, [chatType, typingUsers, t]);
 
     return {
         participants,

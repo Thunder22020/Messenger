@@ -59,6 +59,9 @@ const en: Translations = {
   "sidebar.typingTwo": "{user1}, {user2} are typing...",
   "sidebar.typingMany": "{user1}, {user2} and {count} others are typing...",
 
+  // Chat
+  "chat.unreadMessages": "Unread messages",
+
   // Messages
   "message.voice": "Voice message",
 
@@ -178,6 +181,9 @@ const ru: Translations = {
   "sidebar.typingOne": "{user} печатает...",
   "sidebar.typingTwo": "{user1}, {user2} печатают...",
   "sidebar.typingMany": "{user1}, {user2} и ещё {count} печатают...",
+
+  // Chat
+  "chat.unreadMessages": "Непрочитанные сообщения",
 
   // Messages
   "message.voice": "Голосовое сообщение",

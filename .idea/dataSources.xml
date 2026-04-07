@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="messenger_db@localhost" uuid="bb3bd8fe-4cfe-488b-a12b-319e4b0c3533">
+    <data-source source="LOCAL" name="local" uuid="bb3bd8fe-4cfe-488b-a12b-319e4b0c3533">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
@@ -25,7 +25,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="messenger_db@localhost [2]" uuid="e5b95f93-a9cd-4ec3-a98c-bbad500a0eab">
+    <data-source source="LOCAL" name="vps" uuid="e5b95f93-a9cd-4ec3-a98c-bbad500a0eab">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
