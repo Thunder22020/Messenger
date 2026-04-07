@@ -5693,6 +5693,7 @@ body,
     right: 0;
     height: var(--mobile-vvh, 100dvh);
     overflow: hidden;
+    clip-path: inset(0);
 }
 
 .mobile-sidebar-panel,
