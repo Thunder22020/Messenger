@@ -109,12 +109,12 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
     // Keyboard navigation
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") { handleClose(); return; }
+            if (e.key === "Escape") { e.stopImmediatePropagation(); handleClose(); return; }
             if (e.key === "ArrowLeft" && index > 0) goTo(index - 1);
             if (e.key === "ArrowRight" && index < items.length - 1) goTo(index + 1);
         };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
+        window.addEventListener("keydown", onKey, { capture: true });
+        return () => window.removeEventListener("keydown", onKey, { capture: true });
     }, [index, items.length]);
 
     // Wheel zoom — desktop
