@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { AttachmentDto, ChatParticipant } from "./chatTypes";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
-import { formatFileSize, fileExtension, formatShortDate, formatMessageTime } from "./chatFormat";
+import { formatFileSize, fileExtension, formatShortDate } from "./chatFormat";
 import { useLanguage } from "../../context/LanguageContext";
 
 type Tab = "members" | "media" | "files";
@@ -233,9 +233,6 @@ function FilesTab({ items, loading, hasMore, onLoadMore }: {
                 {item.createdAt && <> · {formatShortDate(item.createdAt)}</>}
               </div>
             </div>
-            {item.createdAt && (
-              <span className="info-file-time">{formatMessageTime(item.createdAt)}</span>
-            )}
           </a>
         ))}
       </div>
