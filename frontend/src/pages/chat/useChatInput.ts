@@ -329,7 +329,7 @@ export function useChatInput({
             await authFetch(`${API_URL}/messages/${editingMessageId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: input }),
+                body: JSON.stringify({ content: input.trim() }),
             });
             setEditingMessageId(null);
             setEditingOriginalContent("");
@@ -340,7 +340,7 @@ export function useChatInput({
         if (!client || !numericChatId) return;
 
         const filesToUpload = [...pendingFiles];
-        const messageContent = input;
+        const messageContent = input.trim();
         const replyTarget = replyingTo;
 
         setReplyingTo(null);
