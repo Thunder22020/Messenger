@@ -151,6 +151,8 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
             // Let the thumbnail strip handle its own scroll
             if ((e.target as HTMLElement).closest(".iv-thumbnail-strip-mask")) return;
 
+            e.stopPropagation();
+
             if (e.touches.length === 2 && !currentIsVideoRef.current) {
                 // Two fingers: enter pinch mode.
                 // preventDefault here stops iOS Safari from doing a native page zoom.

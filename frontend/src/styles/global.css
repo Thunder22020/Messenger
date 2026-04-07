@@ -3625,6 +3625,7 @@ button {
     inset: 0;
     z-index: 1000;
     background: rgba(0, 0, 0, 0.88);
+    touch-action: none;
     display: flex;
     align-items: center;
     justify-content: center;
