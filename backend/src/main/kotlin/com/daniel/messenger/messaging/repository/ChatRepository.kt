@@ -1,7 +1,9 @@
 package com.daniel.messenger.messaging.repository
 
 import com.daniel.messenger.messaging.entity.Chat
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -28,6 +30,10 @@ interface PrivateChatDisplayName {
 
 @Repository
 interface ChatRepository : JpaRepository<Chat, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Chat c WHERE c.id = :id")
+    fun findByIdWithLock(@Param("id") id: Long): Chat?
 
     @Query(
         value = """

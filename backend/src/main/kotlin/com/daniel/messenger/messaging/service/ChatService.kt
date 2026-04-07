@@ -210,6 +210,9 @@ class ChatService(
     fun findByIdOrThrow(id: Long): Chat =
         chatRepository.findById(id).orElseThrow { ChatNotFoundException(id.toString()) }
 
+    fun findByIdOrThrowWithLock(id: Long): Chat =
+        chatRepository.findByIdWithLock(id) ?: throw ChatNotFoundException(id.toString())
+
     internal fun updateChatLastMessage(
         chat: Chat,
         message: MessageEntity?,

@@ -94,14 +94,18 @@ class ChatParticipantService(
 
     @Transactional
     fun addParticipants(chatId: Long, requesterId: Long, userIds: List<Long>) {
-        val chat = chatService.findByIdOrThrow(chatId)
+        val chat = chatService.findByIdOrThrowWithLock(chatId)
         if (chat.type != ChatType.GROUP) {
             throw CannotAddParticipantToPrivateChatException("Forbidden in private chat")
         }
         chatAccessService.isChatParticipantOrThrow(chatId, requesterId)
 
         val requester = userService.findByIdOrThrow(requesterId)
-        val usersToAdd = userService.findAllByIds(userIds)
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+        val existingMemberIds = participants.mapNotNull { it.user.id }.toSet()
+        val usersToAdd = userService.findAllByIds(userIds).filter { it.id !in existingMemberIds }
+
+        if (usersToAdd.isEmpty()) return
 
         for (user in usersToAdd) {
             val uid = requireNotNull(user.id)
@@ -110,7 +114,6 @@ class ChatParticipantService(
             )
         }
 
-        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
         var lastSystemMessage: MessageEntity? = null
 
         for (user in usersToAdd) {
