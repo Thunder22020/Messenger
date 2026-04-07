@@ -27,6 +27,22 @@ function isVideo(item: AttachmentDto): boolean {
     return item.type === "VIDEO";
 }
 
+function clampPan(x: number, y: number, scale: number): { x: number; y: number } {
+    const MARGIN = 80;
+    // Floor: image center stays within viewport (lets zoomed-out small images roam freely)
+    const floorX = window.innerWidth  / 2 - MARGIN;
+    const floorY = window.innerHeight / 2 - MARGIN;
+    // Ceiling: for zoomed-in images, allow panning to see the full image
+    const imageX = (window.innerWidth  * scale) / 2 - MARGIN;
+    const imageY = (window.innerHeight * scale) / 2 - MARGIN;
+    const maxX = Math.max(floorX, imageX);
+    const maxY = Math.max(floorY, imageY);
+    return {
+        x: Math.max(-maxX, Math.min(maxX, x)),
+        y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+}
+
 interface TouchGesture {
     type: "pan" | "pinch";
     // pan
@@ -111,7 +127,12 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
             e.preventDefault();
             const pixels = e.deltaMode === 1 ? e.deltaY * 20 : e.deltaY;
             const factor = Math.exp(-pixels / 200);
-            setScale(prev => Math.min(16, Math.max(0.25, prev * factor)));
+            const newScale = Math.min(16, Math.max(0.25, liveScale.current * factor));
+            const newPan = clampPan(livePan.current.x, livePan.current.y, newScale);
+            liveScale.current = newScale;
+            livePan.current = newPan;
+            setScale(newScale);
+            setPan(newPan);
         };
         el.addEventListener("wheel", handler, { passive: false });
         return () => el.removeEventListener("wheel", handler);
@@ -176,23 +197,22 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
                 const dist = hypot(e.touches[0], e.touches[1]);
                 const ratio = dist / g.initialDist;
                 const newScale = Math.min(16, Math.max(0.25, g.initialScale * ratio));
-                // Anchor-under-fingers formula:
-                //   newPan = focal - ratio * (focal - initPan)
-                // Derived from: image point at focal must map to same screen coord before and after scale.
-                const newPan = {
+                const rawPan = {
                     x: g.focalDX - ratio * (g.focalDX - g.initialPanX),
                     y: g.focalDY - ratio * (g.focalDY - g.initialPanY),
                 };
+                const newPan = clampPan(rawPan.x, rawPan.y, newScale);
                 liveScale.current = newScale;
                 livePan.current = newPan;
                 setScale(newScale);
                 setPan(newPan);
             } else if (e.touches.length === 1 && g.type === "pan") {
                 const t = e.touches[0];
-                const newPan = {
-                    x: g.initialPanX + (t.clientX - g.startX),
-                    y: g.initialPanY + (t.clientY - g.startY),
-                };
+                const newPan = clampPan(
+                    g.initialPanX + (t.clientX - g.startX),
+                    g.initialPanY + (t.clientY - g.startY),
+                    liveScale.current,
+                );
                 livePan.current = newPan;
                 setPan(newPan);
             }
@@ -254,10 +274,11 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
 
     const onMouseMove = (e: React.MouseEvent) => {
         if (!isDragging || !dragRef.current) return;
-        setPan({
-            x: dragRef.current.panX + (e.clientX - dragRef.current.startX),
-            y: dragRef.current.panY + (e.clientY - dragRef.current.startY),
-        });
+        setPan(clampPan(
+            dragRef.current.panX + (e.clientX - dragRef.current.startX),
+            dragRef.current.panY + (e.clientY - dragRef.current.startY),
+            liveScale.current,
+        ));
     };
 
     const onBackdropClick = (e: React.MouseEvent) => {
@@ -269,14 +290,20 @@ export function MediaViewer({ items, initialIndex, sender, createdAt, onClose }:
     const zoomIn = (e: React.MouseEvent) => {
         stopProp(e);
         const s = Math.min(16, liveScale.current * 1.5);
+        const p = clampPan(livePan.current.x, livePan.current.y, s);
         liveScale.current = s;
+        livePan.current = p;
         setScale(s);
+        setPan(p);
     };
     const zoomOut = (e: React.MouseEvent) => {
         stopProp(e);
         const s = Math.max(0.25, liveScale.current / 1.5);
+        const p = clampPan(livePan.current.x, livePan.current.y, s);
         liveScale.current = s;
+        livePan.current = p;
         setScale(s);
+        setPan(p);
     };
     const zoomReset = (e: React.MouseEvent) => {
         stopProp(e);
