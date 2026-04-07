@@ -80,11 +80,23 @@ export function useWebRTC({
   }, []);
 
   const startAsOffer = useCallback(async (): Promise<void> => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
+    let stream: MediaStream;
+    let actualVideo = videoRef.current;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: actualVideo });
+    } catch {
+      if (!actualVideo) return; // audio-only already failed — nothing to fall back to
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        actualVideo = false;
+      } catch {
+        return;
+      }
+    }
     localStreamRef.current = stream;
     setLocalStream(stream);
-    setVideoEnabled(videoRef.current);
-    if (videoRef.current) checkCameraCount();
+    setVideoEnabled(actualVideo);
+    if (actualVideo) checkCameraCount();
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;
@@ -105,11 +117,23 @@ export function useWebRTC({
   }, [callIdRef, videoRef, createPeerConnection, onSignal, checkCameraCount]);
 
   const handleOffer = useCallback(async (sdp: string): Promise<void> => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoRef.current });
+    let stream: MediaStream;
+    let actualVideo = videoRef.current;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: actualVideo });
+    } catch {
+      if (!actualVideo) return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        actualVideo = false;
+      } catch {
+        return;
+      }
+    }
     localStreamRef.current = stream;
     setLocalStream(stream);
-    setVideoEnabled(videoRef.current);
-    if (videoRef.current) checkCameraCount();
+    setVideoEnabled(actualVideo);
+    if (actualVideo) checkCameraCount();
 
     const pc = createPeerConnection();
     peerConnectionRef.current = pc;

@@ -1,3 +1,4 @@
 data/
+logs/
 .claude/settings.local.json
 backend/.claude/settings.local.json
