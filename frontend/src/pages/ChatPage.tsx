@@ -166,11 +166,9 @@ export default function ChatPage() {
 
     // Fetch partner last-seen for offline users in private chats
     useEffect(() => {
+        setPartnerLastSeenAt(null);
         if (chatType !== "PRIVATE" || !chatName) return;
-        if (partnerIsOnline) {
-            setPartnerLastSeenAt(null);
-            return;
-        }
+        if (partnerIsOnline) return;
         const cached = getLastSeen(chatName);
         if (cached) {
             setPartnerLastSeenAt(cached);
