@@ -513,7 +513,8 @@ export default function AppLayout() {
             if (pendingChatId.current === null) return;
             const chat = chats.find(c => c.chatId === pendingChatId.current);
             if (!chat) return;
-            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x, y });
+            const cx = Math.min(x, window.innerWidth - 160);
+            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: cx, y });
         }, [chats])
     );
 
@@ -647,7 +648,7 @@ export default function AppLayout() {
                                             }}
                                             onContextMenu={(e) => {
                                                 e.preventDefault();
-                                                setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
+                                                setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: Math.min(e.clientX, window.innerWidth - 160), y: e.clientY });
                                             }}
                                             onTouchStart={(e) => { pendingChatId.current = chat.chatId; chatTileLongPress.onTouchStart(e); }}
                                             onTouchMove={chatTileLongPress.onTouchMove}
@@ -725,7 +726,7 @@ export default function AppLayout() {
                                                         }}
                                                         onContextMenu={(e) => {
                                                             e.preventDefault();
-                                                            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: e.clientX, y: e.clientY });
+                                                            setChatContextMenu({ chatId: chat.chatId, isPinned: chat.pinnedAt != null, x: Math.min(e.clientX, window.innerWidth - 160), y: e.clientY });
                                                         }}
                                                         onTouchStart={(e) => { pendingChatId.current = chat.chatId; chatTileLongPress.onTouchStart(e); }}
                                                         onTouchMove={chatTileLongPress.onTouchMove}
