@@ -2944,6 +2944,18 @@ button {
     padding: 4px 11px 8px;
 }
 
+/* Single image + text: cap bubble at image max-width (280px) so text wraps under the image
+   and does not expand the bubble beyond the image width, leaving an empty gap beside it.
+   min() keeps the existing 65% constraint on narrow screens. */
+.message-bubble.has-media:has(.attachment-grid.single) {
+    max-width: min(286px, 65%); /* 280px image + 2×3px bubble padding */
+}
+
+/* Video + text: same fix for video thumb max-width (320px) */
+.message-bubble.has-media:has(.message-video-thumb) {
+    max-width: min(326px, 65%); /* 320px video + 2×3px bubble padding */
+}
+
 /* Reply preview inside a media bubble: restore side breathing room */
 .message-bubble.media-only .message-reply-preview,
 .message-bubble.has-media .message-reply-preview {
