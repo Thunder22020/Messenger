@@ -17,7 +17,7 @@ export interface UseVoiceRecorderReturn {
     isMaxReached: boolean;
     durationMs: number;
     analyserNode: AnalyserNode | null;
-    start: () => Promise<void>;
+    start: () => Promise<boolean>;
     pause: () => void;
     resume: () => void;
     stop: () => Promise<Blob>;
@@ -72,7 +72,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
         setAnalyserNode(null);
     }, [clearTick]);
 
-    const start = useCallback(async () => {
+    const start = useCallback(async (): Promise<boolean> => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
@@ -107,8 +107,10 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
             setIsPaused(false);
             setIsMaxReached(false);
             startTick();
+            return true;
         } catch {
             releaseResources();
+            return false;
         }
     }, [startTick, releaseResources]);
 

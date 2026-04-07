@@ -472,8 +472,8 @@ export default function ChatPage() {
                             type="button"
                             onClick={async () => {
                                 if (!voiceMode) {
-                                    await recorder.start();
-                                    setVoiceMode(true);
+                                    const granted = await recorder.start();
+                                    if (granted) setVoiceMode(true);
                                 } else {
                                     if (recorder.isMaxReached) return;
                                     if (recorder.isPaused) recorder.resume();
