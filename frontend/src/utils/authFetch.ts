@@ -1,5 +1,31 @@
 import { API_URL } from "../config";
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = (async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/auth/refresh`, {
+                method: "POST",
+                credentials: "include",
+            });
+            if (res.status === 401 || res.status === 400 || res.status === 403) {
+                localStorage.removeItem("accessToken");
+                window.location.href = "/login";
+                return null;
+            }
+            if (!res.ok) throw new Error(`Refresh failed with status ${res.status}`);
+            const data = await res.json();
+            localStorage.setItem("accessToken", data.accessToken);
+            return data.accessToken as string;
+        } finally {
+            refreshPromise = null;
+        }
+    })();
+    return refreshPromise;
+}
+
 export async function authFetch(
     url: string,
     options: RequestInit = {}
@@ -18,40 +44,20 @@ export async function authFetch(
         return response;
     }
 
-    // пробуем refresh
-    let refreshResponse: Response;
+    let newToken: string | null;
     try {
-        refreshResponse = await fetch(
-            `${API_URL}/api/auth/refresh`,
-            {
-                method: "POST",
-                credentials: "include",
-            }
-        );
+        newToken = await refreshAccessToken();
     } catch {
-        // network error — backend is down/restarting, don't log out
         throw new Error("Network error during token refresh");
     }
 
-    // only log out on actual auth failures, not transient server errors
-    if (refreshResponse.status === 401 || refreshResponse.status === 400 || refreshResponse.status === 403) {
-        localStorage.removeItem("accessToken");
-        window.location.href = "/login";
-        return;
-    }
-
-    if (!refreshResponse.ok) {
-        throw new Error(`Refresh failed with status ${refreshResponse.status}`);
-    }
-
-    const data = await refreshResponse.json();
-    localStorage.setItem("accessToken", data.accessToken);
+    if (!newToken) return;
 
     return fetch(url, {
         ...options,
         headers: {
             ...(options.headers || {}),
-            Authorization: `Bearer ${data.accessToken}`,
+            Authorization: `Bearer ${newToken}`,
         },
     });
 }

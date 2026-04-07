@@ -67,7 +67,8 @@ export function useChatSubscriptions({
         if (!client || !numericChatId) return;
 
         const subscription = client.subscribe(`/topic/chat.${numericChatId}.read`, (msg: { body: string }) => {
-            const body: ReadAckEvent = JSON.parse(msg.body);
+            let body: ReadAckEvent;
+            try { body = JSON.parse(msg.body); } catch { return; }
             if (body.readerUsername === currentUsername) return;
             setOtherParticipantsReadMap(prev => ({
                 ...prev,
@@ -83,7 +84,8 @@ export function useChatSubscriptions({
         if (!client || !numericChatId) return;
 
         const subscription = client.subscribe(`/topic/chat.${numericChatId}`, (msg: { body: string }) => {
-            const body = JSON.parse(msg.body);
+            let body: { type?: string };
+            try { body = JSON.parse(msg.body); } catch { return; }
             if (body.type === "SYSTEM") {
                 loadParticipants();
             }
@@ -97,10 +99,11 @@ export function useChatSubscriptions({
         if (!client || !numericChatId) return;
 
         const subscription = client.subscribe(`/topic/chat.${numericChatId}.typing`, (msg: { body: string }) => {
-            const body = JSON.parse(msg.body);
+            let body: { username?: string; isTyping?: boolean };
+            try { body = JSON.parse(msg.body); } catch { return; }
             if (body.username === currentUsername) return;
 
-            const { username, isTyping } = body;
+            const { username, isTyping } = body as { username: string; isTyping: boolean };
             if (typingTimersRef.current[username]) {
                 clearTimeout(typingTimersRef.current[username]);
                 delete typingTimersRef.current[username];

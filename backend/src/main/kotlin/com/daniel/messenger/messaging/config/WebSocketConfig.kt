@@ -4,6 +4,7 @@ import com.daniel.messenger.messaging.interceptor.JwtChannelInterceptor
 import com.daniel.messenger.messaging.interceptor.SubscriptionAuthInterceptor
 import com.daniel.messenger.security.ratelimit.WsRateLimitInterceptor
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
@@ -42,7 +43,8 @@ class WebSocketConfig(
             .setMessageSizeLimit(MESSAGE_SIZE_LIMIT)
     }
 
-    private fun getScheduler() = ThreadPoolTaskScheduler().apply {
+    @Bean
+    fun getScheduler() = ThreadPoolTaskScheduler().apply {
         poolSize = 1
         setThreadNamePrefix("ws-heartbeat-")
         initialize()
