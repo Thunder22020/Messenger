@@ -12,7 +12,10 @@ export function ScrollToBottomButton(props: {
           onJumpToLatest();
         } else {
           const container = document.querySelector<HTMLDivElement>(".chat-messages");
-          if (container) container.scrollTop = container.scrollHeight;
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+            requestAnimationFrame(() => { void container.offsetHeight; });
+          }
         }
       }}
     >

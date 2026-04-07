@@ -61,6 +61,11 @@ export function useChatScroll(numericChatId: number | null) {
         pendingDividerScrollRef.current = true;
     }, []);
 
+    // Force GPU tile repaint on old iOS Safari after programmatic scroll
+    const forceRepaint = (el: HTMLElement) => {
+        requestAnimationFrame(() => { void el.offsetHeight; });
+    };
+
     /** Call after each render where messages changed to apply pending scroll actions. */
     const applyPendingScroll = useCallback(() => {
         const container = chatContainerRef.current;
@@ -68,6 +73,7 @@ export function useChatScroll(numericChatId: number | null) {
 
         if (shouldScrollToBottom.current) {
             container.scrollTop = container.scrollHeight;
+            forceRepaint(container);
             shouldScrollToBottom.current = false;
             isAtBottomRef.current = true;
             if (!hasMoreNewerRef.current) triggerMarkAsRead();
