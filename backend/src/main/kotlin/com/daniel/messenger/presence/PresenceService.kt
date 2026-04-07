@@ -1,16 +1,20 @@
 package com.daniel.messenger.presence
 
+import com.daniel.messenger.user.repository.UserRepository
 import jakarta.annotation.PostConstruct
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.RedisScript
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
+import java.time.Instant
 
 @Service
 class PresenceService(
     private val redis: RedisTemplate<String, String>,
-    private val simpMessagingTemplate: SimpMessagingTemplate
+    private val simpMessagingTemplate: SimpMessagingTemplate,
+    private val userRepository: UserRepository,
 ) {
     @PostConstruct
     fun cleanupOnStartup() {
@@ -23,6 +27,7 @@ class PresenceService(
         redis.opsForValue().increment(connectionKey(userId))
     }
 
+    @Transactional
     fun userDisconnected(userId: Long, username: String) {
         val cnt = redis.opsForValue().decrement(connectionKey(userId)) ?: 0L
         if (!isAllConnectionsClosed(cnt)) return
@@ -31,8 +36,10 @@ class PresenceService(
         redis.delete(connectionKey(userId))
 
         val numOfRemoved = redis.opsForSet().remove(ONLINE_KEY, username)
-        if (numOfRemoved > 0) {
-            sendOfflinePresenceEvent(username)
+        if (numOfRemoved != null && numOfRemoved > 0) {
+            val now = Instant.now()
+            userRepository.updateLastSeenAt(username, now)
+            sendOfflinePresenceEvent(username, now)
         }
     }
 
@@ -48,13 +55,18 @@ class PresenceService(
         }
     }
 
+    @Transactional
     fun evictStaleUsers() {
         val evicted = redis.execute(
             EVICT_SCRIPT,
             listOf(ONLINE_KEY),
             HEARTBEAT_KEY,
         )?.filterIsInstance<String>() ?: return
-        evicted.forEach { sendOfflinePresenceEvent(it) }
+        val now = Instant.now()
+        evicted.forEach {
+            userRepository.updateLastSeenAt(it, now)
+            sendOfflinePresenceEvent(it, now)
+        }
     }
 
     fun getOnlineUsernames(): Set<String> =
@@ -62,18 +74,20 @@ class PresenceService(
 
     private fun isAllConnectionsClosed(cnt: Long) = cnt <= 0L
 
+    fun getLastSeen(username: String): Instant? =
+        userRepository.findByUsername(username)?.lastSeenAt
+
     private fun sendOnlinePresenceEvent(username: String) {
-        sendPresenceEvent(username, true)
-    }
-
-    private fun sendOfflinePresenceEvent(username: String) {
-        sendPresenceEvent(username, false)
-    }
-
-    private fun sendPresenceEvent(username: String, online: Boolean) {
         simpMessagingTemplate.convertAndSend(
             PRESENCE_TOPIC,
-            PresenceEvent(username, online)
+            PresenceEvent(username, true)
+        )
+    }
+
+    private fun sendOfflinePresenceEvent(username: String, lastSeenAt: Instant) {
+        simpMessagingTemplate.convertAndSend(
+            PRESENCE_TOPIC,
+            PresenceEvent(username, false, lastSeenAt)
         )
     }
 

@@ -7,12 +7,17 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 
 interface PresenceContextValue {
     isOnline: (username: string) => boolean;
+    getLastSeen: (username: string) => string | null;
 }
 
-const PresenceContext = createContext<PresenceContextValue>({ isOnline: () => false });
+const PresenceContext = createContext<PresenceContextValue>({
+    isOnline: () => false,
+    getLastSeen: () => null,
+});
 
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+    const [lastSeenMap, setLastSeenMap] = useState<Map<string, string>>(new Map());
     const client = useWebSocket();
 
     // Fetch initial online set on mount
@@ -63,13 +68,16 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
         window.addEventListener("beforeunload", stopHeartbeat);
 
         const sub = client.subscribe("/topic/presence", (msg) => {
-            const ev: { username: string; online: boolean } = JSON.parse(msg.body);
+            const ev: { username: string; online: boolean; lastSeenAt?: string } = JSON.parse(msg.body);
             setOnlineUsers(prev => {
                 const next = new Set(prev);
                 if (ev.online) next.add(ev.username);
                 else next.delete(ev.username);
                 return next;
             });
+            if (!ev.online && ev.lastSeenAt) {
+                setLastSeenMap(prev => new Map(prev).set(ev.username, ev.lastSeenAt!));
+            }
         });
 
         return () => {
@@ -82,7 +90,10 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     }, [client]);
 
     return (
-        <PresenceContext.Provider value={{ isOnline: (u) => onlineUsers.has(u) }}>
+        <PresenceContext.Provider value={{
+            isOnline: (u) => onlineUsers.has(u),
+            getLastSeen: (u) => lastSeenMap.get(u) ?? null,
+        }}>
             {children}
         </PresenceContext.Provider>
     );

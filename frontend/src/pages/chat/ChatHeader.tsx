@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../context/LanguageContext";
+import { formatLastSeen } from "../../utils/formatLastSeen";
 
 export function ChatHeader(props: {
   chatName: string;
   chatType: string | null;
   participantsCount: number;
   isOnline?: boolean;
+  lastSeenAt?: string;
   typingText?: string;
   onHeaderClick: () => void;
   onToggleInfo: () => void;
@@ -16,10 +18,17 @@ export function ChatHeader(props: {
   onVideoCall?: () => void;
   isInCall?: boolean;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
-  const { t } = useLanguage();
+  const { chatName, chatType, participantsCount, isOnline, lastSeenAt, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
+  const { t, lang } = useLanguage();
 
+  const [, setTick] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!lastSeenAt) return;
+    const id = setInterval(() => setTick(n => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [lastSeenAt]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +50,7 @@ export function ChatHeader(props: {
     if (chatType === "PRIVATE") {
       if (typingText) return <div className="chat-header-typing">{typingText}</div>;
       if (isOnline)   return <div className="chat-header-online">{t("chatHeader.online")}</div>;
+      if (lastSeenAt) return <div className="chat-header-last-seen">{formatLastSeen(lastSeenAt, lang, t("chatHeader.lastSeen"))}</div>;
       return null;
     }
     if (chatType === "GROUP") {

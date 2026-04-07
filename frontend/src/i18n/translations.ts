@@ -99,6 +99,7 @@ const en: Translations = {
 
   // Chat header
   "chatHeader.online": "online",
+  "chatHeader.lastSeen": "last seen",
   "chatHeader.members": "{count} members",
   "chatHeader.audioCall": "Audio Call",
   "chatHeader.videoCall": "Video Call",
@@ -218,6 +219,7 @@ const ru: Translations = {
 
   // Chat header
   "chatHeader.online": "в сети",
+  "chatHeader.lastSeen": "был в сети",
   "chatHeader.members": "{count} участников",
   "chatHeader.audioCall": "Голосовой звонок",
   "chatHeader.videoCall": "Видеозвонок",

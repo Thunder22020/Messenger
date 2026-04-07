@@ -35,7 +35,7 @@ export default function ChatPage() {
     const client = useWebSocket();
     const { initiateCall, activeCall: currentActiveCall } = useCall();
     const setRightPanel = useSetRightPanel();
-    const { isOnline } = usePresence();
+    const { isOnline, getLastSeen } = usePresence();
     const { t } = useLanguage();
 
     const token = localStorage.getItem("accessToken");
@@ -43,6 +43,8 @@ export default function ChatPage() {
 
     const [chatName, setChatName] = useState("");
     const [chatType, setChatType] = useState<string | null>(null);
+    const [partnerLastSeenAt, setPartnerLastSeenAt] = useState<string | null>(null);
+    const partnerIsOnline = chatType === "PRIVATE" ? isOnline(chatName) : false;
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isSearchClosing, setIsSearchClosing] = useState(false);
@@ -161,6 +163,28 @@ export default function ChatPage() {
         loadChatInfo();
         return () => { cancelled = true; };
     }, [numericChatId]);
+
+    // Fetch partner last-seen for offline users in private chats
+    useEffect(() => {
+        if (chatType !== "PRIVATE" || !chatName) return;
+        if (partnerIsOnline) {
+            setPartnerLastSeenAt(null);
+            return;
+        }
+        const cached = getLastSeen(chatName);
+        if (cached) {
+            setPartnerLastSeenAt(cached);
+            return;
+        }
+        let cancelled = false;
+        authFetch(`${API_URL}/api/users/${chatName}/last-seen`)
+            .then(r => (r && r.ok ? r.json() : null))
+            .then((data: { lastSeenAt: string } | null) => {
+                if (!cancelled && data?.lastSeenAt) setPartnerLastSeenAt(data.lastSeenAt);
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [chatType, chatName, partnerIsOnline, getLastSeen]);
 
     // Apply pending scroll actions after messages/divider change (useLayoutEffect = before paint)
     useLayoutEffect(() => {
@@ -302,7 +326,8 @@ export default function ChatPage() {
                     chatName={chatName}
                     chatType={chatType}
                     participantsCount={participants.length}
-                    isOnline={chatType === "PRIVATE" ? isOnline(chatName) : undefined}
+                    isOnline={chatType === "PRIVATE" ? partnerIsOnline : undefined}
+                    lastSeenAt={chatType === "PRIVATE" ? (partnerLastSeenAt ?? undefined) : undefined}
                     typingText={typingUsers.length > 0 ? getTypingText() : undefined}
                     onHeaderClick={handleHeaderClick}
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}
