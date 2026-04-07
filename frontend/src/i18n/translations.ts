@@ -225,7 +225,7 @@ const ru: Translations = {
 
   // Chat header
   "chatHeader.online": "в сети",
-  "chatHeader.lastSeen": "был в сети",
+  "chatHeader.lastSeen": "был(-а) в сети",
   "chatHeader.members": "{count} участников",
   "chatHeader.audioCall": "Голосовой звонок",
   "chatHeader.videoCall": "Видеозвонок",
