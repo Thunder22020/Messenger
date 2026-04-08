@@ -3522,9 +3522,7 @@ button {
 }
 
 .message-bubble.voice-bubble {
-    min-width: 220px;
-    max-width: 280px;
-    padding: 10px 12px 8px;
+    width: 301px;
 }
 
 .voice-message-bubble {
