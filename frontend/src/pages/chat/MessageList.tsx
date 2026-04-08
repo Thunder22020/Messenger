@@ -581,6 +581,7 @@ const MAX_SWIPE_OFFSET = 72;
 
 interface SwipeState {
   col: HTMLElement;
+  row: HTMLElement;
   icon: HTMLElement | null;
   startX: number;
   startY: number;
@@ -653,14 +654,15 @@ export function MessageList(props: {
       if (!bubble) return;
       const col = bubble.closest('.message-bubble-col') as HTMLElement | null;
       if (!col) return;
-      const row = bubble.closest('[data-message-id]') as HTMLElement | null;
-      if (!row) return;
-      const msgId = parseInt((row as HTMLElement).dataset.messageId ?? '', 10);
+      const dataRow = bubble.closest('[data-message-id]') as HTMLElement | null;
+      if (!dataRow) return;
+      const msgId = parseInt((dataRow as HTMLElement).dataset.messageId ?? '', 10);
       if (isNaN(msgId)) return;
       const messageRow = bubble.closest('.message-row') as HTMLElement | null;
-      const icon = messageRow?.querySelector('.swipe-reply-icon') as HTMLElement | null;
+      if (!messageRow) return;
+      const icon = messageRow.querySelector('.swipe-reply-icon') as HTMLElement | null;
       const t = e.touches[0];
-      swipeStateRef.current = { col, icon, startX: t.clientX, startY: t.clientY, locked: null, active: false, msgId };
+      swipeStateRef.current = { col, row: messageRow, icon, startX: t.clientX, startY: t.clientY, locked: null, active: false, msgId };
     };
 
     const onMove = (e: TouchEvent) => {
@@ -680,6 +682,7 @@ export function MessageList(props: {
 
       if (!sw.active) {
         sw.active = true;
+        sw.row.style.overflow = 'visible';
         longPressCancelRef.current();
       }
 
@@ -707,6 +710,7 @@ export function MessageList(props: {
       sw.col.addEventListener('transitionend', () => {
         sw.col.style.transition = '';
         sw.col.style.transform = '';
+        sw.row.style.overflow = '';
       }, { once: true });
 
       if (sw.icon) {
