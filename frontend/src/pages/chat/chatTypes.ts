@@ -33,6 +33,23 @@ export interface UploadingBubble {
   progress: number;
 }
 
+export interface ReactionDto {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+}
+
+export interface WsReactionDto {
+  emoji: string;
+  count: number;
+  reactorUsernames: string[];
+}
+
+export interface ReactionUpdatedWsEvent {
+  messageId: number;
+  reactions: WsReactionDto[];
+}
+
 export interface Message {
   id: number;
   type?: string;
@@ -44,6 +61,7 @@ export interface Message {
   replyToMessageId?: number;
   replyPreview?: ReplyPreview;
   attachments?: AttachmentDto[];
+  reactions?: ReactionDto[];
 }
 
 export interface JwtPayload {

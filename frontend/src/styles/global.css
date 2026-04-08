@@ -28,6 +28,7 @@
 
     /* ===== ACCENT (MILK) ===== */
 
+    --accent-rgb: 234, 224, 210;
     --accent: #EAE0D2;
     --accent-hover: #F2EBE0;
     --accent-soft: #C6BCB2;
@@ -576,7 +577,7 @@ button {
 }
 
 .message-bubble {
-    max-width: 65%;
+    max-width: 100%;
     min-width: 80px;
     -webkit-user-select: none;
     user-select: none;
@@ -5126,6 +5127,25 @@ body,
         0 2px 8px rgba(80,60,40,0.10);
 }
 
+[data-theme="light"] .emoji-quick-bar {
+    border-bottom-color: rgba(0,0,0,0.15);
+}
+[data-theme="light"] .emoji-full-grid {
+    border-bottom-color: rgba(0,0,0,0.15);
+}
+[data-theme="light"] .emoji-expand-btn {
+    background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .emoji-expand-btn:hover {
+    background: rgba(0,0,0,0.18);
+}
+[data-theme="light"] .emoji-btn:hover {
+    background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .context-menu-separator {
+    background: rgba(0,0,0,0.15);
+}
+
 [data-theme="light"] .context-menu-item:hover {
     background: rgba(0,0,0,0.055);
 }
@@ -6277,4 +6297,119 @@ body,
 
 [data-theme="light"] .chat-header-mobile-menu-item:active {
     background: rgba(0,0,0,0.08);
+}
+
+/* ── Reaction chips under messages ─────────────────── */
+.message-bubble-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 65%;
+    min-width: 0;
+}
+
+.reaction-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 0 4px;
+    justify-content: flex-start;
+    font-size: 14px;
+    align-self: flex-start;
+}
+
+.message-row.mine .reaction-row {
+    align-self: flex-end;
+    justify-content: flex-start;
+}
+
+.reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.reaction-chip:hover   { background: rgba(255,255,255,0.14); }
+.reaction-chip.reacted { background: rgba(var(--accent-rgb), 0.18); border-color: var(--accent); }
+
+[data-theme="light"] .reaction-chip {
+    border-color: rgba(0,0,0,0.25);
+}
+[data-theme="light"] .reaction-chip:hover {
+    background: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .reaction-chip.reacted {
+    background: rgba(0,0,0,0.05);
+    border-color: var(--accent);
+}
+
+.reaction-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Emoji picker inside context menu ──────────────── */
+.emoji-quick-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.emoji-full-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.emoji-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+}
+.emoji-btn:hover { background: rgba(255,255,255,0.12); }
+
+.emoji-expand-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 2px;
+    transition: background 0.1s;
+    border: none;
+}
+.emoji-expand-btn:hover { background: rgba(255,255,255,0.16); }
+
+.context-menu-separator {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 0;
 }

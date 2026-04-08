@@ -589,6 +589,7 @@ export function MessageList(props: {
   onScrollToMessage: (messageId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onImageLoad?: () => void;
+  onToggleReaction: (messageId: number, emoji: string) => void;
 }) {
   const {
     dateGroups,
@@ -603,6 +604,7 @@ export function MessageList(props: {
     onScrollToMessage,
     onMediaClick,
     onImageLoad,
+    onToggleReaction,
   } = props;
   const { t } = useLanguage();
 
@@ -613,8 +615,8 @@ export function MessageList(props: {
     useCallback((x: number, y: number) => {
       if (!pendingMsg.current) return;
       const { msg, isMine } = pendingMsg.current;
-      const cx = Math.min(x, window.innerWidth - 148);
-      const cy = Math.min(y, window.innerHeight - 160);
+      const cx = Math.min(x, window.innerWidth - 220);
+      const cy = Math.min(y, window.innerHeight - 220);
       onMessageContextMenu(cx, cy, msg, isMine);
     }, [onMessageContextMenu])
   );
@@ -699,12 +701,13 @@ export function MessageList(props: {
                             />
                           )}
 
+                          <div className="message-bubble-col">
                           <div
                             className={`message-bubble${isVoice ? " voice-bubble" : isMediaOnly || isVideoOnly ? " media-only" : hasMedia || hasVideos ? " has-media" : ""}`}
                             onContextMenu={(e) => {
                               e.preventDefault();
-                              const cx = Math.min(e.clientX, window.innerWidth - 148);
-                              const cy = Math.min(e.clientY, window.innerHeight - 160);
+                              const cx = Math.min(e.clientX, window.innerWidth - 220);
+                              const cy = Math.min(e.clientY, window.innerHeight - 220);
                               onMessageContextMenu(cx, cy, msg, isMine);
                             }}
                             onTouchStart={(e) => {
@@ -792,6 +795,27 @@ export function MessageList(props: {
                                 )}
                               </>
                             )}
+                          </div>
+                          {msg.reactions && msg.reactions.length > 0 && (
+                            <div className="reaction-row">
+                              {[...msg.reactions]
+                                .sort((a, b) => {
+                                  if (b.count !== a.count) return b.count - a.count;
+                                  if (a.reactedByMe !== b.reactedByMe) return a.reactedByMe ? -1 : 1;
+                                  return 0;
+                                })
+                                .map(r => (
+                                <button
+                                  key={r.emoji}
+                                  className={`reaction-chip${r.reactedByMe ? " reacted" : ""}`}
+                                  onClick={() => onToggleReaction(msg.id, r.emoji)}
+                                  type="button"
+                                >
+                                  {r.emoji} <span className="reaction-count">{r.count}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           </div>
                         </div>
                       </div>

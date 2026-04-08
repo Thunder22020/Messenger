@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging.service
 import com.daniel.messenger.messaging.dto.ChatDTO
 import com.daniel.messenger.messaging.dto.event.ChatUpdateEvent
 import com.daniel.messenger.messaging.dto.event.ChatUpdateType
+import com.daniel.messenger.messaging.dto.event.ReactionUpdatedEvent
 import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.dto.event.ReadAckEvent
 import com.daniel.messenger.messaging.dto.event.TypingEvent
@@ -77,6 +78,10 @@ class ChatNotificationService(
 
     fun sendSidebarUpdate(username: String, event: ChatUpdateEvent) {
         messagingTemplate.convertAndSendToUser(username, "/queue/chat-updates", event)
+    }
+
+    fun broadcastReactionUpdate(event: ReactionUpdatedEvent) {
+        messagingTemplate.convertAndSend("/topic/chat.${event.chatId}.reactions", event)
     }
 
     fun sendChatDeleted(username: String, chatId: Long) {

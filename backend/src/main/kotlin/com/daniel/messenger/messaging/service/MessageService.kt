@@ -4,13 +4,16 @@ import com.daniel.messenger.messaging.dto.AttachmentDto
 import com.daniel.messenger.messaging.dto.request.EditMessageRequest
 import com.daniel.messenger.messaging.dto.response.MessageResponse
 import com.daniel.messenger.messaging.dto.response.PagedMessageResponse
+import com.daniel.messenger.messaging.dto.response.ReactionDto
 import com.daniel.messenger.messaging.dto.ReplyPreviewDto
 import com.daniel.messenger.messaging.dto.request.SendMessageRequest
 import com.daniel.messenger.messaging.entity.MessageEntity
+import com.daniel.messenger.messaging.entity.MessageReaction
 import com.daniel.messenger.messaging.enum.AttachmentType
 import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
 import com.daniel.messenger.messaging.exception.NotMessageOwnerException
+import com.daniel.messenger.messaging.repository.MessageReactionRepository
 import com.daniel.messenger.messaging.repository.MessageRepository
 import com.daniel.messenger.messaging.toDto
 import com.daniel.messenger.messaging.toResponse
@@ -25,6 +28,7 @@ import java.time.Instant
 @Service
 class MessageService(
     private val messageRepository: MessageRepository,
+    private val messageReactionRepository: MessageReactionRepository,
     private val chatService: ChatService,
     private val userService: UserService,
     private val attachmentService: AttachmentService,
@@ -122,6 +126,7 @@ class MessageService(
 
         return buildPagedResponse(
             messagesPage,
+            userId,
             hasMoreOlder = hasMoreOlder,
             hasMoreNewer = false
         )
@@ -144,6 +149,7 @@ class MessageService(
 
         return buildPagedResponse(
             messagesPage,
+            userId,
             hasMoreOlder = hasMoreOlder,
             hasMoreNewer = false
         )
@@ -165,6 +171,7 @@ class MessageService(
 
         return buildPagedResponse(
             messagesPage,
+            userId,
             hasMoreOlder = false,
             hasMoreNewer = hasMoreNewer
         )
@@ -201,6 +208,7 @@ class MessageService(
 
         return buildPagedResponse(
             messagesPage,
+            userId,
             hasMoreOlder,
             hasMoreNewer
         )
@@ -215,21 +223,30 @@ class MessageService(
         val messages = messageRepository.findAllByIdInWithSender(ids)
             .sortedByDescending { it.createdAt }
         val attachments = loadAttachments(messages)
-        return messages.map { it.toResponse(attachments = attachments[it.id] ?: emptyList()) }
+        val reactions = loadReactions(messages, userId)
+        return messages.map {
+            it.toResponse(
+                attachments = attachments[it.id] ?: emptyList(),
+                reactions = reactions[it.id] ?: emptyList(),
+            )
+        }
     }
 
     private fun buildPagedResponse(
         messages: List<MessageEntity>,
+        userId: Long,
         hasMoreOlder: Boolean,
         hasMoreNewer: Boolean
     ): PagedMessageResponse {
         val replyPreviews = loadReplyPreviews(messages)
         val attachments = loadAttachments(messages)
+        val reactions = loadReactions(messages, userId)
 
         val response = messages.map {
             it.toResponse(
                 replyPreview = replyPreviews[it.replyToMessageId],
-                attachments = attachments[it.id] ?: emptyList()
+                attachments = attachments[it.id] ?: emptyList(),
+                reactions = reactions[it.id] ?: emptyList(),
             )
         }
 
@@ -296,6 +313,26 @@ class MessageService(
         return attachmentService.getAttachmentsGroupedByMessageId(ids)
             .mapValues { (_, list) -> list.map { it.toDto() } }
     }
+
+    private fun loadReactions(messages: List<MessageEntity>, userId: Long): Map<Long, List<ReactionDto>> {
+        val ids = messages.mapNotNull { it.id }.ifEmpty { return emptyMap() }
+
+        return messageReactionRepository.findAllByMessageIdIn(ids)
+            .groupBy { it.messageId }
+            .mapValues { (_, rows) -> aggregateReactions(rows, userId) }
+    }
+
+    private fun aggregateReactions(rows: List<MessageReaction>, viewerId: Long): List<ReactionDto> =
+        rows
+            .groupBy { it.emoji }
+            .map { (emoji, group) ->
+                ReactionDto(
+                    emoji = emoji,
+                    count = group.size,
+                    reactedByMe = group.any { it.userId == viewerId },
+                )
+            }
+            .sortedWith(compareByDescending<ReactionDto> { it.count }.thenBy { it.emoji })
 
     private fun toMessageResponse(message: MessageEntity): MessageResponse =
         if (message.deletedAt != null) {

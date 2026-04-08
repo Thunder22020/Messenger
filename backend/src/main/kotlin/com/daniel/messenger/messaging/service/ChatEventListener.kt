@@ -4,6 +4,7 @@ import com.daniel.messenger.messaging.dto.event.ChatDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageDeletedEvent
 import com.daniel.messenger.messaging.dto.event.MessageEditedEvent
 import com.daniel.messenger.messaging.dto.event.MessageSentEvent
+import com.daniel.messenger.messaging.dto.event.ReactionUpdatedEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
@@ -34,6 +35,11 @@ class ChatEventListener(
         if (event.isLastMessage) {
             chatNotificationService.broadcastSidebarUpdate(event.participants, event.chat)
         }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onReactionUpdated(event: ReactionUpdatedEvent) {
+        chatNotificationService.broadcastReactionUpdate(event)
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

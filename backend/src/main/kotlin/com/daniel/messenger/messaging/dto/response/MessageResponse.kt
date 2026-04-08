@@ -15,4 +15,5 @@ data class MessageResponse(
     val replyToMessageId: Long? = null,
     val replyPreview: ReplyPreviewDto? = null,
     val attachments: List<AttachmentDto> = emptyList(),
+    val reactions: List<ReactionDto> = emptyList(),
 )

@@ -87,7 +87,7 @@ export default function ChatPage() {
         messages, hasMoreNewer, deletingMessageIds,
         unreadDividerMessageId, dividerRef, newestIdRef,
         loadOlderMessages, loadNewerMessages, scrollToMessage,
-        startCollapseAnimation, jumpToLatest,
+        startCollapseAnimation, onReactionUpdated, jumpToLatest,
     } = useChatMessages({
         numericChatId,
         currentUsername,
@@ -110,6 +110,7 @@ export default function ChatPage() {
         currentUsername,
         chatType,
         client,
+        onReactionUpdated,
     });
 
     // --- Voice recorder ---
@@ -279,6 +280,14 @@ export default function ChatPage() {
         setContextMenu(null);
     };
 
+    const toggleReaction = useCallback(async (messageId: number, emoji: string) => {
+        await authFetch(`${API_URL}/messages/${messageId}/reactions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emoji }),
+        });
+    }, []);
+
     const handleScroll = () => {
         const el = chatContainerRef.current;
         if (!el) return;
@@ -384,6 +393,7 @@ export default function ChatPage() {
                             setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                         }
                         onImageLoad={onMediaLoad}
+                        onToggleReaction={toggleReaction}
                     />
                 </div>
 
@@ -517,6 +527,10 @@ export default function ChatPage() {
                         onCopy={handleCopyText}
                         onEdit={handleStartEdit}
                         onDelete={handleDeleteMessage}
+                        onReact={(emoji) => {
+                            toggleReaction(contextMenu.messageId, emoji);
+                            setContextMenu(null);
+                        }}
                     />
                 )}
             </div>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
-import type { Message } from "./chatTypes";
+import type { Message, ReactionDto } from "./chatTypes";
 import type { Client } from "@stomp/stompjs";
 
 const COLLAPSE_MS = 320;
@@ -181,7 +181,10 @@ export function useChatMessages({
                     return [...prev, body];
                 }
                 const next = [...prev];
-                next[idx] = body;
+                next[idx] = {
+                    ...body,
+                    reactions: body.reactions?.length ? body.reactions : prev[idx].reactions,
+                };
                 return next.map(m =>
                     m.replyPreview?.messageId === body.id
                         ? { ...m, replyPreview: { ...m.replyPreview, content: body.content } }
@@ -319,6 +322,16 @@ export function useChatMessages({
         }
     }, [messages, numericChatId, pendingScrollToMessageIdRef]);
 
+    const onReactionUpdated = useCallback((messageId: number, reactions: ReactionDto[]) => {
+        setMessages(prev => {
+            const idx = prev.findIndex(m => m.id === messageId);
+            if (idx === -1) return prev;
+            const next = [...prev];
+            next[idx] = { ...next[idx], reactions };
+            return next;
+        });
+    }, []);
+
     const jumpToLatest = useCallback(async () => {
         if (!numericChatId) return;
         const res = await authFetch(`${API_URL}/messages/${numericChatId}`);
@@ -348,6 +361,7 @@ export function useChatMessages({
         loadNewerMessages,
         scrollToMessage,
         startCollapseAnimation,
+        onReactionUpdated,
         jumpToLatest,
     };
 }

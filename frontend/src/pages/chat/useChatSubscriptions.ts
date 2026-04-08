@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type MutableRefObject } from "react";
 import type { Client } from "@stomp/stompjs";
-import type { ChatParticipant, ReadAckEvent } from "./chatTypes";
+import type { ChatParticipant, ReadAckEvent, ReactionDto, ReactionUpdatedWsEvent, WsReactionDto } from "./chatTypes";
 import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
 import { useLanguage } from "../../context/LanguageContext";
@@ -10,6 +10,7 @@ interface UseChatSubscriptionsParams {
     currentUsername: string | null;
     chatType: string | null;
     client: Client | null;
+    onReactionUpdated: (messageId: number, reactions: ReactionDto[]) => void;
 }
 
 export function useChatSubscriptions({
@@ -17,6 +18,7 @@ export function useChatSubscriptions({
     currentUsername,
     chatType,
     client,
+    onReactionUpdated,
 }: UseChatSubscriptionsParams) {
     const { t } = useLanguage();
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
@@ -127,6 +129,24 @@ export function useChatSubscriptions({
             setTypingUsers([]);
         };
     }, [client, numericChatId, currentUsername]);
+
+    // Reactions subscription
+    useEffect(() => {
+        if (!client || !numericChatId) return;
+
+        const subscription = client.subscribe(`/topic/chat.${numericChatId}.reactions`, (msg: { body: string }) => {
+            let event: ReactionUpdatedWsEvent;
+            try { event = JSON.parse(msg.body); } catch { return; }
+            const reactions: ReactionDto[] = event.reactions.map((r: WsReactionDto) => ({
+                emoji: r.emoji,
+                count: r.count,
+                reactedByMe: currentUsername != null && r.reactorUsernames.includes(currentUsername),
+            }));
+            onReactionUpdated(event.messageId, reactions);
+        });
+
+        return () => { subscription.unsubscribe(); };
+    }, [client, numericChatId, currentUsername, onReactionUpdated]);
 
     const isReadByAnyOther = useCallback(
         (messageId: number): boolean =>

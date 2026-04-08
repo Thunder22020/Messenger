@@ -3,6 +3,7 @@ package com.daniel.messenger.messaging
 import com.daniel.messenger.messaging.dto.AttachmentDto
 import com.daniel.messenger.messaging.dto.ChatDTO
 import com.daniel.messenger.messaging.dto.response.MessageResponse
+import com.daniel.messenger.messaging.dto.response.ReactionDto
 import com.daniel.messenger.messaging.dto.ReplyPreviewDto
 import com.daniel.messenger.messaging.dto.event.snapshots.ParticipantSnapshot
 import com.daniel.messenger.messaging.entity.Attachment
@@ -17,6 +18,7 @@ fun MessageEntity.toResponse(
     senderUsername: String? = null,
     replyPreview: ReplyPreviewDto? = null,
     attachments: List<AttachmentDto> = emptyList(),
+    reactions: List<ReactionDto> = emptyList(),
 ): MessageResponse = MessageResponse(
     id = requireNotNull(id),
     type = type.name,
@@ -28,6 +30,7 @@ fun MessageEntity.toResponse(
     replyToMessageId = replyToMessageId,
     replyPreview = replyPreview,
     attachments = attachments,
+    reactions = reactions,
 )
 
 fun Attachment.toDto(): AttachmentDto = AttachmentDto(
