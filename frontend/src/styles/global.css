@@ -2957,14 +2957,16 @@ button {
 
 /* Single image + text: cap bubble at image max-width (280px) so text wraps under the image
    and does not expand the bubble beyond the image width, leaving an empty gap beside it.
-   min() keeps the existing 65% constraint on narrow screens. */
+   width (not max-width) gives the bubble a definite size so the parent .message-bubble-col's
+   max-content is correctly calculated as 286px instead of the image's intrinsic size.
+   vw units reference the viewport directly (not the % parent chain) for reliable sizing. */
 .message-bubble.has-media:has(.attachment-grid.single) {
-    max-width: min(286px, 65%); /* 280px image + 2×3px bubble padding */
+    width: min(286px, 65vw);
 }
 
 /* Video + text: same fix for video thumb max-width (320px) */
 .message-bubble.has-media:has(.message-video-thumb) {
-    max-width: min(326px, 65%); /* 320px video + 2×3px bubble padding */
+    width: min(326px, 65vw);
 }
 
 /* Reply preview inside a media bubble: restore side breathing room */
@@ -6304,9 +6306,16 @@ body,
 .message-bubble-col {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: stretch;   /* bubble + reaction-row both fill col width */
     max-width: 65%;
     min-width: 0;
+}
+
+/* Image/video bubbles have explicit width so stretch doesn't apply,
+   but they need align-self to position correctly within the col. */
+.message-row.mine .message-bubble.has-media,
+.message-row.mine .message-bubble.media-only {
+    align-self: flex-end;
 }
 
 .reaction-row {
@@ -6317,12 +6326,20 @@ body,
     padding: 0 4px;
     justify-content: flex-start;
     font-size: 14px;
-    align-self: flex-start;
+    /* min-width: 100% + max-width: 360px implement conditional row-capping:
+       - Short message (col ≤ 360px): min-width=col ≤ max-width → max-width applies → wraps at 360px
+       - Long message  (col > 360px): min-width=col > max-width → CSS raises max-width to min-width
+                                       → reaction-row fills full col → all chips stay on one row
+       This automatically detects "who drove the col's width" without any JS. */
+    min-width: 100%;
+    max-width: 303px;
 }
 
+/* On mine messages the col is right-aligned; when the bubble is wider than 360px
+   (long text case), keep reactions flush to the right edge of the bubble. */
 .message-row.mine .reaction-row {
     align-self: flex-end;
-    justify-content: flex-start;
+    justify-content: flex-end;
 }
 
 .reaction-chip {
