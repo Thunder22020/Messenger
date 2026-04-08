@@ -70,7 +70,8 @@ export async function initPushNotifications(): Promise<void> {
 export async function unsubscribePush(): Promise<void> {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) return;
         const sub = await registration.pushManager.getSubscription();
         if (!sub) return;
         await authFetch(`${API_URL}/api/push/subscribe`, {

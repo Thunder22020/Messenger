@@ -540,20 +540,26 @@ export default function AppLayout() {
     };
 
     const handleLogout = async () => {
-        const token = localStorage.getItem("accessToken");
-
-        await unsubscribePush();
-
-        await fetch(`${API_URL}/api/auth/logout`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        localStorage.removeItem("accessToken");
-        navigate("/login");
+        console.log("IM LOGOUT");
+        try {
+            console.log("TRY");
+            await unsubscribePush();
+            console.log("UNSUB");
+            const token = localStorage.getItem("accessToken");
+            await fetch(`${API_URL}/api/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            console.log("SUCCESS");
+        } catch {
+            console.log("CATCH");
+            // ignore — always clean up
+        } finally {
+            localStorage.removeItem("accessToken");
+            window.location.href = "/login";
+            console.log("FINALLY");
+        }
     };
 
     useEffect(() => {

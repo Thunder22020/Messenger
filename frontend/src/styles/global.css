@@ -1473,17 +1473,18 @@ button {
 /* ===== LOGOUT POPUP ===== */
 
 .logout-popup-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
 
     background: var(--overlay-main);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    z-index: 300;
+    z-index: 10000;
 }
 
 .logout-popup {
