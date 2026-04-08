@@ -330,7 +330,10 @@ export function useChatMessages({
             next[idx] = { ...next[idx], reactions };
             return next;
         });
-    }, []);
+        if (isAtBottomRef.current) {
+            scrollToBottom();
+        }
+    }, [isAtBottomRef, scrollToBottom]);
 
     const jumpToLatest = useCallback(async () => {
         if (!numericChatId) return;
