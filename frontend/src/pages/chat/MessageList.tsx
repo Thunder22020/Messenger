@@ -580,8 +580,7 @@ const SWIPE_THRESHOLD = 50;
 const MAX_SWIPE_OFFSET = 72;
 
 interface SwipeState {
-  col: HTMLElement;
-  row: HTMLElement;
+  slider: HTMLElement;
   icon: HTMLElement | null;
   startX: number;
   startY: number;
@@ -652,17 +651,15 @@ export function MessageList(props: {
     const onStart = (e: TouchEvent) => {
       const bubble = (e.target as HTMLElement).closest('.message-bubble') as HTMLElement | null;
       if (!bubble) return;
-      const col = bubble.closest('.message-bubble-col') as HTMLElement | null;
-      if (!col) return;
+      const slider = bubble.closest('.message-row') as HTMLElement | null;
+      if (!slider) return;
       const dataRow = bubble.closest('[data-message-id]') as HTMLElement | null;
       if (!dataRow) return;
       const msgId = parseInt((dataRow as HTMLElement).dataset.messageId ?? '', 10);
       if (isNaN(msgId)) return;
-      const messageRow = bubble.closest('.message-row') as HTMLElement | null;
-      if (!messageRow) return;
-      const icon = messageRow.querySelector('.swipe-reply-icon') as HTMLElement | null;
+      const icon = dataRow.querySelector('.swipe-reply-icon') as HTMLElement | null;
       const t = e.touches[0];
-      swipeStateRef.current = { col, row: messageRow, icon, startX: t.clientX, startY: t.clientY, locked: null, active: false, msgId };
+      swipeStateRef.current = { slider, icon, startX: t.clientX, startY: t.clientY, locked: null, active: false, msgId };
     };
 
     const onMove = (e: TouchEvent) => {
@@ -682,13 +679,12 @@ export function MessageList(props: {
 
       if (!sw.active) {
         sw.active = true;
-        sw.row.style.overflow = 'visible';
         longPressCancelRef.current();
       }
 
       const offset = Math.max(-MAX_SWIPE_OFFSET, Math.min(0, dx));
-      sw.col.style.transform = `translateX(${offset}px)`;
-      sw.col.style.transition = 'none';
+      sw.slider.style.transform = `translateX(${offset}px)`;
+      sw.slider.style.transition = 'none';
 
       if (sw.icon) {
         const progress = Math.min(1, Math.abs(offset) / SWIPE_THRESHOLD);
@@ -705,12 +701,11 @@ export function MessageList(props: {
       const t = e.changedTouches[0];
       const offset = Math.abs(Math.min(0, t.clientX - sw.startX));
 
-      sw.col.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      sw.col.style.transform = 'translateX(0)';
-      sw.col.addEventListener('transitionend', () => {
-        sw.col.style.transition = '';
-        sw.col.style.transform = '';
-        sw.row.style.overflow = '';
+      sw.slider.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sw.slider.style.transform = 'translateX(0)';
+      sw.slider.addEventListener('transitionend', () => {
+        sw.slider.style.transition = '';
+        sw.slider.style.transform = '';
       }, { once: true });
 
       if (sw.icon) {
@@ -932,12 +927,12 @@ export function MessageList(props: {
                             </div>
                           )}
                           </div>
-                          <div className="swipe-reply-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                              <polyline points="9 17 4 12 9 7"/>
-                              <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-                            </svg>
-                          </div>
+                        </div>
+                        <div className="swipe-reply-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                            <polyline points="9 17 4 12 9 7"/>
+                            <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                          </svg>
                         </div>
                       </div>
                     );
