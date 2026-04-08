@@ -53,5 +53,5 @@ export function useLongPress(onLongPress: (x: number, y: number) => void) {
         }
     }, []);
 
-    return { onTouchStart, onTouchMove, onTouchEnd: clear, onTouchCancel: clear, onClick };
+    return { onTouchStart, onTouchMove, onTouchEnd: clear, onTouchCancel: clear, onClick, cancel: clear };
 }

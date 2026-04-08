@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { RefObject } from "react";
 import { useLongPress } from "../../hooks/useLongPress";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
@@ -576,6 +576,19 @@ function UploadingFileList({ files, progress }: { files: PendingFile[]; progress
   );
 }
 
+const SWIPE_THRESHOLD = 50;
+const MAX_SWIPE_OFFSET = 72;
+
+interface SwipeState {
+  col: HTMLElement;
+  icon: HTMLElement | null;
+  startX: number;
+  startY: number;
+  locked: 'h' | 'v' | null;
+  active: boolean;
+  msgId: number;
+}
+
 export function MessageList(props: {
   dateGroups: DateGroup[];
   uploadingBubbles: UploadingBubble[];
@@ -590,6 +603,7 @@ export function MessageList(props: {
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onImageLoad?: () => void;
   onToggleReaction: (messageId: number, emoji: string) => void;
+  onSwipeReply: (messageId: number) => void;
 }) {
   const {
     dateGroups,
@@ -605,8 +619,14 @@ export function MessageList(props: {
     onMediaClick,
     onImageLoad,
     onToggleReaction,
+    onSwipeReply,
   } = props;
   const { t } = useLanguage();
+
+  const columnRef = useRef<HTMLDivElement>(null);
+  const swipeStateRef = useRef<SwipeState | null>(null) as MutableRefObject<SwipeState | null>;
+  const onSwipeReplyRef = useRef(onSwipeReply);
+  useEffect(() => { onSwipeReplyRef.current = onSwipeReply; }, [onSwipeReply]);
 
   // Long-press state: which message is being held
   const pendingMsg = useRef<{ msg: Message; isMine: boolean } | null>(null);
@@ -621,8 +641,99 @@ export function MessageList(props: {
     }, [onMessageContextMenu])
   );
 
+  const longPressCancelRef = useRef(longPress.cancel);
+  useEffect(() => { longPressCancelRef.current = longPress.cancel; }, [longPress.cancel]);
+
+  useEffect(() => {
+    const container = columnRef.current;
+    if (!container) return;
+
+    const onStart = (e: TouchEvent) => {
+      const bubble = (e.target as HTMLElement).closest('.message-bubble') as HTMLElement | null;
+      if (!bubble) return;
+      const col = bubble.closest('.message-bubble-col') as HTMLElement | null;
+      if (!col) return;
+      const row = bubble.closest('[data-message-id]') as HTMLElement | null;
+      if (!row) return;
+      const msgId = parseInt((row as HTMLElement).dataset.messageId ?? '', 10);
+      if (isNaN(msgId)) return;
+      const messageRow = bubble.closest('.message-row') as HTMLElement | null;
+      const icon = messageRow?.querySelector('.swipe-reply-icon') as HTMLElement | null;
+      const t = e.touches[0];
+      swipeStateRef.current = { col, icon, startX: t.clientX, startY: t.clientY, locked: null, active: false, msgId };
+    };
+
+    const onMove = (e: TouchEvent) => {
+      const sw = swipeStateRef.current;
+      if (!sw) return;
+      const t = e.touches[0];
+      const dx = t.clientX - sw.startX;
+      const dy = t.clientY - sw.startY;
+
+      if (!sw.locked) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        sw.locked = dx < 0 && Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        if (sw.locked === 'v') { swipeStateRef.current = null; return; }
+      }
+
+      e.preventDefault();
+
+      if (!sw.active) {
+        sw.active = true;
+        longPressCancelRef.current();
+      }
+
+      const offset = Math.max(-MAX_SWIPE_OFFSET, Math.min(0, dx));
+      sw.col.style.transform = `translateX(${offset}px)`;
+      sw.col.style.transition = 'none';
+
+      if (sw.icon) {
+        const progress = Math.min(1, Math.abs(offset) / SWIPE_THRESHOLD);
+        sw.icon.style.opacity = String(progress);
+        sw.icon.style.transform = `translateY(-50%) scale(${0.7 + 0.3 * progress})`;
+      }
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      const sw = swipeStateRef.current;
+      swipeStateRef.current = null;
+      if (!sw?.active) return;
+
+      const t = e.changedTouches[0];
+      const offset = Math.abs(Math.min(0, t.clientX - sw.startX));
+
+      sw.col.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      sw.col.style.transform = 'translateX(0)';
+      sw.col.addEventListener('transitionend', () => {
+        sw.col.style.transition = '';
+        sw.col.style.transform = '';
+      }, { once: true });
+
+      if (sw.icon) {
+        sw.icon.style.opacity = '0';
+        sw.icon.style.transform = 'translateY(-50%) scale(0.7)';
+      }
+
+      if (offset >= SWIPE_THRESHOLD) {
+        navigator.vibrate?.(30);
+        onSwipeReplyRef.current(sw.msgId);
+      }
+    };
+
+    container.addEventListener('touchstart', onStart, { passive: true });
+    container.addEventListener('touchmove', onMove, { passive: false });
+    container.addEventListener('touchend', onEnd, { passive: true });
+    container.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      container.removeEventListener('touchstart', onStart);
+      container.removeEventListener('touchmove', onMove);
+      container.removeEventListener('touchend', onEnd);
+      container.removeEventListener('touchcancel', onEnd);
+    };
+  }, []);
+
   return (
-    <div className="messages-column">
+    <div className="messages-column" ref={columnRef}>
       {dateGroups.map((dateGroup) => (
         <div key={dateGroup.dateKey} className="date-section">
           <div className="date-separator">
@@ -816,6 +927,12 @@ export function MessageList(props: {
                               ))}
                             </div>
                           )}
+                          </div>
+                          <div className="swipe-reply-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                              <polyline points="9 17 4 12 9 7"/>
+                              <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                            </svg>
                           </div>
                         </div>
                       </div>

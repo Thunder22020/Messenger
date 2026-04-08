@@ -394,6 +394,10 @@ export default function ChatPage() {
                         }
                         onImageLoad={onMediaLoad}
                         onToggleReaction={toggleReaction}
+                        onSwipeReply={(id) => {
+                            const msg = messages.find(m => m.id === id);
+                            if (msg) startReply(msg);
+                        }}
                     />
                 </div>
 
