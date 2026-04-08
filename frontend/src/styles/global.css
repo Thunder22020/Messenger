@@ -6330,10 +6330,11 @@ body,
     color: var(--text-secondary);
 }
 
-/* Image/video bubbles have explicit width so stretch doesn't apply,
-   but they need align-self to position correctly within the col. */
+/* Bubbles with constrained max-width need align-self: flex-end so they stay
+   right-aligned when the reaction row drives the col wider than the bubble. */
 .message-row.mine .message-bubble.has-media,
-.message-row.mine .message-bubble.media-only {
+.message-row.mine .message-bubble.media-only,
+.message-row.mine .message-bubble.voice-bubble {
     align-self: flex-end;
 }
 
