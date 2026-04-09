@@ -1,7 +1,9 @@
 package com.daniel.messenger.messaging.dto.event
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import java.time.Instant
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class ChatUpdateEvent(
     val chatId: Long,
     val type: ChatUpdateType,

@@ -763,9 +763,25 @@ export function MessageList(props: {
 
                   {group.messages.map((msg, msgIdx) => {
                     if (msg.type === "SYSTEM") {
+                      const systemSenderName = resolveDisplayName(msg.sender, msg.senderDisplayName);
+                      const hasSystemSender = Boolean(msg.sender || msg.senderDisplayName || msg.senderAvatarUrl);
                       return (
-                        <div key={msg.id} className="system-message">
-                          {formatSystemContent(msg.content)}
+                        <div key={msg.id} className={`system-message${hasSystemSender ? " system-message--rich" : ""}`}>
+                          {hasSystemSender ? (
+                            <>
+                              <div className="system-message-avatar">
+                                {msg.senderAvatarUrl
+                                  ? <img src={msg.senderAvatarUrl} className="system-message-avatar-img" alt="" />
+                                  : systemSenderName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="system-message-body">
+                                <span className="system-message-sender">{systemSenderName}</span>
+                                <span className="system-message-text">{formatSystemContent(msg.content)}</span>
+                              </div>
+                            </>
+                          ) : (
+                            formatSystemContent(msg.content)
+                          )}
                         </div>
                       );
                     }

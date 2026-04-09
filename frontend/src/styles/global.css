@@ -2711,6 +2711,56 @@ button {
     margin: 2px 0;
 }
 
+.system-message--rich {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    padding: 8px 12px;
+    margin: 6px auto;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+}
+
+.system-message-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gradient);
+    color: var(--avatar-text);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.system-message-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.system-message-body {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.system-message-sender {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.system-message-text {
+    color: var(--text-muted);
+}
+
 /* ===== MESSAGE COLLAPSE ANIMATION ===== */
 
 .message-row-collapse {

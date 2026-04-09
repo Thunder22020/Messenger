@@ -216,11 +216,41 @@ class ChatService(
     @Transactional
     fun updateGroupAvatar(chatId: Long, userId: Long, avatarUrl: String) {
         val chat = ensureCanUpdateGroupAvatar(chatId, userId)
+        val updater = userService.findByIdOrThrow(userId)
         chat.avatarUrl = avatarUrl
         chatRepository.save(chat)
 
-        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId).map { it.toSnapshot() }
-        chatNotificationService.broadcastSidebarUpdate(participants, chat.toDto())
+        val systemMessage = messageRepository.save(
+            MessageEntity(
+                sender = updater,
+                content = "update group avatar",
+                chat = chat,
+                type = MessageType.SYSTEM,
+            )
+        )
+
+        updateChatLastMessage(chat, systemMessage)
+
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId)
+        val viewingUserIds = chatNotificationService.getViewingUserIds(chatId, participants)
+        chatParticipantRepository.bulkUpdateUnreadCountsNotInViewing(chatId, userId, viewingUserIds)
+
+        val participantSnapshots = participants.map {
+            val isUpdater = it.user.id == userId
+            val isViewing = it.user.id in viewingUserIds
+            ParticipantSnapshot(
+                username = it.user.username,
+                unreadCount = it.unreadCount + if (isUpdater || isViewing) 0 else 1,
+            )
+        }
+
+        eventPublisher.publishEvent(
+            MessageSentEvent(
+                chatId = chatId,
+                response = systemMessage.toResponse(),
+                participants = participantSnapshots,
+            )
+        )
     }
 
     @Transactional(readOnly = true)
