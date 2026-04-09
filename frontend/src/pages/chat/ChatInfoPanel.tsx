@@ -4,6 +4,7 @@ import { authFetch } from "../../utils/authFetch";
 import { API_URL } from "../../config";
 import { formatFileSize, fileExtension, formatShortDate } from "./chatFormat";
 import { useLanguage } from "../../context/LanguageContext";
+import { MediaViewer } from "./MediaViewer";
 
 type Tab = "members" | "media" | "files";
 
@@ -279,21 +280,25 @@ function FilesTab({ items, loading, hasMore, onLoadMore }: {
 export function ChatInfoPanel(props: {
   isOpen: boolean;
   chatName: string;
+  chatAvatarUrl?: string | null;
   chatType: string | null;
   chatId: number | null;
   participants: ChatParticipant[];
   currentUsername: string | null;
   onUserClick: (userId: number) => void;
+  onChatAvatarUpdated: (avatarUrl: string | null) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onClose: () => void;
   onLeave?: () => void;
   isMobile?: boolean;
 }) {
-  const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, onLeave, isMobile } = props;
+  const { isOpen, chatName, chatAvatarUrl, chatType, chatId, participants, currentUsername, onUserClick, onChatAvatarUpdated, onMediaClick, onClose, onLeave, isMobile } = props;
   const { t } = useLanguage();
   const privatePeer = chatType === "PRIVATE"
     ? participants.find((p) => p.username !== currentUsername) ?? participants[0]
     : null;
+  const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
   const [membersAddMode, setMembersAddMode] = useState(false);
@@ -382,6 +387,25 @@ export function ChatInfoPanel(props: {
     files: t("info.tabs.files"),
   };
 
+  const groupAvatarItems: AttachmentDto[] = chatType === "GROUP" && chatAvatarUrl ? [{
+    id: chatId ?? 0,
+    url: chatAvatarUrl,
+    type: "PHOTO",
+    fileName: `${chatName || "group"}-avatar.jpg`,
+    mimeType: "image/jpeg",
+    fileSize: 0,
+  }] : [];
+
+  const uploadGroupAvatar = async (file: File) => {
+    if (!chatId || chatType !== "GROUP") return;
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await authFetch(`${API_URL}/chat/${chatId}/avatar`, { method: "POST", body: fd });
+    if (!res?.ok) return;
+    const { avatarUrl } = await res.json();
+    onChatAvatarUpdated(avatarUrl ?? null);
+  };
+
   return (
     <div className={`chat-info-panel ${isOpen ? "open" : ""}${isMobile && isOpen ? " info-panel-mobile" : ""}`}>
       <div className="info-chat-header">
@@ -389,11 +413,59 @@ export function ChatInfoPanel(props: {
         {chatType === "GROUP" && onLeave && (
           <span className="info-leave-icon" onClick={onLeave} title={t("info.leaveGroup")} />
         )}
-        <div className="info-chat-avatar">
-          {privatePeer?.avatarUrl
-            ? <img src={privatePeer.avatarUrl} className="info-avatar-img" alt="" />
-            : (chatName ? chatName.charAt(0).toUpperCase() : "?")}
+        <div
+          className={`info-chat-avatar${(chatType === "GROUP" ? chatAvatarUrl : privatePeer?.avatarUrl) ? " viewable" : ""}`}
+          onClick={
+            chatType === "GROUP"
+              ? (chatAvatarUrl ? () => setAvatarViewerOpen(true) : undefined)
+              : (privatePeer?.avatarUrl ? () => onMediaClick([{
+                  id: privatePeer.id,
+                  url: privatePeer.avatarUrl!,
+                  type: "PHOTO",
+                  fileName: `${privatePeer.username}-avatar.jpg`,
+                  mimeType: "image/jpeg",
+                  fileSize: 0,
+                }], 0, {
+                  sender: privatePeer.displayName ?? privatePeer.username,
+                  createdAt: new Date().toISOString(),
+                }) : undefined)
+          }
+        >
+          {chatType === "GROUP" ? (
+            chatAvatarUrl
+              ? <img src={chatAvatarUrl} className="info-avatar-img" alt="" />
+              : (chatName ? chatName.charAt(0).toUpperCase() : "?")
+          ) : (
+            privatePeer?.avatarUrl
+              ? <img src={privatePeer.avatarUrl} className="info-avatar-img" alt="" />
+              : (chatName ? chatName.charAt(0).toUpperCase() : "?")
+          )}
+          {chatType === "GROUP" && (
+            <button
+              className="info-chat-avatar-edit-btn"
+              type="button"
+              aria-label="Change group avatar"
+              onClick={(e) => {
+                e.stopPropagation();
+                avatarInputRef.current?.click();
+              }}
+            >
+              ✎
+            </button>
+          )}
         </div>
+        {chatType === "GROUP" && (
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              if (e.target.files?.[0]) uploadGroupAvatar(e.target.files[0]);
+              e.target.value = "";
+            }}
+          />
+        )}
         <div className="info-chat-name">{chatName}</div>
       </div>
 
@@ -458,6 +530,15 @@ export function ChatInfoPanel(props: {
             {t("info.addUser")}
           </button>
         </div>
+      )}
+      {avatarViewerOpen && chatType === "GROUP" && chatAvatarUrl && (
+        <MediaViewer
+          items={groupAvatarItems}
+          initialIndex={0}
+          sender={chatName}
+          createdAt={new Date().toISOString()}
+          onClose={() => setAvatarViewerOpen(false)}
+        />
       )}
     </div>
   );

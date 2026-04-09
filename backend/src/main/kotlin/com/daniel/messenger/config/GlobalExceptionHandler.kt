@@ -3,6 +3,7 @@ package com.daniel.messenger.config
 import com.daniel.messenger.messaging.exception.ChatNotFoundException
 import com.daniel.messenger.messaging.exception.CannotAddParticipantToPrivateChatException
 import com.daniel.messenger.messaging.exception.CannotCreateChatWithYourselfException
+import com.daniel.messenger.messaging.exception.CannotUpdatePrivateChatAvatarException
 import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
 import com.daniel.messenger.messaging.exception.MessageNotFoundException
 import com.daniel.messenger.messaging.exception.NotChatParticipantException
@@ -43,6 +44,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(
         CannotCreateChatWithYourselfException::class,
         GroupTitleIsNullException::class,
+        CannotUpdatePrivateChatAvatarException::class,
         UserAlreadyExistsException::class,
     )
     fun handleBadRequest(ex: RuntimeException): ResponseEntity<ErrorResponse> =

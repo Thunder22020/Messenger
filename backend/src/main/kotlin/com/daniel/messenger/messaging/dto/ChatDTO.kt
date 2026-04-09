@@ -7,6 +7,7 @@ data class ChatDTO(
     val id: Long,
     val type: ChatType,
     val title: String,
+    val avatarUrl: String? = null,
     val lastMessageId: Long,
     val lastMessageContent: String,
     val lastMessageSender: String?,

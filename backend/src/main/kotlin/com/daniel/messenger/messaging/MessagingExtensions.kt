@@ -59,6 +59,7 @@ fun Chat.toDto(): ChatDTO = ChatDTO(
     id = requireNotNull(id),
     type = type,
     title = title ?: "",
+    avatarUrl = avatarUrl,
     lastMessageId = lastMessageId ?: 0,
     lastMessageContent = lastMessageContent ?: "",
     lastMessageSender = lastMessageSender,

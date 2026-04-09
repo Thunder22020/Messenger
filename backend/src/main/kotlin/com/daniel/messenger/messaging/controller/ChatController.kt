@@ -9,6 +9,7 @@ import com.daniel.messenger.messaging.service.ChatParticipantService
 import com.daniel.messenger.messaging.service.ChatService
 import com.daniel.messenger.security.userdetails.UserPrincipal
 import jakarta.validation.Valid
+import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,13 +17,18 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
+import com.daniel.messenger.storage.S3StorageService
+import java.util.UUID
 
 @RestController
 @RequestMapping("/chat")
 class ChatController(
     private val chatService: ChatService,
     private val chatParticipantService: ChatParticipantService,
+    private val s3StorageService: S3StorageService,
 ) {
     @PostMapping("/private/{receiverId}")
     fun openPrivateChat(
@@ -84,6 +90,21 @@ class ChatController(
             requesterId,
             request.userIds
         )
+    }
+
+    @PostMapping("/{chatId}/avatar", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadGroupAvatar(
+        @PathVariable chatId: Long,
+        @RequestPart("file") file: MultipartFile,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): Map<String, String> {
+        val userId = requireNotNull(userPrincipal.user.id)
+        chatService.ensureCanUpdateGroupAvatar(chatId, userId)
+        val ext = file.originalFilename?.substringAfterLast('.', "jpg") ?: "jpg"
+        val key = "chat-avatars/${UUID.randomUUID()}.$ext"
+        val url = s3StorageService.upload(key, file.inputStream, file.contentType ?: "image/jpeg", file.size)
+        chatService.updateGroupAvatar(chatId, userId, url)
+        return mapOf("avatarUrl" to url)
     }
 
     @PostMapping("/{chatId}/leave")

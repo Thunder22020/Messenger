@@ -37,6 +37,9 @@ class Chat(
 
     var lastMessageCreatedAt: Instant? = null,
 
+    @Column(columnDefinition = "TEXT")
+    var avatarUrl: String? = null,
+
     @Column(nullable = false)
     var createdAt: Instant = Instant.now(),
 

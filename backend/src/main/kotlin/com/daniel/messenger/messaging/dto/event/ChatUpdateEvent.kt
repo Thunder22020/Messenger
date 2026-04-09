@@ -5,6 +5,7 @@ import java.time.Instant
 data class ChatUpdateEvent(
     val chatId: Long,
     val type: ChatUpdateType,
+    val chatAvatarUrl: String? = null,
     val lastMessageContent: String? = null,
     val lastMessageSender: String? = null,
     val lastMessageCreatedAt: Instant? = null,

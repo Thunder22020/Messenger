@@ -36,6 +36,11 @@ type UserSearchResult = {
     avatarUrl?: string | null;
 };
 
+type ChatAvatarUpdatedDetail = {
+    chatId: number;
+    avatarUrl: string | null;
+};
+
 const sortChats = (a: ChatListItem, b: ChatListItem) => {
     const aPinned = a.pinnedAt != null;
     const bPinned = b.pinnedAt != null;
@@ -335,6 +340,19 @@ export default function AppLayout() {
     }, []);
 
     useEffect(() => {
+        const handler = (e: Event) => {
+            const { chatId, avatarUrl } = (e as CustomEvent<ChatAvatarUpdatedDetail>).detail;
+            setChats(prev => prev.map(chat =>
+                chat.chatId === chatId
+                    ? { ...chat, chatAvatarUrl: avatarUrl }
+                    : chat
+            ));
+        };
+        window.addEventListener("chat-avatar-updated", handler);
+        return () => window.removeEventListener("chat-avatar-updated", handler);
+    }, []);
+
+    useEffect(() => {
         if (!client) return;
 
         const subscription = client.subscribe(
@@ -388,6 +406,7 @@ export default function AppLayout() {
                         }
                         return {
                             ...chat,
+                            ...("chatAvatarUrl" in body ? { chatAvatarUrl: body.chatAvatarUrl ?? null } : {}),
                             lastMessageContent: body.lastMessageContent ?? null,
                             lastMessageSender: body.lastMessageSender ?? null,
                             lastMessageCreatedAt: body.lastMessageCreatedAt ?? chat.lastMessageCreatedAt,
@@ -398,6 +417,15 @@ export default function AppLayout() {
 
                     return [...updated].sort(sortChats);
                 });
+
+                if ("chatAvatarUrl" in body) {
+                    window.dispatchEvent(new CustomEvent<ChatAvatarUpdatedDetail>("chat-avatar-updated", {
+                        detail: {
+                            chatId: body.chatId,
+                            avatarUrl: body.chatAvatarUrl ?? null,
+                        },
+                    }));
+                }
             }
         );
 

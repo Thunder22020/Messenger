@@ -13,6 +13,7 @@ interface MyChatProjection {
     fun getChatId(): Long
     fun getType(): String
     fun getTitle(): String?
+    fun getAvatarUrl(): String?
     fun getLastMessageContent(): String?
     fun getLastMessageSender(): String?
     fun getLastMessageCreatedAt(): Instant?
@@ -43,6 +44,7 @@ interface ChatRepository : JpaRepository<Chat, Long> {
                 c.id AS chatId,
                 c.type AS type,
                 c.title AS title,
+                c.avatar_url AS avatarUrl,
                 c.last_message_content AS lastMessageContent,
                 c.last_message_sender AS lastMessageSender,
                 c.last_message_created_at AS lastMessageCreatedAt,

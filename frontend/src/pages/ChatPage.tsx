@@ -27,6 +27,11 @@ import { VoiceRecordingBar } from "./chat/VoiceRecordingBar";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useCall } from "../context/CallContext";
 
+type ChatAvatarUpdatedDetail = {
+    chatId: number;
+    avatarUrl: string | null;
+};
+
 export default function ChatPage() {
     const { chatId } = useParams();
     const numericChatId = chatId ? Number(chatId) : null;
@@ -310,11 +315,19 @@ export default function ChatPage() {
             <ChatInfoPanel
                 isOpen={isInfoOpen}
                 chatName={chatName}
+                chatAvatarUrl={chatAvatarUrl}
                 chatType={chatType}
                 chatId={numericChatId}
                 participants={participants}
                 currentUsername={currentUsername}
                 onUserClick={(id) => navigate(`/user/${id}`)}
+                onChatAvatarUpdated={(avatarUrl) => {
+                    if (!numericChatId) return;
+                    setChatAvatarUrl(avatarUrl);
+                    window.dispatchEvent(new CustomEvent<ChatAvatarUpdatedDetail>("chat-avatar-updated", {
+                        detail: { chatId: numericChatId, avatarUrl },
+                    }));
+                }}
                 onMediaClick={(items, index, meta) =>
                     setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })
                 }
@@ -325,7 +338,18 @@ export default function ChatPage() {
         );
         return () => setRightPanel(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isInfoOpen, chatName, chatType, numericChatId, participants, currentUsername, isMobile]);
+    }, [isInfoOpen, chatName, chatAvatarUrl, chatType, numericChatId, participants, currentUsername, isMobile]);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const { chatId, avatarUrl } = (e as CustomEvent<ChatAvatarUpdatedDetail>).detail;
+            if (chatId === numericChatId) {
+                setChatAvatarUrl(avatarUrl);
+            }
+        };
+        window.addEventListener("chat-avatar-updated", handler);
+        return () => window.removeEventListener("chat-avatar-updated", handler);
+    }, [numericChatId]);
 
     const dateGroups = useMemo(() => groupMessagesByDateAndSender({
         messages,

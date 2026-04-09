@@ -2372,6 +2372,31 @@ button {
     background: var(--accent);
 
     color: var(--color-white);
+    position: relative;
+}
+
+.info-chat-avatar.viewable {
+    cursor: pointer;
+}
+
+.info-chat-avatar-edit-btn {
+    position: absolute;
+    right: -4px;
+    bottom: -2px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--accent);
+    color: var(--bg-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.28);
 }
 
 .info-chat-name {

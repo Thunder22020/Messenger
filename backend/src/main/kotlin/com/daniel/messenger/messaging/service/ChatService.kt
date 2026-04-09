@@ -19,6 +19,7 @@ import com.daniel.messenger.messaging.entity.Attachment
 import com.daniel.messenger.messaging.enum.ChatType
 import com.daniel.messenger.messaging.enum.MessageType
 import com.daniel.messenger.messaging.exception.CannotCreateChatWithYourselfException
+import com.daniel.messenger.messaging.exception.CannotUpdatePrivateChatAvatarException
 import com.daniel.messenger.messaging.exception.ChatNotFoundException
 import com.daniel.messenger.messaging.exception.GroupTitleIsNullException
 import com.daniel.messenger.messaging.repository.ChatParticipantRepository
@@ -170,13 +171,14 @@ class ChatService(
             val isPrivate = chat.getType() == ChatType.PRIVATE.name
             val peerInfo = if (isPrivate) peerInfoMap[chat.getChatId()] else null
             val displayName = peerInfo?.displayName ?: chat.getTitle() ?: ""
+            val chatAvatarUrl = if (isPrivate) peerInfo?.avatarUrl else chat.getAvatarUrl()
 
             MyChatResponse(
                 chatId = chat.getChatId(),
                 type = ChatType.valueOf(chat.getType()),
                 displayName = displayName,
                 partnerUsername = peerInfo?.username,
-                chatAvatarUrl = peerInfo?.avatarUrl,
+                chatAvatarUrl = chatAvatarUrl,
                 lastMessageContent = chat.getLastMessageContent(),
                 lastMessageSender = chat.getLastMessageSender(),
                 lastMessageCreatedAt = chat.getLastMessageCreatedAt(),
@@ -209,6 +211,26 @@ class ChatService(
         messageRepository.deleteAllByChatId(chatId)
         chatRepository.deleteById(chatId)
         eventPublisher.publishEvent(ChatDeletedEvent(s3Keys = s3Keys))
+    }
+
+    @Transactional
+    fun updateGroupAvatar(chatId: Long, userId: Long, avatarUrl: String) {
+        val chat = ensureCanUpdateGroupAvatar(chatId, userId)
+        chat.avatarUrl = avatarUrl
+        chatRepository.save(chat)
+
+        val participants = chatParticipantRepository.findAllWithUserByChatId(chatId).map { it.toSnapshot() }
+        chatNotificationService.broadcastSidebarUpdate(participants, chat.toDto())
+    }
+
+    @Transactional(readOnly = true)
+    fun ensureCanUpdateGroupAvatar(chatId: Long, userId: Long): Chat {
+        chatAccessService.isChatParticipantOrThrow(chatId, userId)
+        val chat = findByIdOrThrow(chatId)
+        if (chat.type != ChatType.GROUP) {
+            throw CannotUpdatePrivateChatAvatarException("Only group chats can have a custom avatar")
+        }
+        return chat
     }
 
     fun findByIdOrThrow(id: Long): Chat =

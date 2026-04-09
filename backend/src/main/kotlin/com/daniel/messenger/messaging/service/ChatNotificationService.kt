@@ -66,6 +66,7 @@ class ChatNotificationService(
                 ChatUpdateEvent(
                     chatId = chat.id,
                     type = ChatUpdateType.CONTENT,
+                    chatAvatarUrl = chat.avatarUrl,
                     lastMessageContent = chat.lastMessageContent,
                     lastMessageSender = chat.lastMessageSender,
                     lastMessageCreatedAt = chat.lastMessageCreatedAt,
