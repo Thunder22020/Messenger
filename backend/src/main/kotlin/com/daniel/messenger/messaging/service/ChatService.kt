@@ -157,24 +157,26 @@ class ChatService(
             .filter { it.getType() == ChatType.PRIVATE.name }
             .map { it.getChatId() }
 
-        val displayNameMap = if (privateChatIds.isNotEmpty()) {
+        data class PeerInfo(val displayName: String, val username: String, val avatarUrl: String?)
+
+        val peerInfoMap = if (privateChatIds.isNotEmpty()) {
             chatRepository.findPrivateChatDisplayNames(privateChatIds, userId)
-                .associate { it.getChatId() to it.getUsername() }
+                .associate { it.getChatId() to PeerInfo(it.getDisplayName() ?: it.getUsername(), it.getUsername(), it.getAvatarUrl()) }
         } else {
             emptyMap()
         }
 
         return chats.map { chat ->
-            val displayName = if (chat.getType() == ChatType.PRIVATE.name) {
-                displayNameMap[chat.getChatId()] ?: ""
-            } else {
-                chat.getTitle() ?: ""
-            }
+            val isPrivate = chat.getType() == ChatType.PRIVATE.name
+            val peerInfo = if (isPrivate) peerInfoMap[chat.getChatId()] else null
+            val displayName = peerInfo?.displayName ?: chat.getTitle() ?: ""
 
             MyChatResponse(
                 chatId = chat.getChatId(),
                 type = ChatType.valueOf(chat.getType()),
                 displayName = displayName,
+                partnerUsername = peerInfo?.username,
+                chatAvatarUrl = peerInfo?.avatarUrl,
                 lastMessageContent = chat.getLastMessageContent(),
                 lastMessageSender = chat.getLastMessageSender(),
                 lastMessageCreatedAt = chat.getLastMessageCreatedAt(),
@@ -194,6 +196,8 @@ class ChatService(
             ChatParticipantResponse(
                 id = requireNotNull(it.user.id),
                 username = it.user.username,
+                displayName = it.user.displayName,
+                avatarUrl = it.user.avatarUrl,
                 lastReadMessageId = it.lastReadMessageId,
             )
         }

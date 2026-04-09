@@ -17,6 +17,8 @@ type JwtPayload = { sub: string };
 type ChatListItem = {
     chatId: number;
     displayName: string;
+    partnerUsername?: string | null;
+    chatAvatarUrl?: string | null;
     type: "PRIVATE" | "GROUP";
     lastMessageContent?: string | null;
     lastMessageSender?: string | null;
@@ -30,6 +32,8 @@ type ChatListItem = {
 type UserSearchResult = {
     id: number;
     username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
 };
 
 const sortChats = (a: ChatListItem, b: ChatListItem) => {
@@ -109,6 +113,7 @@ export default function AppLayout() {
         return saved ? Number(saved) : 300;
     });
     const [isResizing, setIsResizing] = useState(false);
+    const [currentUser, setCurrentUser] = useState<{ id: number; avatarUrl: string | null } | null>(null);
     const [chats, setChats] = useState<ChatListItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
@@ -301,6 +306,10 @@ export default function AppLayout() {
 
     useEffect(() => {
         reloadChats();
+        authFetch(`${API_URL}/users/me`)
+            .then(r => r?.ok ? r.json() : null)
+            .then(d => { if (d) setCurrentUser({ id: d.id, avatarUrl: d.avatarUrl ?? null }); })
+            .catch(() => {});
     }, []);
 
     // Re-fetch sidebar when user returns to the tab.
@@ -589,9 +598,11 @@ export default function AppLayout() {
             {/* ── Header ── */}
             <div className="sidebar-header">
                 <div className="sidebar-header-left">
-                    <button className="sidebar-profile-btn" onClick={() => setShowLogoutPopup(true)}>
+                    <button className="sidebar-profile-btn" onClick={() => currentUser && navigate(`/user/${currentUser.id}`)}>
                         <div className="sidebar-avatar-sm">
-                            {currentUsername.charAt(0).toUpperCase()}
+                            {currentUser?.avatarUrl
+                                ? <img src={currentUser.avatarUrl} className="sidebar-avatar-img" alt="" />
+                                : currentUsername.charAt(0).toUpperCase()}
                         </div>
                     </button>
                 </div>
@@ -663,9 +674,11 @@ export default function AppLayout() {
                                         >
                                             <div className="chat-avatar-wrap">
                                                 <div className="chat-avatar">
-                                                    {chat.displayName.charAt(0).toUpperCase()}
+                                                    {chat.chatAvatarUrl
+                                                        ? <img src={chat.chatAvatarUrl} className="chat-avatar-img" alt="" />
+                                                        : chat.displayName.charAt(0).toUpperCase()}
                                                 </div>
-                                                {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                {chat.type === "PRIVATE" && isOnline(chat.partnerUsername ?? chat.displayName) && (
                                                     <span className="presence-dot" />
                                                 )}
                                             </div>
@@ -741,9 +754,11 @@ export default function AppLayout() {
                                                     >
                                                         <div className="chat-avatar-wrap">
                                                             <div className="chat-avatar">
-                                                                {chat.displayName.charAt(0).toUpperCase()}
+                                                                {chat.chatAvatarUrl
+                                                                    ? <img src={chat.chatAvatarUrl} className="chat-avatar-img" alt="" />
+                                                                    : chat.displayName.charAt(0).toUpperCase()}
                                                             </div>
-                                                            {chat.type === "PRIVATE" && isOnline(chat.displayName) && (
+                                                            {chat.type === "PRIVATE" && isOnline(chat.partnerUsername ?? chat.displayName) && (
                                                                 <span className="presence-dot" />
                                                             )}
                                                         </div>
@@ -797,9 +812,18 @@ export default function AppLayout() {
                                                 onClick={() => navigate(`/user/${user.id}`)}
                                             >
                                                 <div className="search-person-avatar">
-                                                    {user.username.charAt(0).toUpperCase()}
+                                                    {user.avatarUrl
+                                                        ? <img src={user.avatarUrl} className="chat-avatar-img" alt="" />
+                                                        : (user.displayName ?? user.username).charAt(0).toUpperCase()}
                                                 </div>
-                                                <span className="search-person-name">{user.username}</span>
+                                                <div className="search-person-info">
+                                                    <span className="search-person-name">
+                                                        {user.displayName ?? user.username}
+                                                    </span>
+                                                    {user.displayName && (
+                                                        <span className="search-person-username">@{user.username}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))
                                     )}
@@ -966,7 +990,7 @@ export default function AppLayout() {
 
     if (isMobile) {
         return (
-            <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable }}>
+            <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable, showLogout: () => setShowLogoutPopup(true) }}>
                 <div className={`mobile-layout ${(chatId || userId || groupMatch) ? "chat-active" : "list-active"}`}>
                     <div className="mobile-sidebar-panel" ref={sidebarPanelRef}>
                         {sidebarJSX}
@@ -984,7 +1008,7 @@ export default function AppLayout() {
 
     // Desktop layout
     return (
-        <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable }}>
+        <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable, showLogout: () => setShowLogoutPopup(true) }}>
             <div className="app-layout">
                 {sidebarJSX}
                 <div className="content">

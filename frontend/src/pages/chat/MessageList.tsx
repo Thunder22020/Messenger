@@ -4,6 +4,7 @@ import { useLongPress } from "../../hooks/useLongPress";
 import type { AttachmentDto, DateGroup, Message, PendingFile, UploadingBubble } from "./chatTypes";
 import { formatMessageTime, formatFileSize, fileExtension, formatSystemContent } from "./chatFormat";
 import { useLanguage } from "../../context/LanguageContext";
+import { resolveDisplayName } from "../../utils/displayName";
 
 const IMAGE_CORNER_R = 13; // bubble outer radius (16) minus bubble padding (3)
 
@@ -755,7 +756,9 @@ export function MessageList(props: {
 
                 <div className={`message-group ${isMine ? "mine" : "other"}`}>
                   {!isMine && chatType === "GROUP" && (
-                    <div className="group-sender-label">{group.sender}</div>
+                    <div className="group-sender-label">
+                      {resolveDisplayName(group.sender, group.messages[0]?.senderDisplayName)}
+                    </div>
                   )}
 
                   {group.messages.map((msg, msgIdx) => {
@@ -796,7 +799,9 @@ export function MessageList(props: {
                           {!isMine && chatType === "GROUP" && (
                             isLast ? (
                               <div className="message-avatar">
-                                {group.sender.charAt(0).toUpperCase()}
+                                {group.messages[0]?.senderAvatarUrl
+                                  ? <img src={group.messages[0].senderAvatarUrl} className="message-avatar-img" alt="" />
+                                  : resolveDisplayName(group.sender, group.messages[0]?.senderDisplayName).charAt(0).toUpperCase()}
                               </div>
                             ) : (
                               <div className="message-avatar-spacer" />
@@ -837,7 +842,7 @@ export function MessageList(props: {
                                 }
                               >
                                 <div className="reply-preview-sender">
-                                  {msg.replyPreview.sender}
+                                  {resolveDisplayName(msg.replyPreview.sender, msg.replyPreview.senderDisplayName)}
                                 </div>
                                 <div className="reply-preview-content">
                                   {msg.replyPreview.content ||

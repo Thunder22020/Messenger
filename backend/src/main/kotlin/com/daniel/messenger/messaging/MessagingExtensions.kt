@@ -24,6 +24,8 @@ fun MessageEntity.toResponse(
     type = type.name,
     content = if (deletedAt != null) "" else content,
     sender = senderUsername ?: sender?.username ?: "",
+    senderDisplayName = sender?.displayName,
+    senderAvatarUrl = sender?.avatarUrl,
     createdAt = createdAt,
     editedAt = editedAt,
     deletedAt = deletedAt,

@@ -9,6 +9,7 @@ import com.daniel.messenger.user.exception.UserNotFoundException
 import com.daniel.messenger.user.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(
@@ -31,12 +32,28 @@ class UserService(
     fun searchUsers(query: String, currentUserId: Long) =
         userRepository
             .findTop50ByUsernameStartingWithAndIdNot(query, currentUserId)
-            .map {
-                UserSearchResponse(
-                    id = requireNotNull(it.id),
-                    username = it.username
-                )
-            }
+            .map { it.toSearchResponse() }
+
+    fun User.toSearchResponse() = UserSearchResponse(
+        id = requireNotNull(id),
+        username = username,
+        displayName = displayName,
+        avatarUrl = avatarUrl,
+    )
+
+    @Transactional
+    fun updateDisplayName(userId: Long, displayName: String?) {
+        val user = findByIdOrThrow(userId)
+        user.displayName = displayName?.takeIf { it.isNotBlank() }
+        userRepository.save(user)
+    }
+
+    @Transactional
+    fun updateAvatarUrl(userId: Long, avatarUrl: String) {
+        val user = findByIdOrThrow(userId)
+        user.avatarUrl = avatarUrl
+        userRepository.save(user)
+    }
 
     fun findByUsernameOrThrow(username: String) =
         userRepository.findByUsername(username)

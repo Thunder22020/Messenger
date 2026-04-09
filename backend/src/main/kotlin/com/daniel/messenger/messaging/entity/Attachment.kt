@@ -6,7 +6,7 @@ import java.time.Instant
 
 @Entity
 @Table(name = "attachments", indexes = [
-    Index(name = "idx_attachments_message_id", columnList = "message_id")
+    Index(name = "idx_attachments_message_id", columnList = "message_id"),
 ])
 class Attachment(
     @Id

@@ -9,6 +9,8 @@ data class MessageResponse(
     val type: String = "REGULAR",
     val content: String?,
     val sender: String,
+    val senderDisplayName: String? = null,
+    val senderAvatarUrl: String? = null,
     val createdAt: Instant,
     val editedAt: Instant?,
     val deletedAt: Instant?,

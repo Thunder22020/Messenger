@@ -8,24 +8,27 @@ import java.time.Duration
 @Component
 class CookieFactory(
     @Value("\${app.jwt.refresh-expiration}")
-    private val expirationDays: Int
+    private val expirationDays: Int,
+    // Set to false in local HTTP dev so Safari sends the cookie over http://localhost
+    @Value("\${app.cookie.secure:true}")
+    private val secureCookie: Boolean,
 ) {
     fun createRefreshTokenCookie(token: String): ResponseCookie =
         ResponseCookie.from(REFRESH_TOKEN_COOKIE, token)
             .httpOnly(true)
-            .secure(true)
+            .secure(secureCookie)
             .path("/")
             .maxAge(Duration.ofDays(expirationDays.toLong()))
-            .sameSite("Lax")
+            .sameSite(if (secureCookie) "None" else "Lax")
             .build()
 
     fun getEmptyRefreshCookie(): ResponseCookie =
         ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
             .httpOnly(true)
-            .secure(true)
+            .secure(secureCookie)
             .path("/")
             .maxAge(Duration.ZERO)
-            .sameSite("Lax")
+            .sameSite(if (secureCookie) "None" else "Lax")
             .build()
 
     companion object {

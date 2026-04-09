@@ -86,7 +86,6 @@ const en: Translations = {
   "deleteChat.subtitle": "Are you sure you want to delete this chat? This cannot be undone.",
   "deleteChat.cancel": "Cancel",
   "deleteChat.confirm": "Delete",
-
   // Context menu
   "menu.pin": "Pin",
   "menu.unpin": "Unpin",
@@ -209,7 +208,6 @@ const ru: Translations = {
   "deleteChat.subtitle": "Вы уверены? Это действие необратимо.",
   "deleteChat.cancel": "Отмена",
   "deleteChat.confirm": "Удалить",
-
   // Context menu
   "menu.pin": "Закрепить",
   "menu.unpin": "Открепить",

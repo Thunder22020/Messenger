@@ -8,6 +8,8 @@ import { useLanguage } from "../context/LanguageContext";
 interface User {
     id: number;
     username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
 }
 
 export default function CreateGroupPage() {
@@ -130,12 +132,19 @@ export default function CreateGroupPage() {
                                     <div className="group-user-dot" />
                                 </div>
 
-                                <div className="group-user-avatar">
-                                    {user.username.charAt(0).toUpperCase()}
+                                <div className="search-person-avatar">
+                                    {user.avatarUrl
+                                        ? <img src={user.avatarUrl} className="chat-avatar-img" alt="" />
+                                        : (user.displayName ?? user.username).charAt(0).toUpperCase()}
                                 </div>
 
-                                <div className="group-user-name">
-                                    {user.username}
+                                <div className="search-person-info">
+                                    <span className="search-person-name">
+                                        {user.displayName ?? user.username}
+                                    </span>
+                                    {user.displayName && (
+                                        <span className="search-person-username">@{user.username}</span>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -148,12 +157,19 @@ export default function CreateGroupPage() {
                             >
                                 <div className="group-user-checkbox" />
 
-                                <div className="group-user-avatar">
-                                    {user.username.charAt(0).toUpperCase()}
+                                <div className="search-person-avatar">
+                                    {user.avatarUrl
+                                        ? <img src={user.avatarUrl} className="chat-avatar-img" alt="" />
+                                        : (user.displayName ?? user.username).charAt(0).toUpperCase()}
                                 </div>
 
-                                <div className="group-user-name">
-                                    {user.username}
+                                <div className="search-person-info">
+                                    <span className="search-person-name">
+                                        {user.displayName ?? user.username}
+                                    </span>
+                                    {user.displayName && (
+                                        <span className="search-person-username">@{user.username}</span>
+                                    )}
                                 </div>
                             </div>
                         ))}

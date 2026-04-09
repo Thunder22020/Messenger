@@ -1,6 +1,7 @@
 export interface ReplyPreview {
   messageId: number;
   sender: string;
+  senderDisplayName?: string | null;
   content: string;
   attachmentType?: string | null;
 }
@@ -55,6 +56,8 @@ export interface Message {
   type?: string;
   content: string;
   sender: string;
+  senderDisplayName?: string | null;
+  senderAvatarUrl?: string | null;
   createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;
@@ -62,6 +65,13 @@ export interface Message {
   replyPreview?: ReplyPreview;
   attachments?: AttachmentDto[];
   reactions?: ReactionDto[];
+}
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
 }
 
 export interface JwtPayload {
@@ -72,6 +82,8 @@ export interface JwtPayload {
 export interface ChatParticipant {
   id: number;
   username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
   lastReadMessageId: number | null;
 }
 
@@ -91,4 +103,3 @@ export interface DateGroup {
   label: string;
   senderGroups: SenderGroup[];
 }
-

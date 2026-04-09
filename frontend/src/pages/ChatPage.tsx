@@ -42,9 +42,13 @@ export default function ChatPage() {
     const currentUsername = token ? jwtDecode<JwtPayload>(token).sub : null;
 
     const [chatName, setChatName] = useState("");
+    const [chatAvatarUrl, setChatAvatarUrl] = useState<string | null>(null);
+    const [partnerUsername, setPartnerUsername] = useState<string | null>(null);
     const [chatType, setChatType] = useState<string | null>(null);
     const [partnerLastSeenAt, setPartnerLastSeenAt] = useState<string | null>(null);
-    const partnerIsOnline = chatType === "PRIVATE" ? isOnline(chatName) : false;
+    // Presence uses username, not display name
+    const presenceKey = partnerUsername ?? chatName;
+    const partnerIsOnline = chatType === "PRIVATE" ? isOnline(presenceKey) : false;
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isSearchClosing, setIsSearchClosing] = useState(false);
@@ -147,7 +151,7 @@ export default function ChatPage() {
         if (!numericChatId) return;
         let cancelled = false;
 
-        type MyChatItem = { chatId: number; displayName: string; type: string };
+        type MyChatItem = { chatId: number; displayName: string; partnerUsername?: string | null; chatAvatarUrl?: string | null; type: string };
 
         const loadChatInfo = async () => {
             const res = await authFetch(`${API_URL}/chat/my`);
@@ -157,6 +161,8 @@ export default function ChatPage() {
             const currentChat = data.find((c) => c.chatId === numericChatId);
             if (currentChat) {
                 setChatName(currentChat.displayName);
+                setPartnerUsername(currentChat.partnerUsername ?? null);
+                setChatAvatarUrl(currentChat.chatAvatarUrl ?? null);
                 setChatType(currentChat.type);
             }
         };
@@ -168,22 +174,22 @@ export default function ChatPage() {
     // Fetch partner last-seen for offline users in private chats
     useEffect(() => {
         setPartnerLastSeenAt(null);
-        if (chatType !== "PRIVATE" || !chatName) return;
+        if (chatType !== "PRIVATE" || !presenceKey) return;
         if (partnerIsOnline) return;
-        const cached = getLastSeen(chatName);
+        const cached = getLastSeen(presenceKey);
         if (cached) {
             setPartnerLastSeenAt(cached);
             return;
         }
         let cancelled = false;
-        authFetch(`${API_URL}/api/users/${chatName}/last-seen`)
+        authFetch(`${API_URL}/api/users/${presenceKey}/last-seen`)
             .then(r => (r && r.ok ? r.json() : null))
             .then((data: { lastSeenAt: string } | null) => {
                 if (!cancelled && data?.lastSeenAt) setPartnerLastSeenAt(data.lastSeenAt);
             })
             .catch(() => {});
         return () => { cancelled = true; };
-    }, [chatType, chatName, partnerIsOnline, getLastSeen]);
+    }, [chatType, presenceKey, partnerIsOnline, getLastSeen]);
 
     // Apply pending scroll actions after messages/divider change (useLayoutEffect = before paint)
     useLayoutEffect(() => {
@@ -331,10 +337,13 @@ export default function ChatPage() {
             <div className="chat-container">
                 <ChatHeader
                     chatName={chatName}
+                    chatAvatarUrl={chatAvatarUrl}
                     chatType={chatType}
+                    participants={participants}
                     participantsCount={participants.length}
                     isOnline={chatType === "PRIVATE" ? partnerIsOnline : undefined}
                     lastSeenAt={chatType === "PRIVATE" ? (partnerLastSeenAt ?? undefined) : undefined}
+                    typingUsers={typingUsers}
                     typingText={typingUsers.length > 0 ? getTypingText() : undefined}
                     onHeaderClick={handleHeaderClick}
                     onToggleInfo={() => setIsInfoOpen(prev => !prev)}

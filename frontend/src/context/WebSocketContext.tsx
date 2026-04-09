@@ -12,10 +12,12 @@ async function getFreshToken(): Promise<string | null> {
     if (!token) return null;
 
     // Decode JWT payload to check expiration (no library needed)
+    let tokenExpired = true;
     try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const expiresAt = payload.exp * 1000; // seconds → ms
-        // If token has >30s remaining, it's fine
+        tokenExpired = Date.now() >= expiresAt;
+        // If token has >30s remaining, it's fine — skip refresh
         if (Date.now() < expiresAt - 30_000) return token;
     } catch {
         // Malformed token — try refresh anyway
@@ -27,12 +29,18 @@ async function getFreshToken(): Promise<string | null> {
             method: "POST",
             credentials: "include",
         });
-        if (!res.ok) return null;
-        const data = await res.json();
-        localStorage.setItem("accessToken", data.accessToken);
-        return data.accessToken;
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("accessToken", data.accessToken);
+            return data.accessToken;
+        }
+        // Refresh failed via HTTP error — only force re-login if token is truly expired.
+        // If it's still valid (within the 30s buffer), keep using it rather than
+        // logging the user out for a transient backend/cookie issue.
+        return tokenExpired ? null : token;
     } catch {
-        return null;
+        // Network / CORS error — same logic: don't logout if token is still alive.
+        return tokenExpired ? null : token;
     }
 }
 

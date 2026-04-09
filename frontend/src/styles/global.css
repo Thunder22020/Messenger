@@ -141,6 +141,9 @@
 
     /* ===== ICON BUTTONS ===== */
     --icon-btn-filter: brightness(0) invert(1);
+    /* Icons/text ON accent-colored surfaces (cream bg in dark theme → need dark icon) */
+    --on-accent-filter: brightness(0);
+    --on-accent-color: #1A1815;
 }
 
 * {
@@ -411,6 +414,14 @@ button {
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+
+.sidebar-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .sidebar-create-btn {
@@ -569,6 +580,14 @@ button {
 
     flex-shrink: 0;
     align-self: flex-end;
+    overflow: hidden;
+}
+
+.message-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .message-avatar-spacer {
@@ -1047,11 +1066,11 @@ button {
     position: absolute;
     bottom: 1px;
     right: 1px;
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: var(--online);
-    border: 2px solid var(--bg-sidebar);
+    border: 1px solid var(--bg-sidebar);
     box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
@@ -1070,6 +1089,23 @@ button {
     background: #201E1B;
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+
+.chat-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.search-person-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
 }
 
 .chat-info {
@@ -1269,10 +1305,19 @@ button {
 
     color: var(--avatar-text);
 
+    overflow: hidden;
+
     box-shadow:
         0 4px 16px rgba(0,0,0,0.5),
         0 0 0 1px rgba(255,255,255,0.1),
         0 1px 0 rgba(255,255,255,0.15) inset;
+}
+
+.chat-header-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .chat-header-info {
@@ -1328,6 +1373,38 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.chat-header-typing--group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.typing-avatars {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-shrink: 0;
+}
+
+.typing-avatar-bubble {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--bg-base);
+    margin-left: -5px;
+    display: block;
+}
+
+.typing-avatar-bubble--letter {
+    background: var(--accent);
+    color: var(--color-white);
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chat-header-avatar,
@@ -1445,10 +1522,25 @@ button {
     flex-shrink: 0;
 }
 
+.search-person-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
 .search-person-name {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-person-username {
+    font-size: 12px;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2065,6 +2157,16 @@ button {
 
     background: var(--accent);
     font-weight: 600;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.info-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
 }
 
 .info-member-name {
@@ -2337,52 +2439,124 @@ button {
 .user-info-container {
     height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    padding: 32px 16px 40px;
+    gap: 32px;
+    position: relative;
+    box-sizing: border-box;
 }
 
-.user-info-card {
-    width: 420px;
-    padding: 40px;
+.user-info-loading {
+    margin: auto;
+    font-size: 14px;
+    opacity: 0.5;
+}
 
-    border-radius: 24px;
+/* ── Profile top section ── */
 
-    background: var(--ui-muted-bg);
-    backdrop-filter: blur(25px);
-
-    border: 1px solid var(--glass-border-medium);
-
+.user-profile-top {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 10px;
+    width: 100%;
+    max-width: 360px;
 }
 
-.user-info-avatar {
-    width: 120px;
-    height: 120px;
+.user-profile-avatar-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
 
+.user-profile-avatar-wrap.viewable {
+    cursor: pointer;
+}
+
+.user-profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.user-profile-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--color-white);
+    font-size: 38px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    font-size: 42px;
-    font-weight: 700;
-
-    background: var(--accent);
-
-    color: var(--color-white);
+    user-select: none;
 }
 
-.user-info-name {
+.user-profile-avatar-edit-icon {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent-color);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-base);
+    padding: 0;
+    border-style: solid;
+    cursor: pointer;
+}
+
+.user-profile-name {
     font-size: 22px;
     font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    cursor: pointer;
+}
+
+.user-profile-name-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    width: 240px;
+    padding: 2px 0;
+}
+
+.user-profile-name-input.empty {
+    cursor: text;
+}
+
+.user-profile-name-input::placeholder {
+    color: rgba(255,255,255,0.25);
+    font-weight: 400;
+}
+
+.user-profile-username {
+    font-size: 14px;
+    color: var(--text-secondary);
 }
 
 .user-info-chat-btn {
-    width: 100%;
-    padding: 14px 0;
+    margin-top: 4px;
+    padding: 12px 32px;
 
     border-radius: 14px;
     border: none;
@@ -2391,7 +2565,7 @@ button {
 
     color: var(--avatar-text);
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
 
     cursor: pointer;
     transition: transform 0.2s ease;
@@ -4730,6 +4904,9 @@ body,
 
     /* Icon buttons — dark icons on light bg */
     --icon-btn-filter: brightness(0);
+    /* Icons/text ON accent-colored surfaces (dark espresso bg in light theme → need light icon) */
+    --on-accent-filter: brightness(0) invert(1);
+    --on-accent-color: #EAE0D2;
 }
 
 /* ----- Structural elements with hardcoded colors ----- */
@@ -5782,6 +5959,31 @@ body,
     left: 16px;
 }
 
+.user-info-logout-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+}
+.user-info-logout-btn:hover { opacity: 1; }
+.user-info-logout-btn img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: invert(27%) sepia(90%) saturate(700%) hue-rotate(330deg) brightness(110%);
+}
+
 @media (max-width: 768px) {
     .user-info-container {
         position: relative;
@@ -6450,4 +6652,13 @@ body,
     height: 1px;
     background: rgba(255,255,255,0.08);
     margin: 0;
+}
+
+@media (max-width: 768px) {
+    .user-profile-top {
+        max-width: 100%;
+    }
+    .user-info-container {
+        padding: 56px 16px 40px;
+    }
 }

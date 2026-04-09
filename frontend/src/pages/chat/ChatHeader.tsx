@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { formatLastSeen } from "../../utils/formatLastSeen";
+import type { ChatParticipant } from "./chatTypes";
 
 export function ChatHeader(props: {
   chatName: string;
+  chatAvatarUrl?: string | null;
   chatType: string | null;
+  participants?: ChatParticipant[];
   participantsCount: number;
   isOnline?: boolean;
   lastSeenAt?: string;
+  typingUsers?: string[];
   typingText?: string;
   onHeaderClick: () => void;
   onToggleInfo: () => void;
@@ -18,7 +22,7 @@ export function ChatHeader(props: {
   onVideoCall?: () => void;
   isInCall?: boolean;
 }) {
-  const { chatName, chatType, participantsCount, isOnline, lastSeenAt, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
+  const { chatName, chatAvatarUrl, chatType, participants, participantsCount, isOnline, lastSeenAt, typingUsers, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
   const { t, lang } = useLanguage();
 
   const [, setTick] = useState(0);
@@ -54,7 +58,24 @@ export function ChatHeader(props: {
       return null;
     }
     if (chatType === "GROUP") {
-      if (typingText) return <div className="chat-header-typing">{typingText}</div>;
+      if (typingUsers && typingUsers.length > 0) {
+        const participantMap = new Map(participants?.map(p => [p.username, p]) ?? []);
+        const avatars = typingUsers.slice(0, 3).map(u => participantMap.get(u));
+        return (
+          <div className="chat-header-typing chat-header-typing--group">
+            <div className="typing-avatars">
+              {avatars.map((p, i) => (
+                p?.avatarUrl
+                  ? <img key={i} src={p.avatarUrl} className="typing-avatar-bubble" alt="" />
+                  : <div key={i} className="typing-avatar-bubble typing-avatar-bubble--letter">
+                      {(p?.displayName ?? typingUsers[i] ?? "?").charAt(0).toUpperCase()}
+                    </div>
+              ))}
+            </div>
+            <span>{typingText}</span>
+          </div>
+        );
+      }
       return (
         <div className="chat-header-members" onClick={onHeaderClick}>
           {t("chatHeader.members", { count: participantsCount })}
@@ -95,7 +116,9 @@ export function ChatHeader(props: {
         </button>
       )}
       <div className="chat-header-avatar" onClick={onHeaderClick}>
-        {chatName ? chatName.charAt(0).toUpperCase() : "?"}
+        {chatAvatarUrl
+          ? <img src={chatAvatarUrl} className="chat-header-avatar-img" alt="" />
+          : (chatName ? chatName.charAt(0).toUpperCase() : "?")}
       </div>
 
       <div className="chat-header-info">

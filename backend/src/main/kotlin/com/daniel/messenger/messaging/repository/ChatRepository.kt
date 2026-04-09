@@ -26,6 +26,8 @@ interface MyChatProjection {
 interface PrivateChatDisplayName {
     fun getChatId(): Long
     fun getUsername(): String
+    fun getDisplayName(): String?
+    fun getAvatarUrl(): String?
 }
 
 @Repository
@@ -65,7 +67,7 @@ interface ChatRepository : JpaRepository<Chat, Long> {
 
     @Query(
         value = """
-            SELECT cp.chat_id AS chatId, u.username AS username
+            SELECT cp.chat_id AS chatId, u.username AS username, u.display_name AS displayName, u.avatar_url AS avatarUrl
             FROM chat_participants cp
             JOIN users u ON u.id = cp.user_id
             WHERE cp.chat_id IN (:chatIds) AND cp.user_id != :userId

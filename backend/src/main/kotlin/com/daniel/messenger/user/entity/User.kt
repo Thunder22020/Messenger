@@ -23,6 +23,12 @@ data class User(
 
     @Column(name = "last_seen_at")
     var lastSeenAt: Instant? = null,
+
+    @Column(name = "display_name", length = 26)
+    var displayName: String? = null,
+
+    @Column(name = "avatar_url")
+    var avatarUrl: String? = null,
 ): Serializable {
     companion object {
         private const val serialVersionUID = 1L

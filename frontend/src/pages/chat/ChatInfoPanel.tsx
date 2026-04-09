@@ -9,7 +9,12 @@ type Tab = "members" | "media" | "files";
 
 const PAGE_SIZE = 20;
 
-type SearchUser = { id: number; username: string };
+type SearchUser = {
+  id: number;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
 
 // ---- MembersTab ----
 
@@ -104,8 +109,15 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
             <div className="info-add-checkbox checked">
               <div className="info-add-checkbox-dot" />
             </div>
-            <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
-            <span className="info-member-name">{user.username}</span>
+            <div className="info-avatar">
+              {user.avatarUrl
+                ? <img src={user.avatarUrl} className="info-avatar-img" alt="" />
+                : (user.displayName ?? user.username).charAt(0).toUpperCase()}
+            </div>
+            <div className="search-person-info">
+              <span className="search-person-name">{user.displayName ?? user.username}</span>
+              {user.displayName && <span className="search-person-username">@{user.username}</span>}
+            </div>
           </div>
         ))}
 
@@ -120,8 +132,15 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
               <div className={`info-add-checkbox${isMember ? " checked disabled" : ""}`}>
                 {isMember && <div className="info-add-checkbox-dot" />}
               </div>
-              <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
-              <span className="info-member-name">{user.username}</span>
+              <div className="info-avatar">
+                {user.avatarUrl
+                  ? <img src={user.avatarUrl} className="info-avatar-img" alt="" />
+                  : (user.displayName ?? user.username).charAt(0).toUpperCase()}
+              </div>
+              <div className="search-person-info">
+                <span className="search-person-name">{user.displayName ?? user.username}</span>
+                {user.displayName && <span className="search-person-username">@{user.username}</span>}
+              </div>
             </div>
           );
         })}
@@ -131,8 +150,15 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
             <div className="info-add-checkbox checked disabled">
               <div className="info-add-checkbox-dot" />
             </div>
-            <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
-            <span className="info-member-name">{user.username}</span>
+            <div className="info-avatar">
+              {user.avatarUrl
+                ? <img src={user.avatarUrl} className="info-avatar-img" alt="" />
+                : (user.displayName ?? user.username).charAt(0).toUpperCase()}
+            </div>
+            <div className="search-person-info">
+              <span className="search-person-name">{user.displayName ?? user.username}</span>
+              {user.displayName && <span className="search-person-username">@{user.username}</span>}
+            </div>
             <span className="info-you-label">{t("info.member")}</span>
           </div>
         ))}
@@ -154,8 +180,12 @@ function MembersTab({ participants, currentUsername, onUserClick, chatId, addMod
     <div className="info-members-list">
       {sorted.map((user) => (
         <div key={user.id} className="info-member-row" onClick={() => onUserClick(user.id)}>
-          <div className="info-avatar">{user.username.charAt(0).toUpperCase()}</div>
-          <span className="info-member-name">{user.username}</span>
+          <div className="info-avatar">
+            {user.avatarUrl
+              ? <img src={user.avatarUrl} className="info-avatar-img" alt="" />
+              : (user.displayName ?? user.username).charAt(0).toUpperCase()}
+          </div>
+          <span className="info-member-name">{user.displayName ?? user.username}</span>
           {user.username === currentUsername && <span className="info-you-label">{t("info.you")}</span>}
         </div>
       ))}
@@ -261,6 +291,9 @@ export function ChatInfoPanel(props: {
 }) {
   const { isOpen, chatName, chatType, chatId, participants, currentUsername, onUserClick, onMediaClick, onClose, onLeave, isMobile } = props;
   const { t } = useLanguage();
+  const privatePeer = chatType === "PRIVATE"
+    ? participants.find((p) => p.username !== currentUsername) ?? participants[0]
+    : null;
 
   const [activeTab, setActiveTab] = useState<Tab>(chatType === "GROUP" ? "members" : "media");
   const [membersAddMode, setMembersAddMode] = useState(false);
@@ -357,7 +390,9 @@ export function ChatInfoPanel(props: {
           <span className="info-leave-icon" onClick={onLeave} title={t("info.leaveGroup")} />
         )}
         <div className="info-chat-avatar">
-          {chatName ? chatName.charAt(0).toUpperCase() : "?"}
+          {privatePeer?.avatarUrl
+            ? <img src={privatePeer.avatarUrl} className="info-avatar-img" alt="" />
+            : (chatName ? chatName.charAt(0).toUpperCase() : "?")}
         </div>
         <div className="info-chat-name">{chatName}</div>
       </div>
