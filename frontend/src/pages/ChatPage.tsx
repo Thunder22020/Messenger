@@ -415,6 +415,7 @@ export default function ChatPage() {
                         dateGroups={dateGroups}
                         uploadingBubbles={uploadingBubbles}
                         chatType={chatType}
+                        chatAvatarUrl={chatAvatarUrl}
                         currentUsername={currentUsername}
                         unreadDividerMessageId={unreadDividerMessageId}
                         dividerRef={dividerRef}

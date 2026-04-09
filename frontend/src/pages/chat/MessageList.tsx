@@ -594,6 +594,7 @@ export function MessageList(props: {
   dateGroups: DateGroup[];
   uploadingBubbles: UploadingBubble[];
   chatType: string | null;
+  chatAvatarUrl?: string | null;
   currentUsername: string | null;
   unreadDividerMessageId: number | null | undefined;
   dividerRef: RefObject<HTMLDivElement | null>;
@@ -610,6 +611,7 @@ export function MessageList(props: {
     dateGroups,
     uploadingBubbles,
     chatType,
+    chatAvatarUrl,
     currentUsername,
     unreadDividerMessageId,
     dividerRef,
@@ -755,7 +757,7 @@ export function MessageList(props: {
                 )}
 
                 <div className={`message-group ${isMine ? "mine" : "other"}`}>
-                  {!isMine && chatType === "GROUP" && (
+                  {!isMine && chatType === "GROUP" && group.messages[0]?.type !== "SYSTEM" && (
                     <div className="group-sender-label">
                       {resolveDisplayName(group.sender, group.messages[0]?.senderDisplayName)}
                     </div>
@@ -763,6 +765,7 @@ export function MessageList(props: {
 
                   {group.messages.map((msg, msgIdx) => {
                     if (msg.type === "SYSTEM") {
+                      const isGroupAvatarUpdate = chatType === "GROUP" && msg.content === "update group avatar";
                       const systemSenderName = resolveDisplayName(msg.sender, msg.senderDisplayName);
                       const hasSystemSender = Boolean(msg.sender || msg.senderDisplayName || msg.senderAvatarUrl);
                       return (
@@ -770,8 +773,8 @@ export function MessageList(props: {
                           {hasSystemSender ? (
                             <>
                               <div className="system-message-avatar">
-                                {msg.senderAvatarUrl
-                                  ? <img src={msg.senderAvatarUrl} className="system-message-avatar-img" alt="" />
+                                {(isGroupAvatarUpdate ? chatAvatarUrl : msg.senderAvatarUrl)
+                                  ? <img src={(isGroupAvatarUpdate ? chatAvatarUrl : msg.senderAvatarUrl) ?? undefined} className="system-message-avatar-img" alt="" />
                                   : systemSenderName.charAt(0).toUpperCase()}
                               </div>
                               <div className="system-message-body">
