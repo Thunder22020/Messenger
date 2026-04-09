@@ -22,7 +22,7 @@ export function ChatHeader(props: {
   onVideoCall?: () => void;
   isInCall?: boolean;
 }) {
-  const { chatName, chatAvatarUrl, chatType, participants, participantsCount, isOnline, lastSeenAt, typingUsers, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
+  const { chatName, chatAvatarUrl, chatType, participantsCount, isOnline, lastSeenAt, typingUsers, typingText, onHeaderClick, onToggleInfo, onToggleSearch, isSearchOpen, onBack, onCall, onVideoCall, isInCall } = props;
   const { t, lang } = useLanguage();
 
   const [, setTick] = useState(0);
@@ -59,22 +59,7 @@ export function ChatHeader(props: {
     }
     if (chatType === "GROUP") {
       if (typingUsers && typingUsers.length > 0) {
-        const participantMap = new Map(participants?.map(p => [p.username, p]) ?? []);
-        const avatars = typingUsers.slice(0, 3).map(u => participantMap.get(u));
-        return (
-          <div className="chat-header-typing chat-header-typing--group">
-            <div className="typing-avatars">
-              {avatars.map((p, i) => (
-                p?.avatarUrl
-                  ? <img key={i} src={p.avatarUrl} className="typing-avatar-bubble" alt="" />
-                  : <div key={i} className="typing-avatar-bubble typing-avatar-bubble--letter">
-                      {(p?.displayName ?? typingUsers[i] ?? "?").charAt(0).toUpperCase()}
-                    </div>
-              ))}
-            </div>
-            <span>{typingText}</span>
-          </div>
-        );
+        return <div className="chat-header-typing">{typingText}</div>;
       }
       return (
         <div className="chat-header-members" onClick={onHeaderClick}>

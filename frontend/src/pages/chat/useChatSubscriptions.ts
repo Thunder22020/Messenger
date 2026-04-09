@@ -154,12 +154,26 @@ export function useChatSubscriptions({
         [otherParticipantsReadMap],
     );
 
+    const getTypingLabel = useCallback((username: string): string => {
+        const participant = participants.find((p) => p.username === username);
+        return participant?.displayName?.trim() || username;
+    }, [participants]);
+
     const getTypingText = useCallback((): string => {
         if (chatType === "PRIVATE") return t("sidebar.typing");
-        if (typingUsers.length === 1) return t("sidebar.typingOne", { user: typingUsers[0] });
-        if (typingUsers.length === 2) return t("sidebar.typingTwo", { user1: typingUsers[0], user2: typingUsers[1] });
-        return t("sidebar.typingMany", { user1: typingUsers[0], user2: typingUsers[1], count: typingUsers.length - 2 });
-    }, [chatType, typingUsers, t]);
+        if (typingUsers.length === 1) return t("sidebar.typingOne", { user: getTypingLabel(typingUsers[0]) });
+        if (typingUsers.length === 2) {
+            return t("sidebar.typingTwo", {
+                user1: getTypingLabel(typingUsers[0]),
+                user2: getTypingLabel(typingUsers[1]),
+            });
+        }
+        return t("sidebar.typingMany", {
+            user1: getTypingLabel(typingUsers[0]),
+            user2: getTypingLabel(typingUsers[1]),
+            count: typingUsers.length - 2,
+        });
+    }, [chatType, getTypingLabel, typingUsers, t]);
 
     return {
         participants,

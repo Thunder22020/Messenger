@@ -1375,38 +1375,6 @@ button {
     text-overflow: ellipsis;
 }
 
-.chat-header-typing--group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.typing-avatars {
-    display: flex;
-    flex-direction: row-reverse;
-    flex-shrink: 0;
-}
-
-.typing-avatar-bubble {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1.5px solid var(--bg-base);
-    margin-left: -5px;
-    display: block;
-}
-
-.typing-avatar-bubble--letter {
-    background: var(--accent);
-    color: var(--color-white);
-    font-size: 9px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .chat-header-avatar,
 .chat-header-members,
 .chat-header-name {
