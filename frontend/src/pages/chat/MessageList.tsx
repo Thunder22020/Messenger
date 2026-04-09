@@ -601,6 +601,7 @@ export function MessageList(props: {
   deletingMessageIds: Set<number>;
   isReadByAnyOther: (messageId: number) => boolean;
   onMessageContextMenu: (x: number, y: number, msg: Message, isMine: boolean) => void;
+  onSenderClick: (username: string) => void;
   onScrollToMessage: (messageId: number) => void;
   onMediaClick: (items: AttachmentDto[], index: number, meta: { sender: string; createdAt: string }) => void;
   onImageLoad?: () => void;
@@ -618,6 +619,7 @@ export function MessageList(props: {
     deletingMessageIds,
     isReadByAnyOther,
     onMessageContextMenu,
+    onSenderClick,
     onScrollToMessage,
     onMediaClick,
     onImageLoad,
@@ -758,7 +760,7 @@ export function MessageList(props: {
 
                 <div className={`message-group ${isMine ? "mine" : "other"}`}>
                   {!isMine && chatType === "GROUP" && group.messages[0]?.type !== "SYSTEM" && (
-                    <div className="group-sender-label">
+                    <div className="group-sender-label clickable" onClick={() => onSenderClick(group.sender)}>
                       {resolveDisplayName(group.sender, group.messages[0]?.senderDisplayName)}
                     </div>
                   )}
@@ -817,7 +819,7 @@ export function MessageList(props: {
                         <div className={`message-row ${isMine ? "mine" : "other"}`}>
                           {!isMine && chatType === "GROUP" && (
                             isLast ? (
-                              <div className="message-avatar">
+                              <div className="message-avatar clickable" onClick={() => onSenderClick(group.sender)}>
                                 {group.messages[0]?.senderAvatarUrl
                                   ? <img src={group.messages[0].senderAvatarUrl} className="message-avatar-img" alt="" />
                                   : resolveDisplayName(group.sender, group.messages[0]?.senderDisplayName).charAt(0).toUpperCase()}

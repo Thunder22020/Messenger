@@ -422,6 +422,10 @@ export default function ChatPage() {
                         deletingMessageIds={deletingMessageIds}
                         isReadByAnyOther={isReadByAnyOther}
                         onMessageContextMenu={handleMessageRightClick}
+                        onSenderClick={(username) => {
+                            const sender = participants.find((p) => p.username === username);
+                            if (sender) navigate(`/user/${sender.id}`);
+                        }}
                         onScrollToMessage={scrollToMessage}
                         onMediaClick={(items, index, meta) =>
                             setViewerState({ items, index, sender: meta.sender, createdAt: meta.createdAt })

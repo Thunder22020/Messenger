@@ -549,6 +549,11 @@ button {
     padding-left: calc(30px + 8px + 2px);
 }
 
+.group-sender-label.clickable,
+.message-avatar.clickable {
+    cursor: pointer;
+}
+
 .message-row {
     display: flex;
 }
