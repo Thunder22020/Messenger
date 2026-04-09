@@ -16,6 +16,8 @@ import java.time.Instant
 
 fun MessageEntity.toResponse(
     senderUsername: String? = null,
+    senderDisplayName: String? = null,
+    senderAvatarUrl: String? = null,
     replyPreview: ReplyPreviewDto? = null,
     attachments: List<AttachmentDto> = emptyList(),
     reactions: List<ReactionDto> = emptyList(),
@@ -24,8 +26,8 @@ fun MessageEntity.toResponse(
     type = type.name,
     content = if (deletedAt != null) "" else content,
     sender = senderUsername ?: sender?.username ?: "",
-    senderDisplayName = sender?.displayName,
-    senderAvatarUrl = sender?.avatarUrl,
+    senderDisplayName = senderDisplayName ?: sender?.displayName,
+    senderAvatarUrl = senderAvatarUrl ?: sender?.avatarUrl,
     createdAt = createdAt,
     editedAt = editedAt,
     deletedAt = deletedAt,

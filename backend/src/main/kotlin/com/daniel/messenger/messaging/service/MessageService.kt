@@ -65,6 +65,8 @@ class MessageService(
 
         return message.toResponse(
             senderUsername = sender.username,
+            senderDisplayName = sender.displayName,
+            senderAvatarUrl = sender.avatarUrl,
             replyPreview = loadReplyPreview(message),
             attachments = attachments.map { it.toDto() },
         )
