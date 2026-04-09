@@ -928,35 +928,6 @@ export default function AppLayout() {
                 </div>
             </div>
 
-            {/* ── Logout popup ── */}
-            {showLogoutPopup && (
-                <div className="logout-popup-overlay">
-                    <div className="logout-popup">
-                        <div className="logout-title">{t("logout.title")}</div>
-
-                        <div className="logout-subtitle">
-                            {t("logout.subtitle")}
-                        </div>
-
-                        <div className="logout-actions">
-                            <button
-                                className="btn-secondary"
-                                onClick={() => setShowLogoutPopup(false)}
-                            >
-                                {t("logout.cancel")}
-                            </button>
-
-                            <button
-                                className="logout-confirm-btn"
-                                onClick={handleLogout}
-                            >
-                                {t("logout.confirm")}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* ── Chat context menu ── */}
             {chatContextMenu && (
                 <div
@@ -1016,6 +987,34 @@ export default function AppLayout() {
         </div>
     );
 
+    const logoutPopupJSX = showLogoutPopup && (
+        <div className="logout-popup-overlay">
+            <div className="logout-popup">
+                <div className="logout-title">{t("logout.title")}</div>
+
+                <div className="logout-subtitle">
+                    {t("logout.subtitle")}
+                </div>
+
+                <div className="logout-actions">
+                    <button
+                        className="btn-secondary"
+                        onClick={() => setShowLogoutPopup(false)}
+                    >
+                        {t("logout.cancel")}
+                    </button>
+
+                    <button
+                        className="logout-confirm-btn"
+                        onClick={handleLogout}
+                    >
+                        {t("logout.confirm")}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
     if (isMobile) {
         return (
             <AppLayoutContext.Provider value={{ setRightPanel: setRightPanelStable, showLogout: () => setShowLogoutPopup(true) }}>
@@ -1029,6 +1028,7 @@ export default function AppLayout() {
                         </div>
                         {rightPanel}
                     </div>
+                    {logoutPopupJSX}
                 </div>
             </AppLayoutContext.Provider>
         );
@@ -1043,6 +1043,7 @@ export default function AppLayout() {
                     <Outlet />
                 </div>
                 {rightPanel}
+                {logoutPopupJSX}
             </div>
         </AppLayoutContext.Provider>
     );
