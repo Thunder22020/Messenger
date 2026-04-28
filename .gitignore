@@ -10,7 +10,6 @@ backend/.env.*
 !backend/.env.example
 
 # Runtime data and logs
-data/
 logs/
 *.log
 

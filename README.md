@@ -1,4 +1,9 @@
-# Messenger
+<p align="center">
+  <img src="./data/logo/framed_milk_logo.png" alt="Messenger logo" width="220">
+</p>
+
+# Synk.
+Messenger App
 
 Fullstack pet project: real-time messenger with authentication, private and group chats, message reactions, file attachments, online presence, push notifications and WebRTC call signaling.
 
@@ -42,6 +47,21 @@ This keeps business rules close to their domain while still sharing cross-cuttin
 ## Frontend Note
 
 The frontend is also part of the product work: the messenger UI was designed from scratch and implemented as a modern React + TypeScript application. It fully works with the backend features in this repository, including realtime chats, group flows, reactions, attachments, presence, profile/avatar updates, push notifications and call UI.
+
+## App Mockups
+
+<p align="center">
+  <img src="./data/mockups/154_mockup_desktop.png" alt="Desktop messenger mockup" width="820">
+</p>
+
+<p align="center">
+  <img src="./data/mockups/emoji_light_desktop_mockup.png" alt="Desktop emoji picker mockup" width="820">
+</p>
+
+<p align="center">
+  <img src="./data/mockups/mobile_3.png" alt="Mobile messenger mockup" width="300">
+  <img src="./data/mockups/mobile_1.png" alt="Mobile chat mockup" width="300">
+</p>
 
 ## Request Flow
 
