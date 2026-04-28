@@ -46,7 +46,7 @@ app:
     refresh-expiration: 7
   turn:
     secret: ${TURN_SECRET}
-    url: ${TURN_URL:synk.su}
+    url: ${TURN_URL:turn.example.com}
 
 logging:
   level:

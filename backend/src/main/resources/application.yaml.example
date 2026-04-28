@@ -1,42 +1,39 @@
 #file: noinspection SpringBootApplicationYaml
 # ──────────────────────────────────────────────────────────────────────────────
 # application.yaml.example
-# Copy to application.yaml and fill in all required values.
+# Reference config for Spring Boot. Prefer setting real values through
+# environment variables instead of committing them to application.yaml.
 #
 # Required environment variables:
 #   JWT_SECRET                – HS256 signing key, min 32 chars (generate: openssl rand -base64 48)
 #   DB_USERNAME               – PostgreSQL user
 #   DB_PASSWORD               – PostgreSQL password
+#   TURN_SECRET               – TURN HMAC secret
 #   S3_ACCESS_KEY             – S3-compatible storage access key
 #   S3_SECRET_KEY             – S3-compatible storage secret key
 #   S3_REGION                 – Storage region (e.g. ru-7)
 #   S3_ENDPOINT               – Full endpoint URL
 #   S3_BUCKET                 – Bucket name
 #   S3_FETCH_URL              – Public base URL for serving files to clients
+#   VAPID_PUBLIC_KEY          – Web Push public key
+#   VAPID_PRIVATE_KEY         – Web Push private key
 #
 # Optional environment variables (have defaults):
 #   APP_CORS_ALLOWED_ORIGINS  – Frontend origin (default: http://localhost:5173)
-#   JPA_DDL_AUTO              – Hibernate DDL mode (default: update; use validate in prod)
+#   APP_COOKIE_SECURE         – Secure refresh-token cookie flag (default: true)
+#   JPA_DDL_AUTO              – Hibernate DDL mode (default: validate)
+#   TURN_URL                  – TURN host (default: turn.example.com)
+#   VAPID_SUBJECT             – Web Push contact subject (default: mailto:admin@example.com)
 # ──────────────────────────────────────────────────────────────────────────────
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 40MB
+      max-request-size: 40MB
   application:
     name: Messenger
 
-  # ── File uploads ─────────────────────────────────────────────────────────────
-  servlet:
-    multipart:
-      max-file-size: 20MB
-      max-request-size: 20MB
-
-  # ── JWT ──────────────────────────────────────────────────────────────────────
-  security:
-    jwt:
-      secretKey: ${JWT_SECRET}
-      access-expiration: 300000   # milliseconds
-      refresh-expiration: 30       # days
-
-  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   datasource:
     url: jdbc:postgresql://localhost:5432/messenger_db
     username: ${DB_USERNAME}
@@ -47,7 +44,7 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
     database: postgresql
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
@@ -56,30 +53,54 @@ spring:
           jta:
             platform: org.hibernate.service.jta.JtaService
 
-  # ── Redis ────────────────────────────────────────────────────────────────────
   data:
     redis:
       host: localhost
       port: 6379
-      # password: ${REDIS_PASSWORD}   # uncomment if Redis requires authentication
+      repositories:
+        enabled: false
 
   cache:
     type: redis
 
-# ── S3-compatible object storage ─────────────────────────────────────────────
+app:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY}
+    private-key: ${VAPID_PRIVATE_KEY}
+    subject: ${VAPID_SUBJECT:mailto:admin@example.com}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  cookie:
+    secure: ${APP_COOKIE_SECURE:true}
+  jwt:
+    secret-key: ${JWT_SECRET}
+    access-expiration: 300000
+    refresh-expiration: 7
+  turn:
+    secret: ${TURN_SECRET}
+    url: ${TURN_URL:turn.example.com}
+
+logging:
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    distribution:
+      percentiles:
+        http.server.requests: [0.5, 0.95, 0.99]
+
 s3:
   access-key: ${S3_ACCESS_KEY}
   secret-key: ${S3_SECRET_KEY}
   region: ${S3_REGION}
   endpoint: ${S3_ENDPOINT}
   bucket: ${S3_BUCKET}
-  fetch-url: ${S3_FETCH_URL}      # public base URL used to build client-facing download links
-
-# ── CORS ─────────────────────────────────────────────────────────────────────
-app:
-  cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
-  vapid:
-    public-key: ${VAPID_PUBLIC_KEY}
-    private-key: ${VAPID_PRIVATE_KEY}
-    subject: ${VAPID_SUBJECT:mailto:admin@example.com}
+  fetch-url: ${S3_FETCH_URL}

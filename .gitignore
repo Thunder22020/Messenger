@@ -1,4 +1,36 @@
+.DS_Store
+Thumbs.db
+
+# Local environment files. Keep the examples committed.
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Runtime data and logs
 data/
 logs/
+*.log
+
+# Build output and dependencies
+target/
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# IDE and local tool state
+.idea/
+backend/.idea/
+frontend/.idea/
+.vscode/
+*.iml
+
+# Local agent settings
+.claude/
+backend/.claude/
+frontend/.claude/
 .claude/settings.local.json
 backend/.claude/settings.local.json

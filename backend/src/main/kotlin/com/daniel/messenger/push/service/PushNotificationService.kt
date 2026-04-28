@@ -44,10 +44,12 @@ class PushNotificationService(
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(BouncyCastleProvider())
         }
-        // Keys must be base64url WITHOUT padding — normalize in case they were stored
-        // with standard base64 characters (+, /) or trailing = padding.
-        val pubKey  = vapidPublicKey .trimEnd('=').replace('+', '-').replace('/', '_')
-        val privKey = vapidPrivateKey.trimEnd('=').replace('+', '-').replace('/', '_')
+        val pubKey  = vapidPublicKey.trimEnd('=')
+            .replace('+', '-')
+            .replace('/', '_')
+        val privKey = vapidPrivateKey.trimEnd('=')
+            .replace('+', '-')
+            .replace('/', '_')
         pushService = PushService(pubKey, privKey, vapidSubject)
     }
 
@@ -58,8 +60,7 @@ class PushNotificationService(
 
     fun saveSubscription(username: String, endpoint: String, p256dh: String, auth: String) {
         if (pushSubscriptionRepository.existsByEndpoint(endpoint)) return
-        // Delete stale subscriptions from the same push service (same host) for this user
-        // so old registrations don't accumulate when the PWA is reinstalled.
+
         val host = runCatching { java.net.URI(endpoint).let { "${it.scheme}://${it.host}" } }.getOrNull()
         if (host != null) {
             val stale = pushSubscriptionRepository.findByUsernameAndEndpointStartingWith(username, host)
@@ -76,10 +77,6 @@ class PushNotificationService(
         pushSubscriptionRepository.deleteByEndpoint(endpoint)
     }
 
-    /**
-     * Debounces push notifications per (recipient, chat): waits 3 seconds after the
-     * last message before delivering, so a burst of messages results in one push.
-     */
     fun schedule(recipientUsername: String, chatId: Long, title: String, body: String) {
         val key = "$recipientUsername:$chatId"
         pending.compute(key) { _, existing ->

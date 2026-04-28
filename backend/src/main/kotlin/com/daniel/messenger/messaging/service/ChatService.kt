@@ -132,7 +132,9 @@ class ChatService(
         updateChatLastMessage(chat, newLast, attachments = newLast?.attachments ?: emptyList())
         chatParticipantRepository.bulkDecrementUnreadCounts(chatId, deletedMessageId)
         val participants = chatParticipantRepository.findAllWithUserByChatId(chatId).map { it.toSnapshot() }
-        eventPublisher.publishEvent(MessageDeletedEvent(chat.toDto(), participants, response, hasAttachments))
+        eventPublisher.publishEvent(
+            MessageDeletedEvent(chat.toDto(), participants, response, hasAttachments)
+        )
     }
 
     @Transactional
@@ -147,7 +149,9 @@ class ChatService(
         val participants = chatParticipantRepository
             .findAllWithUserByChatId(chatId)
             .map { it.toSnapshot() }
-        eventPublisher.publishEvent(MessageEditedEvent(chat.toDto(), participants, response, isLastMessage))
+        eventPublisher.publishEvent(
+            MessageEditedEvent(chat.toDto(), participants, response, isLastMessage)
+        )
     }
 
     @Transactional(readOnly = true)
@@ -162,7 +166,11 @@ class ChatService(
 
         val peerInfoMap = if (privateChatIds.isNotEmpty()) {
             chatRepository.findPrivateChatDisplayNames(privateChatIds, userId)
-                .associate { it.getChatId() to PeerInfo(it.getDisplayName() ?: it.getUsername(), it.getUsername(), it.getAvatarUrl()) }
+                .associate {it.getChatId() to PeerInfo(
+                    it.getDisplayName() ?: it.getUsername(),
+                    it.getUsername(),
+                    it.getAvatarUrl()
+                ) }
         } else {
             emptyMap()
         }

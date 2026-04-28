@@ -86,6 +86,10 @@ class ChatNotificationService(
     }
 
     fun sendChatDeleted(username: String, chatId: Long) {
-        sendSidebarUpdate(username, ChatUpdateEvent(chatId = chatId, type = ChatUpdateType.DELETED, unreadCount = 0))
+        sendSidebarUpdate(username, ChatUpdateEvent(
+            chatId = chatId,
+            type = ChatUpdateType.DELETED,
+            unreadCount = 0
+        ))
     }
 }

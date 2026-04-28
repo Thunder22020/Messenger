@@ -50,16 +50,4 @@ class ReactionService(
 
         eventPublisher.publishEvent(ReactionUpdatedEvent(chatId, messageId, wsReactions))
     }
-
-    internal fun aggregateReactions(rows: List<MessageReaction>, viewerId: Long): List<ReactionDto> =
-        rows
-            .groupBy { it.emoji }
-            .map { (emoji, group) ->
-                ReactionDto(
-                    emoji = emoji,
-                    count = group.size,
-                    reactedByMe = group.any { it.userId == viewerId },
-                )
-            }
-            .sortedWith(compareByDescending<ReactionDto> { it.count }.thenBy { it.emoji })
 }

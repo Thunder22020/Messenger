@@ -26,10 +26,6 @@ class PushNotificationEventListener(
             else -> return
         }
 
-        // Send push to all recipients — the service worker suppresses the notification
-        // if the app is currently focused, avoiding duplicates for online users.
-        // We do NOT filter by online status here because mobile PWAs keep WebSocket
-        // connections alive in the background, making online detection unreliable.
         val recipients = event.participants.filter { it.username != senderUsername }
 
         if (recipients.isEmpty()) return

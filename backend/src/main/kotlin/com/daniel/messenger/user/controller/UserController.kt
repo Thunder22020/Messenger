@@ -62,7 +62,11 @@ class UserController(
         val userId = requireNotNull(userPrincipal.user.id)
         val ext = file.originalFilename?.substringAfterLast('.', "jpg") ?: "jpg"
         val key = "avatars/${UUID.randomUUID()}.$ext"
-        val url = s3StorageService.upload(key, file.inputStream, file.contentType ?: "image/jpeg", file.size)
+        val url = s3StorageService.upload(
+            key, file.inputStream,
+            file.contentType ?: "image/jpeg",
+            file.size
+        )
         userService.updateAvatarUrl(userId, url)
         return mapOf("avatarUrl" to url)
     }

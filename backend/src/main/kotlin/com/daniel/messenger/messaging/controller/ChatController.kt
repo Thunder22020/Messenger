@@ -102,7 +102,12 @@ class ChatController(
         chatService.ensureCanUpdateGroupAvatar(chatId, userId)
         val ext = file.originalFilename?.substringAfterLast('.', "jpg") ?: "jpg"
         val key = "chat-avatars/${UUID.randomUUID()}.$ext"
-        val url = s3StorageService.upload(key, file.inputStream, file.contentType ?: "image/jpeg", file.size)
+        val url = s3StorageService.upload(
+            key,
+            file.inputStream,
+            file.contentType ?: "image/jpeg",
+            file.size
+        )
         chatService.updateGroupAvatar(chatId, userId, url)
         return mapOf("avatarUrl" to url)
     }
